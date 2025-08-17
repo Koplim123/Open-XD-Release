@@ -48,6 +48,28 @@ public class HUD extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
+
+    public BooleanValue watermarkShowBuild = ValueBuilder.create(this, "Show Build")
+            .setVisibility(this.waterMark::getCurrentValue)
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+    public BooleanValue watermarkShowUserName = ValueBuilder.create(this, "Show Username")
+            .setVisibility(this.waterMark::getCurrentValue)
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+    public BooleanValue watermarkShowFPS = ValueBuilder.create(this, "Show FPS")
+            .setVisibility(this.waterMark::getCurrentValue)
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+    public BooleanValue watermarkShowTime = ValueBuilder.create(this, "Show Time")
+            .setVisibility(this.waterMark::getCurrentValue)
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
 
@@ -155,7 +177,23 @@ public class HUD extends Module {
         // WaterMark
         if (this.waterMark.getCurrentValue()) {
             e.getStack().pushPose();
-            String text = "Naven | " + Version.getVersion() + " | Dev | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
+            StringBuilder watermarkText = new StringBuilder("Naven");
+
+            if (watermarkShowBuild.getCurrentValue()) {
+                watermarkText.append(" | ").append(Version.getVersion());
+            }
+            if (watermarkShowUserName.getCurrentValue()) {
+                watermarkText.append(" | ").append("Dev");
+            }
+            if (watermarkShowFPS.getCurrentValue()) {
+                watermarkText.append(" | ").append(StringUtils.split(mc.fpsString, " ")[0]).append(" FPS");
+            }
+            if (watermarkShowTime.getCurrentValue()) {
+                watermarkText.append(" | ").append(format.format(new Date()));
+            }
+
+            String text = watermarkText.toString();
+
             this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
             this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
             StencilUtils.write(false);

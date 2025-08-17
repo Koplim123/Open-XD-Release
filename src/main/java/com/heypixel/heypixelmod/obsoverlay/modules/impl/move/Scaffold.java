@@ -115,6 +115,8 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
+
     public BooleanValue keepFoV = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(1.15F)
@@ -164,8 +166,6 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
             .build()
             .getFloatValue();
-
-    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
 
     private float blockCounterWidth;
     private float blockCounterHeight;
@@ -541,7 +541,7 @@ public class Scaffold extends Module {
 
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F; // 调整X坐标以适应背景宽度
+            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
             float y = screenHeight / 2.0F + 15.0F;
 
             e.getStack().pushPose();
