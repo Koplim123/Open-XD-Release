@@ -118,4 +118,7 @@ public class Vector2f {
          return this.x == other.x && this.y == other.y;
       }
    }
+
+    public void set(Vector2f rots) {
+    }
 }

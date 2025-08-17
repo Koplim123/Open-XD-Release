@@ -310,7 +310,11 @@ public class RotationUtils {
       return new Vec3(mc.player.getX(), mc.player.getY() + (double)mc.player.getEyeHeight(mc.player.getPose()), mc.player.getZ());
    }
 
-   public static class Data {
+    public static float normalizeAngle(float v) {
+        return v;
+    }
+
+    public static class Data {
       private final Vec3 eye;
       private final Vec3 hitVec;
       private final double distance;

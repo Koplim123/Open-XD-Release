@@ -440,4 +440,7 @@ public class RenderUtils {
       bufferBuilder.vertex(matrix, minX, maxY, minZ).endVertex();
       BufferUploader.drawWithShader(bufferBuilder.end());
    }
+
+    public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
+    }
 }

@@ -5,11 +5,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventKey;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMouseClick;
 import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchModuleException;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.AimAssist;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.AntiBots;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.AttackCrystal;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.Aura;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.AutoClicker;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.Velocity;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.AntiFireball;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.AutoTools;
@@ -23,16 +19,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ItemTracker;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Spammer;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.AutoMLG;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.FastWeb;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.LongJump;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.NoJumpDelay;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.NoSlow;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.SafeWalk;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Scaffold;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Sprint;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiBlindness;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiNausea;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ChestESP;
@@ -130,11 +117,13 @@ public class ModuleManager {
          new MotionBlur(),
          new Helper(),
          new NoSlow(),
+         new BowAimbot(),
+         new JumpOnHit(),
          new LongJump()
       );
    }
 
-   private void registerModule(Module... modules) {
+    private void registerModule(Module... modules) {
       for (Module module : modules) {
          this.registerModule(module);
       }

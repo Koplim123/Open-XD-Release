@@ -12,16 +12,15 @@ import java.util.List;
 
 public class KillSaysFile extends ClientFile {
    private static final String[] styles = new String[]{
-      "%s L",
-      "%s fw",
+      "%s 你以为能战胜我吗？",
+      "%s 权威认证",
       "%s 我喜欢你",
       "%s 我喜欢你♥",
-      "%s 兄弟你好香",
       "%s 可以和我交往吗？",
       "%s 你好可爱",
       "%s 别急",
-      "%s 你已被清朝杀手陈安健害死！快使用Hack Lunar！",
-      "%s 你已被狂笑的蛇陈安健本人害死，快使用我编写的Hack Lunar端！"
+      "%s 你已被BJD害死！快使用Hack Lunar1056741305！",
+      "%s 你已被YM本人害死，快使用我编写的1056741305端！"
    };
 
    public KillSaysFile() {
