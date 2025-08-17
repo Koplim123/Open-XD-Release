@@ -8,32 +8,22 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ChestStealer;
-import com.heypixel.heypixelmod.obsoverlay.utils.Colors;
-import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.ProjectionUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.*;
+import org.joml.Vector4f;
+
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.EggItem;
-import net.minecraft.world.item.EnchantedGoldenAppleItem;
-import net.minecraft.world.item.EndCrystalItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.SnowballItem;
-import org.joml.Vector4f;
 
 @ModuleInfo(
    name = "ItemTags",

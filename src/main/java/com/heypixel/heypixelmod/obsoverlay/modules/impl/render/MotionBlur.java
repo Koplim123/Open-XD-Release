@@ -11,9 +11,10 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.mojang.blaze3d.shaders.Uniform;
-import java.io.IOException;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.ResourceLocation;
+
+import java.io.IOException;
 
 @ModuleInfo(
    name = "MotionBlur",

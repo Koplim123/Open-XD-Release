@@ -12,20 +12,17 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundPongPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.BowlFoodItem;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @ModuleInfo(
    name = "Stuck",

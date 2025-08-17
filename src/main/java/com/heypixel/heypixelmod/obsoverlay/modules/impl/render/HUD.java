@@ -19,17 +19,14 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
+import org.apache.commons.lang3.StringUtils;
+import org.joml.Vector4f;
 
-import java.awt.Color;
+import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
-import org.joml.Vector4f;
 
 @ModuleInfo(
         name = "HUD",
@@ -42,7 +39,6 @@ public class HUD extends Module {
     public static final int backgroundColor = new Color(0, 0, 0, 40).getRGB();
     private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 
-    // HUD 基本设置
     public BooleanValue waterMark = ValueBuilder.create(this, "Water Mark").setDefaultBooleanValue(true).build().getBooleanValue();
     public FloatValue watermarkSize = ValueBuilder.create(this, "Watermark Size")
             .setVisibility(this.waterMark::getCurrentValue)
@@ -55,7 +51,6 @@ public class HUD extends Module {
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
 
-    // ArrayList 设置
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue prettyModuleName = ValueBuilder.create(this, "Pretty Module Name")
             .setOnUpdate(value -> Module.update = true)
@@ -121,28 +116,6 @@ public class HUD extends Module {
             .build()
             .getFloatValue();
 
-    // Scaffold HUD 设置（新增：开关 / X / Y / Size）
-    public BooleanValue scaffoldHUD = ValueBuilder.create(this, "Scaffold HUD")
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    public FloatValue scaffoldX = ValueBuilder.create(this, "Scaffold X")
-            .setVisibility(this.scaffoldHUD::getCurrentValue)
-            .setMinFloatValue(-300.0F).setMaxFloatValue(300.0F).setDefaultFloatValue(0.0F).setFloatStep(1.0F)
-            .build().getFloatValue();
-    public FloatValue scaffoldY = ValueBuilder.create(this, "Scaffold Y")
-            .setVisibility(this.scaffoldHUD::getCurrentValue)
-            .setMinFloatValue(-300.0F).setMaxFloatValue(300.0F).setDefaultFloatValue(0.0F).setFloatStep(1.0F)
-            .build().getFloatValue();
-    public FloatValue scaffoldSize = ValueBuilder.create(this, "Scaffold Size")
-            .setVisibility(this.scaffoldHUD::getCurrentValue)
-            .setDefaultFloatValue(0.8F)
-            .setFloatStep(0.01F)
-            .setMinFloatValue(0.1F)
-            .setMaxFloatValue(1.0F)
-            .build()
-            .getFloatValue();
-
     List<Module> renderModules;
     float width;
     float watermarkHeight;
@@ -179,7 +152,7 @@ public class HUD extends Module {
     public void onRender(EventRender2D e) {
         CustomTextRenderer font = Fonts.opensans;
 
-        // 水印
+        // WaterMark
         if (this.waterMark.getCurrentValue()) {
             e.getStack().pushPose();
             String text = "Naven | " + Version.getVersion() + " | Dev | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
@@ -271,38 +244,5 @@ public class HUD extends Module {
             font.setAlpha(1.0F);
             e.getStack().popPose();
         }
-
-        // Scaffold 方块数量显示（带 X/Y/Size）
-        Module scaffold = Naven.getInstance().getModuleManager().getModule("Scaffold");
-        if (scaffold != null && scaffold.isEnabled() && this.scaffoldHUD.getCurrentValue()) {
-            int blockCount = getTotalBlocks();
-            CustomTextRenderer font2 = Fonts.opensans;
-            String text = "Blocks: " + blockCount;
-
-            double scale = this.scaffoldSize.getCurrentValue(); // 使用可调大小
-            float textWidth = font2.getWidth(text, scale);
-            float textHeight = (float) font2.getHeight(true, scale);
-
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - textWidth) / 2.0F + this.scaffoldX.getCurrentValue();
-            float y = screenHeight / 2.0F + 50.0F + this.scaffoldY.getCurrentValue();
-
-            RenderUtils.drawRoundedRect(e.getStack(), x - 6, y - 4, textWidth + 12, textHeight + 8, 6.0F, new Color(0, 0, 0, 120).getRGB());
-            font2.render(e.getStack(), text, x, y, Color.WHITE, true, scale);
-        }
-    }
-
-    // 统计背包中可放置方块数量，增加空指针保护，避免未进世界时崩溃
-    private int getTotalBlocks() {
-        if (mc == null || mc.player == null || mc.player.getInventory() == null) return 0;
-        int total = 0;
-        for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.getItem() instanceof BlockItem) {
-                total += stack.getCount();
-            }
-        }
-        return total;
     }
 }

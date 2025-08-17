@@ -1,7 +1,8 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles;
 
-import java.awt.Color;
 import net.minecraft.world.entity.Entity;
+
+import java.awt.*;
 
 public interface ProjectileData {
    Color getColor(Object var1);

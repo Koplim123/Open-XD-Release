@@ -1,9 +1,10 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas;
 
-import java.awt.Color;
+import net.minecraft.world.entity.projectile.ThrownPotion;
+
+import java.awt.*;
 import java.util.Collections;
 import java.util.HashSet;
-import net.minecraft.world.entity.projectile.ThrownPotion;
 
 public class EntityPotionData extends BasicProjectileData {
    public EntityPotionData() {

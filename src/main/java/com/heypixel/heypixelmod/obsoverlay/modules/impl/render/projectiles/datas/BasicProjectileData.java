@@ -1,9 +1,10 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas;
 
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.ProjectileData;
-import java.awt.Color;
-import java.util.Set;
 import net.minecraft.world.entity.Entity;
+
+import java.awt.*;
+import java.util.Set;
 
 public class BasicProjectileData implements ProjectileData {
    private final Color color;

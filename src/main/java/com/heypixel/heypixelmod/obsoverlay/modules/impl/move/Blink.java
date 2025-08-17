@@ -13,24 +13,10 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.ProjectileData;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas.BasicProjectileData;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas.EntityArrowData;
-import com.heypixel.heypixelmod.obsoverlay.utils.BlinkingPlayer;
-import com.heypixel.heypixelmod.obsoverlay.utils.FriendManager;
-import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
-import java.awt.Color;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.player.RemotePlayer;
@@ -50,8 +36,16 @@ import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.entity.projectile.ThrownEgg;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.Vec3;
+
+import java.awt.*;
+import java.util.List;
+import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @ModuleInfo(
    name = "Blink",
