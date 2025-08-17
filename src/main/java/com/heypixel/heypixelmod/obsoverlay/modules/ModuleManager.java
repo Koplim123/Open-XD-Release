@@ -107,7 +107,6 @@ public class ModuleManager {
          new Helper(),
          new NoSlow(),
          new BowAimbot(),
-         new JumpOnHit(), //WTF What this fucking module does?
          new LongJump(),
          new BetaVelocity(),
          new Speed(),
