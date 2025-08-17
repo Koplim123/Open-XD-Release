@@ -7,18 +7,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMouseClick;
 import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchModuleException;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.Velocity;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.AntiFireball;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.AutoTools;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ChestStealer;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ClientFriend;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Disabler;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.FastPlace;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Helper;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.InventoryCleaner;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ItemTracker;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Spammer;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiBlindness;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiNausea;
@@ -118,7 +107,8 @@ public class ModuleManager {
          new Helper(),
          new NoSlow(),
          new BowAimbot(),
-         new JumpOnHit(),
+         new JumpReset(),
+         new GhostHand(),
          new LongJump()
       );
    }
