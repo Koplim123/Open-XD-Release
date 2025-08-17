@@ -89,9 +89,7 @@ public class Aura extends Module {
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
-    // 新增转头模式，包含 None, Linear, Sigmoid 和 Accelerated
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
-    // 新增真人转头速度控制，最大值改为180
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -108,9 +106,7 @@ public class Aura extends Module {
             .setVisibility(() -> !this.rotationType.isCurrentMode("None"))
             .build()
             .getFloatValue();
-    // 新增瞄准才攻击开关
     BooleanValue aimOnlyAttack = ValueBuilder.create(this, "Aim Only Attack").setDefaultBooleanValue(false).build().getBooleanValue();
-    // 移除抖动控制
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -155,7 +151,6 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "FoV", "Range", "None").build().getModeValue();
-    // 加速度参数只在Accelerated模式下可见
     FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
             .setDefaultFloatValue(20.0F)
             .setFloatStep(1.0F)
@@ -165,7 +160,6 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
 
-    // 新增平滑度参数
     FloatValue sigmoidSmoothness = ValueBuilder.create(this, "Sigmoid Smoothness")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -194,28 +188,28 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
-
-        // 绘制目标HUD
+        // TargetHUD
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
-            LivingEntity living = (LivingEntity) target;
+            LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
-            float x = (float) mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
-            float y = (float) mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
+            float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
+            float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
             String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
             float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
             this.blurMatrix = new Vector4f(x, y, width, 30.0F);
             StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
             StencilUtils.erase(true);
+            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
             RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
             StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double) (x + 5.0F), (double) (y + 6.0F), Color.WHITE, true, 0.35F);
+            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
             Fonts.harmony
                     .render(
                             e.getStack(),
                             "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double) (x + 5.0F),
-                            (double) (y + 17.0F),
+                            (double)(x + 5.0F),
+                            (double)(y + 17.0F),
                             Color.WHITE,
                             true,
                             0.35F
@@ -223,7 +217,6 @@ public class Aura extends Module {
             e.getStack().popPose();
         }
 
-        // 绘制瞄准点
         if (!this.rotationType.isCurrentMode("None") && aimingTarget != null) {
             e.getStack().pushPose();
             RenderSystem.enableBlend();
@@ -286,7 +279,6 @@ public class Aura extends Module {
         target = null;
         aimingTarget = null;
         targets.clear();
-        // 初始化当前旋转和速度，避免残留值
         this.currentRotation.x = mc.player.getYRot();
         this.currentRotation.y = mc.player.getXRot();
         this.currentSpeed.x = 0.0F;
@@ -297,7 +289,6 @@ public class Aura extends Module {
     public void onDisable() {
         target = null;
         aimingTarget = null;
-        // 重置旋转和速度
         this.currentRotation.x = 0.0F;
         this.currentRotation.y = 0.0F;
         this.currentSpeed.x = 0.0F;
@@ -314,7 +305,6 @@ public class Aura extends Module {
 
     @EventTarget
     public void onAttackSlowdown(EventAttackSlowdown e) {
-        // 确保 KeepSprint 能正确控制
         if (this.keepSprint.getCurrentValue()) {
             e.setCancelled(true);
         }
@@ -332,7 +322,6 @@ public class Aura extends Module {
                 rotation = null;
                 this.lastRotationData = null;
                 targets.clear();
-                // 禁用时重置状态
                 this.currentRotation.x = mc.player.getYRot();
                 this.currentRotation.y = mc.player.getXRot();
                 this.currentSpeed.x = 0.0F;
@@ -344,11 +333,9 @@ public class Aura extends Module {
             this.setSuffix(this.multi.getCurrentValue() ? "Multi" : (isSwitch ? "Switch" : "Single"));
             this.updateAttackTargets();
 
-            // 如果已经有目标，并且它仍然有效，就保持锁定
             if (target != null && isValidTarget(target)) {
                 aimingTarget = target;
             } else {
-                // 否则，选择一个新的目标
                 aimingTarget = this.shouldPreAim();
             }
 
@@ -365,7 +352,6 @@ public class Aura extends Module {
                     } else if (this.rotationType.isCurrentMode("Accelerated")) {
                         this.updateAcceleratedRotations(this.rotationData);
                     } else {
-                        // None模式下，不进行任何旋转
                         rotation = null;
                         RotationManager.rotations.x = mc.player.getYRot();
                         RotationManager.rotations.y = mc.player.getXRot();
@@ -447,10 +433,9 @@ public class Aura extends Module {
         if (!targets.isEmpty()) {
             HitResult hitResult = mc.hitResult;
 
-            // 如果开启了 "Aim Only Attack"，则检查是否实际瞄准了目标
             if (this.aimOnlyAttack.getCurrentValue()) {
                 if (hitResult.getType() != Type.ENTITY || ((EntityHitResult) hitResult).getEntity() != aimingTarget) {
-                    return; // 如果没有瞄准到aimingTarget，则不攻击
+                    return;
                 }
             }
 
@@ -489,7 +474,6 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 核心修复: 预测减速，避免转圈圈
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
@@ -521,16 +505,12 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 使用Sigmoid函数计算移动比例，并用可调的“平滑度”参数来控制曲线
-        // 修复：确保 sigmoid 函数的输入值在合理范围内
         float sigmoidYawFactor = (float) (2.0F / (1.0F + Math.exp(-deltaYaw / smoothness)) - 1.0F);
         float sigmoidPitchFactor = (float) (2.0F / (1.0F + Math.exp(-deltaPitch / smoothness)) - 1.0F);
 
         float newYawSpeed = sigmoidYawFactor * maxSpeedX;
         float newPitchSpeed = sigmoidPitchFactor * maxSpeedY;
 
-        // 核心修复: 预测减速，避免转圈圈和超调
-        // 如果剩余角度差小于当前速度，直接锁定目标
         if (Math.abs(deltaYaw) < Math.abs(newYawSpeed)) {
             newYawSpeed = deltaYaw;
         }
@@ -559,21 +539,19 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 使用加速度计算新的速度
         float newSpeedX = this.currentSpeed.x + accel * Math.signum(deltaYaw);
         float newSpeedY = this.currentSpeed.y + accel * Math.signum(deltaPitch);
 
-        // 核心修复: 预测减速，避免转圈圈
         if (Math.abs(deltaYaw) < Math.abs(newSpeedX)) {
             newSpeedX = deltaYaw;
-            this.currentSpeed.x = 0.0f; // 停止加速度，防止超调
+            this.currentSpeed.x = 0.0f;
         } else {
             newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(deltaYaw);
         }
 
         if (Math.abs(deltaPitch) < Math.abs(newSpeedY)) {
             newSpeedY = deltaPitch;
-            this.currentSpeed.y = 0.0f; // 停止加速度，防止超调
+            this.currentSpeed.y = 0.0f;
         } else {
             newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(deltaPitch);
         }

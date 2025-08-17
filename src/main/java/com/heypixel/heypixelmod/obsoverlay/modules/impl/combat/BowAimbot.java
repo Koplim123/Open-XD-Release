@@ -29,7 +29,6 @@ import net.minecraft.world.level.ClipContext;
 )
 public class BowAimbot extends Module {
 
-    // 配置选项
     public BooleanValue enabled = ValueBuilder.create(this, "Enabled").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue onlyWhenUsingBow = ValueBuilder.create(this, "Only When Using Bow").setDefaultBooleanValue(true).build().getBooleanValue();
     public FloatValue fov = ValueBuilder.create(this, "FOV").setDefaultFloatValue(90.0F).setMinFloatValue(1.0F).setMaxFloatValue(360.0F).setFloatStep(1.0F).build().getFloatValue();
@@ -108,7 +107,6 @@ public class BowAimbot extends Module {
         if (!entity.isAlive() || entity.isDeadOrDying()) return false;
         if (entity.distanceTo(mc.player) > aimRange.getCurrentValue()) return false;
 
-        // 使用射线追踪来代替 hasLineOfSightTo，兼容性更好
         if (!hasLineOfSightTo(entity)) return false;
 
         float yawDifference = Math.abs(RotationUtils.getAngleDifference(RotationUtils.getRotations(entity).getX(), mc.player.getYRot()));

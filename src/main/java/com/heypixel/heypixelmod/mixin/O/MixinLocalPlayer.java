@@ -11,17 +11,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.StatusOnly;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -69,12 +60,12 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayer {
    }
 
    @Inject(
-      method = {"tick"},
-      at = {@At(
-         value = "INVOKE",
-         target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V",
-         shift = Shift.BEFORE
-      )}
+           method = {"tick"},
+           at = {@At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V",
+                   shift = Shift.BEFORE
+           )}
    )
    public void injectUpdateEvent(CallbackInfo ci) {
       Naven.getInstance().getEventManager().call(new EventUpdate());
@@ -84,72 +75,35 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayer {
     * @author b
     * @reason b
     */
-   @Overwrite
-   private void sendPosition() {
+   @Inject(
+           method = {"sendPosition"},
+           at = @At(value = "HEAD"),
+           cancellable = true
+   )
+   public void onSendPositionPre(CallbackInfo ci) {
       EventMotion eventPre = new EventMotion(EventType.PRE, this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot(), this.onGround());
       Naven.getInstance().getEventManager().call(eventPre);
       if (eventPre.isCancelled()) {
          Naven.getInstance().getEventManager().call(new EventMotion(EventType.POST, eventPre.getYaw(), eventPre.getPitch()));
-      } else {
-         this.sendIsSprintingIfNeeded();
-         boolean flag3 = this.isShiftKeyDown();
-         if (flag3 != this.wasShiftKeyDown) {
-            Action serverboundplayercommandpacket$action1 = flag3 ? Action.PRESS_SHIFT_KEY : Action.RELEASE_SHIFT_KEY;
-            this.connection.send(new ServerboundPlayerCommandPacket(this, serverboundplayercommandpacket$action1));
-            this.wasShiftKeyDown = flag3;
-         }
-
-         if (this.isControlledCamera()) {
-            double d4 = eventPre.getX() - this.xLast;
-            double d0 = eventPre.getY() - this.yLast1;
-            double d1 = eventPre.getZ() - this.zLast;
-            double d2 = (double)(eventPre.getYaw() - this.yRotLast);
-            double d3 = (double)(eventPre.getPitch() - this.xRotLast);
-            this.positionReminder++;
-            boolean flag1 = Mth.lengthSquared(d4, d0, d1) > Mth.square(2.0E-4) || this.positionReminder >= 20;
-            boolean flag2 = d2 != 0.0 || d3 != 0.0;
-            if (this.isPassenger()) {
-               Vec3 vec3 = this.getDeltaMovement();
-               this.connection.send(new PosRot(vec3.x, -999.0, vec3.z, eventPre.getYaw(), eventPre.getPitch(), eventPre.isOnGround()));
-               flag1 = false;
-            } else if (flag1 && flag2) {
-               this.connection
-                  .send(new PosRot(eventPre.getX(), eventPre.getY(), eventPre.getZ(), eventPre.getYaw(), eventPre.getPitch(), eventPre.isOnGround()));
-            } else if (flag1) {
-               this.connection.send(new Pos(eventPre.getX(), eventPre.getY(), eventPre.getZ(), eventPre.isOnGround()));
-            } else if (flag2) {
-               this.connection.send(new Rot(eventPre.getYaw(), eventPre.getPitch(), eventPre.isOnGround()));
-            } else if (this.lastOnGround != eventPre.isOnGround()) {
-               this.connection.send(new StatusOnly(eventPre.isOnGround()));
-            }
-
-            if (flag1) {
-               this.xLast = eventPre.getX();
-               this.yLast1 = eventPre.getY();
-               this.zLast = eventPre.getZ();
-               this.positionReminder = 0;
-            }
-
-            if (flag2) {
-               this.yRotLast = eventPre.getYaw();
-               this.xRotLast = eventPre.getPitch();
-            }
-
-            this.lastOnGround = eventPre.isOnGround();
-            this.autoJumpEnabled = (Boolean)this.minecraft.options.autoJump().get();
-         }
-
-         Naven.getInstance().getEventManager().call(new EventMotion(EventType.POST, eventPre.getYaw(), eventPre.getPitch()));
+         ci.cancel();
       }
    }
 
+   @Inject(
+           method = {"sendPosition"},
+           at = @At(value = "RETURN")
+   )
+   public void onSendPositionPost(CallbackInfo ci) {
+      Naven.getInstance().getEventManager().call(new EventMotion(EventType.POST, this.yRotLast, this.xRotLast));
+   }
+
    @Redirect(
-      method = {"aiStep"},
-      at = @At(
-         value = "INVOKE",
-         target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z",
-         ordinal = 0
-      )
+           method = {"aiStep"},
+           at = @At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z",
+                   ordinal = 0
+           )
    )
    public boolean onSlowdown(LocalPlayer localPlayer) {
       EventSlowdown event = new EventSlowdown(localPlayer.isUsingItem());

@@ -64,7 +64,6 @@ public class ChestStealer extends Module {
     private static final TickTimeHelper timer = new TickTimeHelper();
     private Screen lastTickScreen;
 
-    // ChestStealer 模块的设置
     private final FloatValue closeDelay = ValueBuilder.create(this, "Close Delay (Ticks)")
             .setDefaultFloatValue(1.0F)
             .setFloatStep(1.0F)
@@ -82,7 +81,6 @@ public class ChestStealer extends Module {
     private final BooleanValue instant = ValueBuilder.create(this, "Instant").setDefaultBooleanValue(false).build().getBooleanValue();
     private final BooleanValue pickEnderChest = ValueBuilder.create(this, "Ender Chest").setDefaultBooleanValue(false).build().getBooleanValue();
 
-    // GhostHand 模块的设置
     private final BooleanValue ghostHandChests = ValueBuilder.create(this, "GhostHand Chests")
             .setDefaultBooleanValue(true)
             .build()
@@ -167,7 +165,6 @@ public class ChestStealer extends Module {
         }
     }
 
-    // GhostHand 的辅助方法
     private BlockPos findChestAtCrosshair(LocalPlayer player, Level level, double range) {
         Vec3 lookVec = player.getLookAngle();
         Vec3 startPos = player.getEyePosition(1.0F);
@@ -197,17 +194,14 @@ public class ChestStealer extends Module {
     }
 
     private Entity findEntityAtCrosshair(LocalPlayer player, double range) {
-        // 由于不再有任何实体目标，直接返回 null
         return null;
     }
 
     private boolean isTarget(Entity entity) {
-        // 由于不再有任何实体目标，始终返回 false
         return false;
     }
 
     private void interactWithEntity(Entity entity) {
-        // 此方法不再被调用，但保留以防万一
         mc.getConnection().send(ServerboundInteractPacket.createInteractionPacket(entity, false, InteractionHand.MAIN_HAND));
         mc.player.swing(InteractionHand.MAIN_HAND);
     }
@@ -227,7 +221,6 @@ public class ChestStealer extends Module {
         mc.player.swing(InteractionHand.MAIN_HAND);
     }
 
-    // ChestStealer 的辅助方法
     private boolean isBestItemInChest(ChestMenu menu, ItemStack stack) {
         if (!InventoryUtils.isGodItem(stack) && !InventoryUtils.isSharpnessAxe(stack)) {
             for (int i = 0; i < menu.getRowCount() * 9; i++) {

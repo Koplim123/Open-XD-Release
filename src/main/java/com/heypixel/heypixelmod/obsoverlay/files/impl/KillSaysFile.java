@@ -19,8 +19,8 @@ public class KillSaysFile extends ClientFile {
       "%s 可以和我交往吗？",
       "%s 你好可爱",
       "%s 别急",
-      "%s 你已被BJD害死！快使用Hack Lunar1056741305！",
-      "%s 你已被YM本人害死，快使用我编写的1056741305端！"
+      "%s 你已被BJD害死！快使用Hack Lunar！",
+      "%s 你已被YM本人害死，快使用我编写的端！"
    };
 
    public KillSaysFile() {
