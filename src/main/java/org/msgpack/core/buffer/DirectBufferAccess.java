@@ -4,7 +4,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 class DirectBufferAccess {
@@ -20,12 +19,7 @@ class DirectBufferAccess {
    }
 
    private static void setupCleanerJava9(ByteBuffer direct) {
-      Object obj = AccessController.doPrivileged(new PrivilegedAction<Object>() {
-         @Override
-         public Object run() {
-            return DirectBufferAccess.getInvokeCleanerMethod(direct);
-         }
-      });
+      Object obj = getInvokeCleanerMethod(direct);
       if (obj instanceof Throwable) {
          throw new RuntimeException((Throwable)obj);
       } else {
@@ -132,25 +126,34 @@ class DirectBufferAccess {
 
          try {
             directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(long.class, long.class);
+            directByteBufferConstructor.setAccessible(true);
             constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_LONG_LONG;
          } catch (NoSuchMethodException var12) {
             try {
                directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(long.class, int.class, Object.class);
+               directByteBufferConstructor.setAccessible(true);
                constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_LONG_INT_REF;
             } catch (NoSuchMethodException var11) {
                try {
                   directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(long.class, int.class);
+                  directByteBufferConstructor.setAccessible(true);
                   constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_LONG_INT;
                } catch (NoSuchMethodException var10) {
                   try {
                      directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(int.class, int.class);
+                     directByteBufferConstructor.setAccessible(true);
                      constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_INT_INT;
                   } catch (NoSuchMethodException var9) {
-                     Class<?> aClass = Class.forName("java.nio.MemoryBlock");
-                     mbWrap = aClass.getDeclaredMethod("wrapFromJni", int.class, long.class);
-                     mbWrap.setAccessible(true);
-                     directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(aClass, int.class, int.class);
-                     constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_MB_INT_INT;
+                     try {
+                        Class<?> aClass = Class.forName("java.nio.MemoryBlock");
+                        mbWrap = aClass.getDeclaredMethod("wrapFromJni", int.class, long.class);
+                        mbWrap.setAccessible(true);
+                        directByteBufferConstructor = directByteBufferClass.getDeclaredConstructor(aClass, int.class, int.class);
+                        directByteBufferConstructor.setAccessible(true);
+                        constructorType = DirectBufferAccess.DirectBufferConstructorType.ARGS_MB_INT_INT;
+                     } catch (Exception e) {
+                        directByteBufferConstructor = null;
+                     }
                   }
                }
             }
