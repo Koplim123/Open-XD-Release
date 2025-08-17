@@ -107,9 +107,14 @@ public class ModuleManager {
          new Helper(),
          new NoSlow(),
          new BowAimbot(),
-         new JumpReset(),
-         new GhostHand(),
-         new LongJump()
+         new LongJump(),
+         new BetaVelocity(),
+         new Speed(),
+         new TNTWarning(),
+         new LegitKillAura(),
+         new BetaBowAim(),
+         new MidPearl()
+
       );
    }
 
