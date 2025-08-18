@@ -109,6 +109,7 @@ public class ModuleManager {
          new BowAimbot(),
          new LongJump(),
          new JumpReset(),
+         new GhostHand(),
          new BetaVelocity(),
          new Speed(),
          new TNTWarning(),
