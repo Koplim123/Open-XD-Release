@@ -39,9 +39,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
@@ -89,9 +87,7 @@ public class Aura extends Module {
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
-    // 新增转头模式，包含 None, Linear, Sigmoid 和 Accelerated
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
-    // 新增真人转头速度控制，最大值改为180
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -108,9 +104,7 @@ public class Aura extends Module {
             .setVisibility(() -> !this.rotationType.isCurrentMode("None"))
             .build()
             .getFloatValue();
-    // 新增瞄准才攻击开关
     BooleanValue aimOnlyAttack = ValueBuilder.create(this, "Aim Only Attack").setDefaultBooleanValue(false).build().getBooleanValue();
-    // 移除抖动控制
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -155,7 +149,6 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "FoV", "Range", "None").build().getModeValue();
-    // 加速度参数只在Accelerated模式下可见
     FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
             .setDefaultFloatValue(20.0F)
             .setFloatStep(1.0F)
@@ -164,8 +157,6 @@ public class Aura extends Module {
             .setVisibility(() -> this.rotationType.isCurrentMode("Accelerated"))
             .build()
             .getFloatValue();
-
-    // 新增平滑度参数
     FloatValue sigmoidSmoothness = ValueBuilder.create(this, "Sigmoid Smoothness")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -195,7 +186,6 @@ public class Aura extends Module {
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
 
-        // 绘制目标HUD
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
             LivingEntity living = (LivingEntity) target;
             e.getStack().pushPose();
@@ -223,7 +213,6 @@ public class Aura extends Module {
             e.getStack().popPose();
         }
 
-        // 绘制瞄准点
         if (!this.rotationType.isCurrentMode("None") && aimingTarget != null) {
             e.getStack().pushPose();
             RenderSystem.enableBlend();
@@ -286,7 +275,6 @@ public class Aura extends Module {
         target = null;
         aimingTarget = null;
         targets.clear();
-        // 初始化当前旋转和速度，避免残留值
         this.currentRotation.x = mc.player.getYRot();
         this.currentRotation.y = mc.player.getXRot();
         this.currentSpeed.x = 0.0F;
@@ -297,7 +285,6 @@ public class Aura extends Module {
     public void onDisable() {
         target = null;
         aimingTarget = null;
-        // 重置旋转和速度
         this.currentRotation.x = 0.0F;
         this.currentRotation.y = 0.0F;
         this.currentSpeed.x = 0.0F;
@@ -314,7 +301,6 @@ public class Aura extends Module {
 
     @EventTarget
     public void onAttackSlowdown(EventAttackSlowdown e) {
-        // 确保 KeepSprint 能正确控制
         if (this.keepSprint.getCurrentValue()) {
             e.setCancelled(true);
         }
@@ -332,7 +318,6 @@ public class Aura extends Module {
                 rotation = null;
                 this.lastRotationData = null;
                 targets.clear();
-                // 禁用时重置状态
                 this.currentRotation.x = mc.player.getYRot();
                 this.currentRotation.y = mc.player.getXRot();
                 this.currentSpeed.x = 0.0F;
@@ -344,11 +329,9 @@ public class Aura extends Module {
             this.setSuffix(this.multi.getCurrentValue() ? "Multi" : (isSwitch ? "Switch" : "Single"));
             this.updateAttackTargets();
 
-            // 如果已经有目标，并且它仍然有效，就保持锁定
             if (target != null && isValidTarget(target)) {
                 aimingTarget = target;
             } else {
-                // 否则，选择一个新的目标
                 aimingTarget = this.shouldPreAim();
             }
 
@@ -358,19 +341,22 @@ public class Aura extends Module {
             if (aimingTarget != null) {
                 this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget);
                 if (this.rotationData.getRotation() != null) {
-                    if (this.rotationType.isCurrentMode("Linear")) {
-                        this.updateLinearRotations(this.rotationData);
-                    } else if (this.rotationType.isCurrentMode("Sigmoid")) {
-                        this.updateSigmoidRotations(this.rotationData);
-                    } else if (this.rotationType.isCurrentMode("Accelerated")) {
-                        this.updateAcceleratedRotations(this.rotationData);
-                    } else {
-                        // None模式下，不进行任何旋转
-                        rotation = null;
-                        RotationManager.rotations.x = mc.player.getYRot();
-                        RotationManager.rotations.y = mc.player.getXRot();
-                        this.currentSpeed.x = 0.0F;
-                        this.currentSpeed.y = 0.0F;
+                    switch (this.rotationType.getCurrentMode()) {
+                        case "Linear":
+                            this.updateLinearRotations(this.rotationData);
+                            break;
+                        case "Sigmoid":
+                            this.updateSigmoidRotations(this.rotationData);
+                            break;
+                        case "Accelerated":
+                            this.updateAcceleratedRotations(this.rotationData);
+                            break;
+                        default: // None mode
+                            rotation = null;
+                            RotationManager.rotations.x = mc.player.getYRot();
+                            RotationManager.rotations.y = mc.player.getXRot();
+                            this.currentSpeed.x = 0.0F;
+                            this.currentSpeed.y = 0.0F;
                     }
                 } else {
                     rotation = null;
@@ -408,7 +394,7 @@ public class Aura extends Module {
                 }
             }
 
-            if (this.index > targets.size() - 1 || !isSwitch) {
+            if (this.index > targets.size() - 1 || !this.infSwitch.getCurrentValue()) {
                 this.index = 0;
             }
 
@@ -447,10 +433,9 @@ public class Aura extends Module {
         if (!targets.isEmpty()) {
             HitResult hitResult = mc.hitResult;
 
-            // 如果开启了 "Aim Only Attack"，则检查是否实际瞄准了目标
             if (this.aimOnlyAttack.getCurrentValue()) {
                 if (hitResult.getType() != Type.ENTITY || ((EntityHitResult) hitResult).getEntity() != aimingTarget) {
-                    return; // 如果没有瞄准到aimingTarget，则不攻击
+                    return;
                 }
             }
 
@@ -489,7 +474,6 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 核心修复: 预测减速，避免转圈圈
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
@@ -521,16 +505,12 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 使用Sigmoid函数计算移动比例，并用可调的“平滑度”参数来控制曲线
-        // 修复：确保 sigmoid 函数的输入值在合理范围内
         float sigmoidYawFactor = (float) (2.0F / (1.0F + Math.exp(-deltaYaw / smoothness)) - 1.0F);
         float sigmoidPitchFactor = (float) (2.0F / (1.0F + Math.exp(-deltaPitch / smoothness)) - 1.0F);
 
         float newYawSpeed = sigmoidYawFactor * maxSpeedX;
         float newPitchSpeed = sigmoidPitchFactor * maxSpeedY;
 
-        // 核心修复: 预测减速，避免转圈圈和超调
-        // 如果剩余角度差小于当前速度，直接锁定目标
         if (Math.abs(deltaYaw) < Math.abs(newYawSpeed)) {
             newYawSpeed = deltaYaw;
         }
@@ -559,21 +539,19 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        // 使用加速度计算新的速度
         float newSpeedX = this.currentSpeed.x + accel * Math.signum(deltaYaw);
         float newSpeedY = this.currentSpeed.y + accel * Math.signum(deltaPitch);
 
-        // 核心修复: 预测减速，避免转圈圈
         if (Math.abs(deltaYaw) < Math.abs(newSpeedX)) {
             newSpeedX = deltaYaw;
-            this.currentSpeed.x = 0.0f; // 停止加速度，防止超调
+            this.currentSpeed.x = 0.0f;
         } else {
             newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(deltaYaw);
         }
 
         if (Math.abs(deltaPitch) < Math.abs(newSpeedY)) {
             newSpeedY = deltaPitch;
-            this.currentSpeed.y = 0.0f; // 停止加速度，防止超调
+            this.currentSpeed.y = 0.0f;
         } else {
             newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(deltaPitch);
         }
@@ -597,58 +575,64 @@ public class Aura extends Module {
     }
 
     public boolean isValidTarget(Entity entity) {
-        if (entity == mc.player) {
-            return false;
-        } else if (entity instanceof LivingEntity living) {
-            if (living instanceof BlinkingPlayer) {
-                return false;
-            } else {
-                AntiBots module = (AntiBots) Naven.getInstance().getModuleManager().getModule(AntiBots.class);
-                if (module == null || !module.isEnabled() || !AntiBots.isBot(entity) && !AntiBots.isBedWarsBot(entity)) {
-                    if (Teams.isSameTeam(living)) {
-                        return false;
-                    } else if (FriendManager.isFriend(living)) {
-                        return false;
-                    } else if (living.isDeadOrDying() || living.getHealth() <= 0.0F) {
-                        return false;
-                    } else if (entity instanceof ArmorStand) {
-                        return false;
-                    } else if (entity.isInvisible() && !this.attackInvisible.getCurrentValue()) {
-                        return false;
-                    } else if (entity instanceof Player && !this.attackPlayer.getCurrentValue()) {
-                        return false;
-                    } else if (!(entity instanceof Player) || !((double) entity.getBbWidth() < 0.5) && !living.isSleeping()) {
-                        if ((entity instanceof Mob || entity instanceof Slime || entity instanceof Bat || entity instanceof AbstractGolem)
-                                && !this.attackMobs.getCurrentValue()) {
-                            return false;
-                        } else if ((entity instanceof Animal || entity instanceof Squid) && !this.attackAnimals.getCurrentValue()) {
-                            return false;
-                        } else {
-                            return entity instanceof Villager && !this.attackAnimals.getCurrentValue() ? false : !(entity instanceof Player) || !entity.isSpectator();
-                        }
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-        } else {
+        if (entity == mc.player || entity instanceof ArmorStand || entity.isSpectator()) {
             return false;
         }
+        
+        if (entity instanceof LivingEntity living) {
+            if (living instanceof BlinkingPlayer 
+                || living.isDeadOrDying() 
+                || living.getHealth() <= 0.0F) {
+                return false;
+            }
+            
+            AntiBots module = (AntiBots) Naven.getInstance().getModuleManager().getModule(AntiBots.class);
+            if (module != null && module.isEnabled() && (AntiBots.isBot(entity) || AntiBots.isBedWarsBot(entity))) {
+                return false;
+            }
+            
+            if (Teams.isSameTeam(living) || FriendManager.isFriend(living)) {
+                return false;
+            }
+            
+            if (entity.isInvisible() && !this.attackInvisible.getCurrentValue()) {
+                return false;
+            }
+            
+            if (entity instanceof Player) {
+                return this.attackPlayer.getCurrentValue() 
+                    && !((double) entity.getBbWidth() < 0.5) 
+                    && !living.isSleeping();
+            }
+            
+            if (entity instanceof Mob || entity instanceof Slime || entity instanceof Bat || entity instanceof AbstractGolem) {
+                return this.attackMobs.getCurrentValue();
+            }
+            
+            if (entity instanceof Animal || entity instanceof Squid) {
+                return this.attackAnimals.getCurrentValue();
+            }
+            
+            if (entity instanceof Villager) {
+                return this.attackAnimals.getCurrentValue();
+            }
+        }
+        
+        return false;
     }
 
     public boolean isValidAttack(Entity entity) {
         if (!this.isValidTarget(entity)) {
             return false;
-        } else if (entity instanceof LivingEntity && (float) ((LivingEntity) entity).hurtTime > this.hurtTime.getCurrentValue()) {
-            return false;
-        } else {
-            Vec3 closestPoint = RotationUtils.getClosestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
-            return closestPoint.distanceTo(mc.player.getEyePosition()) > (double) this.aimRange.getCurrentValue()
-                    ? false
-                    : RotationUtils.inFoV(entity, this.fov.getCurrentValue() / 2.0F);
         }
+        
+        if (entity instanceof LivingEntity living && (float) living.hurtTime > this.hurtTime.getCurrentValue()) {
+            return false;
+        }
+        
+        Vec3 closestPoint = RotationUtils.getClosestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
+        return closestPoint.distanceTo(mc.player.getEyePosition()) <= (double) this.aimRange.getCurrentValue()
+                && RotationUtils.inFoV(entity, this.fov.getCurrentValue() / 2.0F);
     }
 
     public void attackEntity(Entity entity) {
@@ -673,18 +657,23 @@ public class Aura extends Module {
     }
 
     private List<Entity> getTargets() {
-        Stream<Entity> stream = StreamSupport.<Entity>stream(mc.level.entitiesForRendering().spliterator(), true)
-                .filter(entity -> entity instanceof Entity)
-                .filter(this::isValidAttack);
-        List<Entity> possibleTargets = stream.collect(Collectors.toList());
-        if (this.priority.isCurrentMode("Range")) {
-            possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
-        } else if (this.priority.isCurrentMode("FoV")) {
-            possibleTargets.sort(
-                    Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
-            );
-        } else if (this.priority.isCurrentMode("Health")) {
-            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double) living.getHealth() : 0.0));
+        List<Entity> possibleTargets = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), true)
+                .filter(this::isValidAttack)
+                .collect(Collectors.toList());
+                
+        switch (this.priority.getCurrentMode()) {
+            case "Range":
+                possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
+                break;
+            case "FoV":
+                possibleTargets.sort(
+                    Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(
+                        RotationManager.rotations.x, RotationUtils.getRotations(o).x))
+                );
+                break;
+            case "Health":
+                possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double) living.getHealth() : 0.0));
+                break;
         }
 
         if (this.preferBaby.getCurrentValue() && possibleTargets.stream().anyMatch(entity -> entity instanceof LivingEntity && ((LivingEntity) entity).isBaby())) {

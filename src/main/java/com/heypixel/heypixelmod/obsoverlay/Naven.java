@@ -9,6 +9,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShutdown;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
+import com.heypixel.heypixelmod.obsoverlay.ui.IRCLoginScreen;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.EntityWatcher;
 import com.heypixel.heypixelmod.obsoverlay.utils.EventWrapper;
@@ -26,6 +27,8 @@ import java.awt.FontFormatException;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.common.MinecraftForge;
 
 public class Naven {
@@ -81,10 +84,36 @@ public class Naven {
    public static void modRegister() {
       try {
          new Naven();
+         // 在主菜单显示时检查是否需要进行IRC登录
+         checkAndShowIRCLogin();
       } catch (Exception var1) {
          System.err.println("Failed to load client");
          var1.printStackTrace(System.err);
       }
+   }
+
+   /**
+    * 检查是否需要显示IRC登录界面
+    */
+   private static void checkAndShowIRCLogin() {
+      // 注册一个事件监听器，在游戏tick时检查当前屏幕
+      Naven.getInstance().getEventManager().register(new Object() {
+         @EventTarget
+         public void onTick(EventRunTicks event) {
+            Minecraft mc = Minecraft.getInstance();
+            Screen currentScreen = mc.screen;
+            
+            // 如果当前屏幕是标题屏幕（主菜单）且IRC未登录
+            if (currentScreen != null && currentScreen.getClass().getSimpleName().contains("TitleScreen")) {
+               if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
+                  // 显示IRC登录界面
+                  mc.setScreen(new IRCLoginScreen());
+                  // 取消监听，避免重复显示
+                  Naven.getInstance().getEventManager().unregister(this);
+               }
+            }
+         }
+      });
    }
 
    @EventTarget

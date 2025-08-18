@@ -41,8 +41,8 @@ public class Stuck extends Module {
    public void onEnable() {
       this.stage = 0;
       this.packet = null;
-      this.lastYaw = RotationManager.rotations.x;
-      this.lastPitch = RotationManager.rotations.y;
+      this.lastYaw = RotationManager.rotations != null ? RotationManager.rotations.x : mc.player.getYRot();
+      this.lastPitch = RotationManager.rotations != null ? RotationManager.rotations.y : mc.player.getXRot();
       this.tryDisable = false;
    }
 

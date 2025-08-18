@@ -20,6 +20,7 @@ public class Module extends HasValue {
    private String suffix;
    private Category category;
    private boolean enabled;
+   private boolean cannotDisable = false; // 添加不可禁用属性
    private int minPermission = 0;
    private int key;
 
@@ -77,6 +78,11 @@ public class Module extends HasValue {
 
    public void setEnabled(boolean enabled) {
       try {
+         // 如果模块不可禁用且尝试禁用，则直接返回
+         if (this.cannotDisable && !enabled) {
+            return;
+         }
+         
          Naven naven = Naven.getInstance();
          if (enabled) {
             this.enabled = true;
@@ -110,6 +116,10 @@ public class Module extends HasValue {
    }
 
    public void toggle() {
+      // 如果模块不可禁用，则不能切换
+      if (this.cannotDisable && this.enabled) {
+         return;
+      }
       this.setEnabled(!this.enabled);
    }
 
@@ -140,6 +150,14 @@ public class Module extends HasValue {
 
    public boolean isEnabled() {
       return this.enabled;
+   }
+
+   public boolean isCannotDisable() {
+      return this.cannotDisable;
+   }
+
+   public void setCannotDisable(boolean cannotDisable) {
+      this.cannotDisable = cannotDisable;
    }
 
    public int getMinPermission() {

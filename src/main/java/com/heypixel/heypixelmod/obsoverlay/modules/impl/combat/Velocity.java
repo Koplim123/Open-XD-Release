@@ -218,7 +218,7 @@ public class Velocity extends Module {
                grimTick--;
             }
 
-            float yaw = RotationManager.rotations.getX();
+            float yaw = RotationManager.rotations != null ? RotationManager.rotations.getX() : mc.player.getYRot();
             float pitch = 89.79F;
             BlockHitResult blockRayTraceResult = (BlockHitResult)PlayerUtils.pickCustom(3.7F, yaw, pitch);
             if (stage == Velocity.Stage.TRANSACTION
