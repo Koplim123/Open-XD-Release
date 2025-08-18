@@ -175,9 +175,15 @@ public class AimAssist extends Module {
       if (this.priority.isCurrentMode("Range")) {
          possibleTargets.sort(Comparator.comparingDouble(o -> (double)o.distanceTo(mc.player)));
       } else if (this.priority.isCurrentMode("FoV")) {
-         possibleTargets.sort(
-            Comparator.comparingDouble(o -> (double)RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
-         );
+         if (RotationManager.rotations != null) {
+            possibleTargets.sort(
+               Comparator.comparingDouble(o -> (double)RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
+            );
+         } else {
+            possibleTargets.sort(
+               Comparator.comparingDouble(o -> (double)RotationUtils.getDistanceBetweenAngles(mc.player.getYRot(), RotationUtils.getRotations(o).x))
+            );
+         }
       } else if (this.priority.isCurrentMode("Health")) {
          possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double)living.getHealth() : 0.0));
       }

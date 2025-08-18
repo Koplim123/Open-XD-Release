@@ -106,6 +106,7 @@ import org.joml.Vector2d;
         description = "Reduces knockback.",
         category = Category.MOVEMENT
 )
+
 public class BetaVelocity extends Module {
 
     private final ModeValue mode = ValueBuilder.create(this, "Mode")

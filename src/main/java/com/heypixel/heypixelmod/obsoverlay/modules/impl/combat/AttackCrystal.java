@@ -49,8 +49,13 @@ public class AttackCrystal extends Module {
                PacketUtils.sendSequencedPacket(id -> new ServerboundUseItemPacket(InteractionHand.MAIN_HAND, id));
                float currentYaw = mc.player.getYRot();
                float currentPitch = mc.player.getXRot();
-               mc.player.setYRot(RotationManager.rotations.x);
-               mc.player.setXRot(RotationManager.rotations.y);
+               if (RotationManager.rotations != null) {
+                  mc.player.setYRot(RotationManager.rotations.x);
+                  mc.player.setXRot(RotationManager.rotations.y);
+               } else {
+                  mc.player.setYRot(rotations.x);
+                  mc.player.setXRot(rotations.y);
+               }
                mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(pTarget, false));
                mc.player.swing(InteractionHand.MAIN_HAND);
                mc.player.setYRot(currentYaw);
