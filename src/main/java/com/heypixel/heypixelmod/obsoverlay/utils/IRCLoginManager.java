@@ -23,7 +23,7 @@ public class IRCLoginManager {
     public static int userId = -1;
     
     private static final String LOGIN_URL = "http://nxdirc.koplim.sbs/LoginRequestAPI.php";
-    private static final String REGISTER_URL = "http://nxdirc.koplim.sbs/RegAccount.php";
+    private static final String REGISTER_URL = "http://nxdirc.koplim.sbs/RegAccount.html";
     
     public static boolean login(String user, String pass) {
         try {
