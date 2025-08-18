@@ -443,18 +443,16 @@ public class Scaffold extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
 
-        // 如果距离目标较远，则加速
         if (Math.abs(deltaYaw) > 1.0f) {
             this.currentSpeedX = Math.min(this.currentSpeedX + accel, maxSpeedX);
-        } else { // 否则减速
+        } else {
             this.currentSpeedX = Math.max(0.0f, this.currentSpeedX - decel);
         }
         float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), this.currentSpeedX * boostFactor) * Math.signum(deltaYaw);
 
-        // 如果距离目标较远，则加速
         if (Math.abs(deltaPitch) > 1.0f) {
             this.currentSpeedY = Math.min(this.currentSpeedY + accel, maxSpeedY);
-        } else { // 否则减速
+        } else {
             this.currentSpeedY = Math.max(0.0f, this.currentSpeedY - decel);
         }
         float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), this.currentSpeedY * boostFactor) * Math.signum(deltaPitch);

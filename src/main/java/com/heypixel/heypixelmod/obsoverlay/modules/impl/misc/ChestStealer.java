@@ -63,6 +63,7 @@ public class ChestStealer extends Module {
     private final Minecraft mc = Minecraft.getInstance();
     private static final TickTimeHelper timer = new TickTimeHelper();
     private Screen lastTickScreen;
+    private long lastMultiStackClick = 0;
 
     private final FloatValue closeDelay = ValueBuilder.create(this, "Close Delay (Ticks)")
             .setDefaultFloatValue(1.0F)
@@ -102,32 +103,33 @@ public class ChestStealer extends Module {
                 ChestMenu menu = (ChestMenu)container.getMenu();
                 if (currentScreen != this.lastTickScreen) {
                     timer.reset();
-                } else {
-                    String chestTitle = container.getTitle().getString();
-                    String chest = Component.translatable("container.chest").getString();
-                    String largeChest = Component.translatable("container.chestDouble").getString();
-                    String enderChest = Component.translatable("container.enderchest").getString();
-                    if (chestTitle.equals(chest)
-                            || chestTitle.equals(largeChest)
-                            || chestTitle.equals("Chest")
-                            || this.pickEnderChest.getCurrentValue() && chestTitle.equals(enderChest)) {
-                        if (this.isChestEmpty(menu) && timer.delay(this.closeDelay.getCurrentValue())) {
-                            mc.player.closeContainer();
-                        } else {
-                            List<Integer> slots = IntStream.range(0, menu.getRowCount() * 9).boxed().collect(Collectors.toList());
-                            Collections.shuffle(slots);
+                }
 
-                            for (Integer pSlotId : slots) {
-                                ItemStack stack = menu.getSlot(pSlotId).getItem();
-                                if (isItemUseful(stack) && this.isBestItemInChest(menu, stack)) {
-                                    if (this.instant.getCurrentValue()) {
-                                        mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
-                                    } else if (timer.delay(this.multiStackDelay.getCurrentValue())) {
-                                        mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
-                                        timer.reset();
-                                    }
-                                    break;
+                String chestTitle = container.getTitle().getString();
+                String chest = Component.translatable("container.chest").getString();
+                String largeChest = Component.translatable("container.chestDouble").getString();
+                String enderChest = Component.translatable("container.enderchest").getString();
+
+                if (chestTitle.equals(chest)
+                        || chestTitle.equals(largeChest)
+                        || chestTitle.equals("Chest")
+                        || this.pickEnderChest.getCurrentValue() && chestTitle.equals(enderChest)) {
+                    if (this.isChestEmpty(menu) && timer.delay(this.closeDelay.getCurrentValue())) {
+                        mc.player.closeContainer();
+                    } else {
+                        List<Integer> slots = IntStream.range(0, menu.getRowCount() * 9).boxed().collect(Collectors.toList());
+                        Collections.shuffle(slots);
+
+                        for (Integer pSlotId : slots) {
+                            ItemStack stack = menu.getSlot(pSlotId).getItem();
+                            if (isItemUseful(stack) && this.isBestItemInChest(menu, stack)) {
+                                if (this.instant.getCurrentValue()) {
+                                    mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
+                                } else if (System.currentTimeMillis() - this.lastMultiStackClick > this.multiStackDelay.getCurrentValue() * 50) {
+                                    mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
+                                    this.lastMultiStackClick = System.currentTimeMillis();
                                 }
+                                break;
                             }
                         }
                     }
@@ -194,10 +196,12 @@ public class ChestStealer extends Module {
     }
 
     private Entity findEntityAtCrosshair(LocalPlayer player, double range) {
+        // Implementation for finding entities
         return null;
     }
 
     private boolean isTarget(Entity entity) {
+        // Implementation for checking if entity is a target
         return false;
     }
 
