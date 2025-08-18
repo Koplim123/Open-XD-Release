@@ -534,27 +534,36 @@ public class Scaffold extends Module {
                 }
             }
             String text = "Blocks: " + blockCount;
-            double scale = 0.4;
+            double backgroundScale = 0.4;
+            double textScale = 0.35;
 
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, scale);
-            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, scale);
+            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
+            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
 
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float y = screenHeight / 2.0F + 15.0F;
+
+            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+            float backgroundY = screenHeight / 2.0F + 15.0F;
+
+            float textWidth = Fonts.opensans.getWidth(text, textScale);
+            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
+
+            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
+            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
 
             e.getStack().pushPose();
 
             StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
             StencilUtils.erase(true);
             int headerColor = new Color(150, 45, 45, 255).getRGB();
-            RenderUtils.fill(e.getStack(), x, y, x + this.blockCounterWidth + 6.0F, y + 3.0F, headerColor);
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
 
             int bodyColor = new Color(0, 0, 0, 120).getRGB();
-            RenderUtils.fill(e.getStack(), x, y + 3.0F, x + this.blockCounterWidth + 6.0F, y + this.blockCounterHeight + 8.0F, bodyColor);
-            Fonts.opensans.render(e.getStack(), text, x + 3.0, y + 4.0, Color.WHITE, true, scale);
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
+
+            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
             StencilUtils.dispose();
             e.getStack().popPose();
         }

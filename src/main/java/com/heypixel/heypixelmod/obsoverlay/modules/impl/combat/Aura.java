@@ -39,7 +39,9 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
@@ -88,6 +90,7 @@ public class Aura extends Module {
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
+    ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -157,6 +160,7 @@ public class Aura extends Module {
             .setVisibility(() -> this.rotationType.isCurrentMode("Accelerated"))
             .build()
             .getFloatValue();
+
     FloatValue sigmoidSmoothness = ValueBuilder.create(this, "Sigmoid Smoothness")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -185,27 +189,28 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
-
+        // TargetHUD
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
-            LivingEntity living = (LivingEntity) target;
+            LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
-            float x = (float) mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
-            float y = (float) mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
+            float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
+            float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
             String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
             float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
             this.blurMatrix = new Vector4f(x, y, width, 30.0F);
             StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
             StencilUtils.erase(true);
+            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
             RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
             StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double) (x + 5.0F), (double) (y + 6.0F), Color.WHITE, true, 0.35F);
+            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
             Fonts.harmony
                     .render(
                             e.getStack(),
                             "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double) (x + 5.0F),
-                            (double) (y + 17.0F),
+                            (double)(x + 5.0F),
+                            (double)(y + 17.0F),
                             Color.WHITE,
                             true,
                             0.35F
@@ -339,24 +344,21 @@ public class Aura extends Module {
             this.rotationData = null;
 
             if (aimingTarget != null) {
-                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget);
+                // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
+                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget, this.aimPointMode.getCurrentMode());
                 if (this.rotationData.getRotation() != null) {
-                    switch (this.rotationType.getCurrentMode()) {
-                        case "Linear":
-                            this.updateLinearRotations(this.rotationData);
-                            break;
-                        case "Sigmoid":
-                            this.updateSigmoidRotations(this.rotationData);
-                            break;
-                        case "Accelerated":
-                            this.updateAcceleratedRotations(this.rotationData);
-                            break;
-                        default: // None mode
-                            rotation = null;
-                            RotationManager.rotations.x = mc.player.getYRot();
-                            RotationManager.rotations.y = mc.player.getXRot();
-                            this.currentSpeed.x = 0.0F;
-                            this.currentSpeed.y = 0.0F;
+                    if (this.rotationType.isCurrentMode("Linear")) {
+                        this.updateLinearRotations(this.rotationData);
+                    } else if (this.rotationType.isCurrentMode("Sigmoid")) {
+                        this.updateSigmoidRotations(this.rotationData);
+                    } else if (this.rotationType.isCurrentMode("Accelerated")) {
+                        this.updateAcceleratedRotations(this.rotationData);
+                    } else {
+                        rotation = null;
+                        RotationManager.rotations.x = mc.player.getYRot();
+                        RotationManager.rotations.y = mc.player.getXRot();
+                        this.currentSpeed.x = 0.0F;
+                        this.currentSpeed.y = 0.0F;
                     }
                 } else {
                     rotation = null;
@@ -387,14 +389,15 @@ public class Aura extends Module {
                     }
 
                     Entity nextTarget = targets.get(this.index);
-                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget);
+                    // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
+                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget, this.aimPointMode.getCurrentMode());
                     if (data.getDistance() < 3.0) {
                         break;
                     }
                 }
             }
 
-            if (this.index > targets.size() - 1 || !this.infSwitch.getCurrentValue()) {
+            if (this.index > targets.size() - 1 || !isSwitch) {
                 this.index = 0;
             }
 
@@ -430,7 +433,7 @@ public class Aura extends Module {
     }
 
     public void doAttack() {
-        if (!targets.isEmpty()) {
+        if (!targets.isEmpty() && aimingTarget != null) {
             HitResult hitResult = mc.hitResult;
 
             if (this.aimOnlyAttack.getCurrentValue()) {
@@ -477,10 +480,11 @@ public class Aura extends Module {
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
-        if (Math.abs(deltaYaw) < Math.abs(yawSpeed)) {
+        // 优化：当距离目标角度很近时，直接使用剩余角度，实现平滑减速
+        if (Math.abs(deltaYaw) < maxSpeedX) {
             yawSpeed = deltaYaw;
         }
-        if (Math.abs(deltaPitch) < Math.abs(pitchSpeed)) {
+        if (Math.abs(deltaPitch) < maxSpeedY) {
             pitchSpeed = deltaPitch;
         }
 
@@ -539,22 +543,26 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        float newSpeedX = this.currentSpeed.x + accel * Math.signum(deltaYaw);
-        float newSpeedY = this.currentSpeed.y + accel * Math.signum(deltaPitch);
+        float newSpeedX = this.currentSpeed.x;
+        float newSpeedY = this.currentSpeed.y;
 
-        if (Math.abs(deltaYaw) < Math.abs(newSpeedX)) {
-            newSpeedX = deltaYaw;
-            this.currentSpeed.x = 0.0f;
-        } else {
-            newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(deltaYaw);
+        // 根据方向加速
+        newSpeedX += accel * Math.signum(deltaYaw);
+        newSpeedY += accel * Math.signum(deltaPitch);
+
+        // 优化：当角度差小于当前速度时，平滑减速，而不是直接急停
+        if (Math.abs(deltaYaw) < Math.abs(newSpeedX) || Math.signum(deltaYaw) != Math.signum(newSpeedX)) {
+            newSpeedX = deltaYaw / 2.0f; // 简单地将速度减半以平滑
+            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw; // 接近时直接赋值
+        }
+        if (Math.abs(deltaPitch) < Math.abs(newSpeedY) || Math.signum(deltaPitch) != Math.signum(newSpeedY)) {
+            newSpeedY = deltaPitch / 2.0f;
+            if (Math.abs(newSpeedY) < 1.0f) newSpeedY = deltaPitch;
         }
 
-        if (Math.abs(deltaPitch) < Math.abs(newSpeedY)) {
-            newSpeedY = deltaPitch;
-            this.currentSpeed.y = 0.0f;
-        } else {
-            newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(deltaPitch);
-        }
+        // 限制最大速度
+        newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(newSpeedX);
+        newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(newSpeedY);
 
         this.currentRotation.x += newSpeedX;
         this.currentRotation.y += newSpeedY;
@@ -575,64 +583,58 @@ public class Aura extends Module {
     }
 
     public boolean isValidTarget(Entity entity) {
-        if (entity == mc.player || entity instanceof ArmorStand || entity.isSpectator()) {
+        if (entity == mc.player) {
+            return false;
+        } else if (entity instanceof LivingEntity living) {
+            if (living instanceof BlinkingPlayer) {
+                return false;
+            } else {
+                AntiBots module = (AntiBots) Naven.getInstance().getModuleManager().getModule(AntiBots.class);
+                if (module == null || !module.isEnabled() || !AntiBots.isBot(entity) && !AntiBots.isBedWarsBot(entity)) {
+                    if (Teams.isSameTeam(living)) {
+                        return false;
+                    } else if (FriendManager.isFriend(living)) {
+                        return false;
+                    } else if (living.isDeadOrDying() || living.getHealth() <= 0.0F) {
+                        return false;
+                    } else if (entity instanceof ArmorStand) {
+                        return false;
+                    } else if (entity.isInvisible() && !this.attackInvisible.getCurrentValue()) {
+                        return false;
+                    } else if (entity instanceof Player && !this.attackPlayer.getCurrentValue()) {
+                        return false;
+                    } else if (!(entity instanceof Player) || !((double) entity.getBbWidth() < 0.5) && !living.isSleeping()) {
+                        if ((entity instanceof Mob || entity instanceof Slime || entity instanceof Bat || entity instanceof AbstractGolem)
+                                && !this.attackMobs.getCurrentValue()) {
+                            return false;
+                        } else if ((entity instanceof Animal || entity instanceof Squid) && !this.attackAnimals.getCurrentValue()) {
+                            return false;
+                        } else {
+                            return entity instanceof Villager && !this.attackAnimals.getCurrentValue() ? false : !(entity instanceof Player) || !entity.isSpectator();
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        } else {
             return false;
         }
-        
-        if (entity instanceof LivingEntity living) {
-            if (living instanceof BlinkingPlayer 
-                || living.isDeadOrDying() 
-                || living.getHealth() <= 0.0F) {
-                return false;
-            }
-            
-            AntiBots module = (AntiBots) Naven.getInstance().getModuleManager().getModule(AntiBots.class);
-            if (module != null && module.isEnabled() && (AntiBots.isBot(entity) || AntiBots.isBedWarsBot(entity))) {
-                return false;
-            }
-            
-            if (Teams.isSameTeam(living) || FriendManager.isFriend(living)) {
-                return false;
-            }
-            
-            if (entity.isInvisible() && !this.attackInvisible.getCurrentValue()) {
-                return false;
-            }
-            
-            if (entity instanceof Player) {
-                return this.attackPlayer.getCurrentValue() 
-                    && !((double) entity.getBbWidth() < 0.5) 
-                    && !living.isSleeping();
-            }
-            
-            if (entity instanceof Mob || entity instanceof Slime || entity instanceof Bat || entity instanceof AbstractGolem) {
-                return this.attackMobs.getCurrentValue();
-            }
-            
-            if (entity instanceof Animal || entity instanceof Squid) {
-                return this.attackAnimals.getCurrentValue();
-            }
-            
-            if (entity instanceof Villager) {
-                return this.attackAnimals.getCurrentValue();
-            }
-        }
-        
-        return false;
     }
 
     public boolean isValidAttack(Entity entity) {
         if (!this.isValidTarget(entity)) {
             return false;
-        }
-        
-        if (entity instanceof LivingEntity living && (float) living.hurtTime > this.hurtTime.getCurrentValue()) {
+        } else if (entity instanceof LivingEntity && (float) ((LivingEntity) entity).hurtTime > this.hurtTime.getCurrentValue()) {
             return false;
+        } else {
+            Vec3 closestPoint = RotationUtils.getClosestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
+            return closestPoint.distanceTo(mc.player.getEyePosition()) > (double) this.aimRange.getCurrentValue()
+                    ? false
+                    : RotationUtils.inFoV(entity, this.fov.getCurrentValue() / 2.0F);
         }
-        
-        Vec3 closestPoint = RotationUtils.getClosestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
-        return closestPoint.distanceTo(mc.player.getEyePosition()) <= (double) this.aimRange.getCurrentValue()
-                && RotationUtils.inFoV(entity, this.fov.getCurrentValue() / 2.0F);
     }
 
     public void attackEntity(Entity entity) {
@@ -657,23 +659,18 @@ public class Aura extends Module {
     }
 
     private List<Entity> getTargets() {
-        List<Entity> possibleTargets = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), true)
-                .filter(this::isValidAttack)
-                .collect(Collectors.toList());
-                
-        switch (this.priority.getCurrentMode()) {
-            case "Range":
-                possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
-                break;
-            case "FoV":
-                possibleTargets.sort(
-                    Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(
-                        RotationManager.rotations.x, RotationUtils.getRotations(o).x))
-                );
-                break;
-            case "Health":
-                possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double) living.getHealth() : 0.0));
-                break;
+        Stream<Entity> stream = StreamSupport.<Entity>stream(mc.level.entitiesForRendering().spliterator(), true)
+                .filter(entity -> entity instanceof Entity)
+                .filter(this::isValidAttack);
+        List<Entity> possibleTargets = stream.collect(Collectors.toList());
+        if (this.priority.isCurrentMode("Range")) {
+            possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
+        } else if (this.priority.isCurrentMode("FoV")) {
+            possibleTargets.sort(
+                    Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
+            );
+        } else if (this.priority.isCurrentMode("Health")) {
+            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double) living.getHealth() : 0.0));
         }
 
         if (this.preferBaby.getCurrentValue() && possibleTargets.stream().anyMatch(entity -> entity instanceof LivingEntity && ((LivingEntity) entity).isBaby())) {

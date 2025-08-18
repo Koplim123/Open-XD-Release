@@ -49,6 +49,19 @@ public class NetworkUtils {
       }
    }
 
+   public static void sendPacket(Packet<?> packet) {
+      if (packet == null || Minecraft.getInstance().getConnection() == null) {
+         return;
+      }
+
+      EventPacket event = new EventPacket(EventType.PRE, packet);
+      Naven.getInstance().getEventManager().call(event);
+
+      if (!event.isCancelled()) {
+         Minecraft.getInstance().getConnection().send(packet);
+      }
+   }
+
    public static void sendPacketNoEvent(Packet<?> packet) {
       LOGGER.info("Sending: " + packet.getClass().getName());
       if (packet instanceof ServerboundCustomPayloadPacket sb) {
@@ -74,9 +87,9 @@ public class NetworkUtils {
    @EventTarget(4)
    public void onGlobalPacket(EventGlobalPacket e) {
       if (e.getPacket() instanceof ClientboundPingPacket
-         || e.getPacket() instanceof ClientboundMoveEntityPacket
-         || e.getPacket() instanceof ClientboundSetTimePacket
-         || e.getPacket() instanceof ClientboundSetPlayerTeamPacket) {
+              || e.getPacket() instanceof ClientboundMoveEntityPacket
+              || e.getPacket() instanceof ClientboundSetTimePacket
+              || e.getPacket() instanceof ClientboundSetPlayerTeamPacket) {
          timer.reset();
       }
 

@@ -25,12 +25,25 @@ public class MidPearl extends Module {
             .build()
             .getModeValue();
 
+    private final ModeValue keyMode = ValueBuilder.create(this, "Trigger Key")
+            .setModes("Mid", "Mouse4", "Mouse5")
+            .setDefaultModeIndex(0)
+            .build()
+            .getModeValue();
+
     private int originalSlot = -1;
 
     @EventTarget
     public void onMouseClick(EventMouseClick event) {
 
-        if (event.getKey() == 2 && !event.isState() && mc.player != null && mc.gameMode != null) {
+        int triggerKey = 2;
+        if (keyMode.isCurrentMode("Mouse4")) {
+            triggerKey = 3;
+        } else if (keyMode.isCurrentMode("Mouse5")) {
+            triggerKey = 4;
+        }
+
+        if (event.getKey() == triggerKey && !event.isState() && mc.player != null && mc.gameMode != null) {
             int pearlSlot = findPearlSlot();
             if (pearlSlot == -1) {
                 ChatUtils.addChatMessage("§cPearl Not Found in hotbar!");

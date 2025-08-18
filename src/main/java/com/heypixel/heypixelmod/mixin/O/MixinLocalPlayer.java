@@ -69,12 +69,12 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayer {
    }
 
    @Inject(
-      method = {"tick"},
-      at = {@At(
-         value = "INVOKE",
-         target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V",
-         shift = Shift.BEFORE
-      )}
+           method = {"tick"},
+           at = {@At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/player/AbstractClientPlayer;tick()V",
+                   shift = Shift.BEFORE
+           )}
    )
    public void injectUpdateEvent(CallbackInfo ci) {
       Naven.getInstance().getEventManager().call(new EventUpdate());
@@ -114,7 +114,7 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayer {
                flag1 = false;
             } else if (flag1 && flag2) {
                this.connection
-                  .send(new PosRot(eventPre.getX(), eventPre.getY(), eventPre.getZ(), eventPre.getYaw(), eventPre.getPitch(), eventPre.isOnGround()));
+                       .send(new PosRot(eventPre.getX(), eventPre.getY(), eventPre.getZ(), eventPre.getYaw(), eventPre.getPitch(), eventPre.isOnGround()));
             } else if (flag1) {
                this.connection.send(new Pos(eventPre.getX(), eventPre.getY(), eventPre.getZ(), eventPre.isOnGround()));
             } else if (flag2) {
@@ -144,12 +144,12 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayer {
    }
 
    @Redirect(
-      method = {"aiStep"},
-      at = @At(
-         value = "INVOKE",
-         target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z",
-         ordinal = 0
-      )
+           method = {"aiStep"},
+           at = @At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z",
+                   ordinal = 0
+           )
    )
    public boolean onSlowdown(LocalPlayer localPlayer) {
       EventSlowdown event = new EventSlowdown(localPlayer.isUsingItem());
