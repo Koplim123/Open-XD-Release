@@ -90,6 +90,7 @@ public class Aura extends Module {
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
+    ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -343,7 +344,8 @@ public class Aura extends Module {
             this.rotationData = null;
 
             if (aimingTarget != null) {
-                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget);
+                // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
+                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget, this.aimPointMode.getCurrentMode());
                 if (this.rotationData.getRotation() != null) {
                     if (this.rotationType.isCurrentMode("Linear")) {
                         this.updateLinearRotations(this.rotationData);
@@ -387,7 +389,8 @@ public class Aura extends Module {
                     }
 
                     Entity nextTarget = targets.get(this.index);
-                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget);
+                    // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
+                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget, this.aimPointMode.getCurrentMode());
                     if (data.getDistance() < 3.0) {
                         break;
                     }
@@ -430,7 +433,7 @@ public class Aura extends Module {
     }
 
     public void doAttack() {
-        if (!targets.isEmpty()) {
+        if (!targets.isEmpty() && aimingTarget != null) {
             HitResult hitResult = mc.hitResult;
 
             if (this.aimOnlyAttack.getCurrentValue()) {
@@ -477,10 +480,11 @@ public class Aura extends Module {
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
-        if (Math.abs(deltaYaw) < Math.abs(yawSpeed)) {
+        // 优化：当距离目标角度很近时，直接使用剩余角度，实现平滑减速
+        if (Math.abs(deltaYaw) < maxSpeedX) {
             yawSpeed = deltaYaw;
         }
-        if (Math.abs(deltaPitch) < Math.abs(pitchSpeed)) {
+        if (Math.abs(deltaPitch) < maxSpeedY) {
             pitchSpeed = deltaPitch;
         }
 
@@ -539,22 +543,26 @@ public class Aura extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
 
-        float newSpeedX = this.currentSpeed.x + accel * Math.signum(deltaYaw);
-        float newSpeedY = this.currentSpeed.y + accel * Math.signum(deltaPitch);
+        float newSpeedX = this.currentSpeed.x;
+        float newSpeedY = this.currentSpeed.y;
 
-        if (Math.abs(deltaYaw) < Math.abs(newSpeedX)) {
-            newSpeedX = deltaYaw;
-            this.currentSpeed.x = 0.0f;
-        } else {
-            newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(deltaYaw);
+        // 根据方向加速
+        newSpeedX += accel * Math.signum(deltaYaw);
+        newSpeedY += accel * Math.signum(deltaPitch);
+
+        // 优化：当角度差小于当前速度时，平滑减速，而不是直接急停
+        if (Math.abs(deltaYaw) < Math.abs(newSpeedX) || Math.signum(deltaYaw) != Math.signum(newSpeedX)) {
+            newSpeedX = deltaYaw / 2.0f; // 简单地将速度减半以平滑
+            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw; // 接近时直接赋值
+        }
+        if (Math.abs(deltaPitch) < Math.abs(newSpeedY) || Math.signum(deltaPitch) != Math.signum(newSpeedY)) {
+            newSpeedY = deltaPitch / 2.0f;
+            if (Math.abs(newSpeedY) < 1.0f) newSpeedY = deltaPitch;
         }
 
-        if (Math.abs(deltaPitch) < Math.abs(newSpeedY)) {
-            newSpeedY = deltaPitch;
-            this.currentSpeed.y = 0.0f;
-        } else {
-            newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(deltaPitch);
-        }
+        // 限制最大速度
+        newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(newSpeedX);
+        newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(newSpeedY);
 
         this.currentRotation.x += newSpeedX;
         this.currentRotation.y += newSpeedY;
