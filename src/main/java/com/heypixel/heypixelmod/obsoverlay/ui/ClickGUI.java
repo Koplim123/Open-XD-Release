@@ -134,62 +134,59 @@ public class ClickGUI extends Screen {
       if (this.bindingModule == null || mouseButton != 3 && mouseButton != 4) {
          if (mouseButton != 2 && this.bindingModule == null) {
             if (this.hoveringModule != null) {
-                if (mouseButton == 0) {
-                    // 检查模块是否可以被禁用，如果可以则切换
-                    if (!this.hoveringModule.isCannotDisable() || !this.hoveringModule.isEnabled()) {
-                        this.hoveringModule.toggle();
-                    }
-                } else if (mouseButton == 1) {
-                    this.selectedModule = this.hoveringModule;
-                    this.renderValues = Naven.getInstance().getValueManager().getValuesByHasValue(this.hoveringModule);
-                    this.moduleValuesMotionY.target = this.moduleValuesMotionY.value = 0.0F;
-                }
+               if (mouseButton == 0) {
+                  this.hoveringModule.toggle();
+               } else if (mouseButton == 1) {
+                  this.selectedModule = this.hoveringModule;
+                  this.renderValues = Naven.getInstance().getValueManager().getValuesByHasValue(this.hoveringModule);
+                  this.moduleValuesMotionY.target = this.moduleValuesMotionY.value = 0.0F;
+               }
             }
 
             if (mouseButton == 0) {
-                if (this.hoveringBack && !this.clickResizeWindow && !this.clickDragWindow) {
-                    this.selectedCategory = null;
-                    this.selectedModule = null;
-                    this.renderValues = null;
-                }
+               if (this.hoveringBack && !this.clickResizeWindow && !this.clickDragWindow) {
+                  this.selectedCategory = null;
+                  this.selectedModule = null;
+                  this.renderValues = null;
+               }
 
-                if (this.clickOpenCategoryModules && this.hoveringCategory != null) {
-                    this.selectedCategory = this.hoveringCategory;
-                    this.categoryMotionY.value = this.categoryMotionY.target = 0.0F;
-                    this.moduleSwapAnimation.value = 5.0F;
-                    this.moduleSwapAnimation.target = 255.0F;
-                    this.clickOpenCategoryModules = false;
-                }
+               if (this.clickOpenCategoryModules && this.hoveringCategory != null) {
+                  this.selectedCategory = this.hoveringCategory;
+                  this.categoryMotionY.value = this.categoryMotionY.target = 0.0F;
+                  this.moduleSwapAnimation.value = 5.0F;
+                  this.moduleSwapAnimation.target = 255.0F;
+                  this.clickOpenCategoryModules = false;
+               }
 
-                boolean doDragWindow = this.selectedCategory != null
-                   ? RenderUtils.isHovering((int)mouseX, (int)mouseY, windowX, windowY, windowX + windowWidth, windowY + 25.0F)
-                   : RenderUtils.isHovering((int)mouseX, (int)mouseY, windowX, windowY, windowX + 100.0F, windowY + 40.0F);
-                if ((this.selectedCategory == null || !this.hoveringBack) && doDragWindow) {
-                    this.SetDragPosition(mouseX, mouseY);
-                    this.clickDragWindow = true;
-                }
+               boolean doDragWindow = this.selectedCategory != null
+                  ? RenderUtils.isHovering((int)mouseX, (int)mouseY, windowX, windowY, windowX + windowWidth, windowY + 25.0F)
+                  : RenderUtils.isHovering((int)mouseX, (int)mouseY, windowX, windowY, windowX + 100.0F, windowY + 40.0F);
+               if ((this.selectedCategory == null || !this.hoveringBack) && doDragWindow) {
+                  this.SetDragPosition(mouseX, mouseY);
+                  this.clickDragWindow = true;
+               }
 
-                if (RenderUtils.isHovering(
-                   (int)mouseX, (int)mouseY, windowX + windowWidth - 10.0F, windowY + windowHeight - 10.0F, windowX + windowWidth, windowY + windowHeight
-                )) {
-                    this.SetDragPosition(mouseX, mouseY);
-                    this.clickResizeWindow = true;
-                }
+               if (RenderUtils.isHovering(
+                  (int)mouseX, (int)mouseY, windowX + windowWidth - 10.0F, windowY + windowHeight - 10.0F, windowX + windowWidth, windowY + windowHeight
+               )) {
+                  this.SetDragPosition(mouseX, mouseY);
+                  this.clickResizeWindow = true;
+               }
 
-                if (this.hoveringBooleanValue != null) {
-                    this.hoveringBooleanValue.setCurrentValue(!this.hoveringBooleanValue.getCurrentValue());
-                }
+               if (this.hoveringBooleanValue != null) {
+                  this.hoveringBooleanValue.setCurrentValue(!this.hoveringBooleanValue.getCurrentValue());
+               }
 
-                if (this.hoveringFloatValue != null) {
-                    this.draggingFloatValue = this.hoveringFloatValue;
-                }
+               if (this.hoveringFloatValue != null) {
+                  this.draggingFloatValue = this.hoveringFloatValue;
+               }
 
-                if (this.hoveringModeValue != null) {
-                    this.hoveringModeValue.setCurrentValue(this.targetModeValueIndex);
-                    SmoothAnimationTimer animation = this.valuesAnimation.get(this.hoveringModeValue);
-                    animation.value = 0.0F;
-                    animation.target = 255.0F;
-                }
+               if (this.hoveringModeValue != null) {
+                  this.hoveringModeValue.setCurrentValue(this.targetModeValueIndex);
+                  SmoothAnimationTimer animation = this.valuesAnimation.get(this.hoveringModeValue);
+                  animation.value = 0.0F;
+                  animation.target = 255.0F;
+               }
             }
          } else if (mouseButton == 2 && this.hoveringModule != null) {
             this.bindingModule = this.hoveringModule;
@@ -423,22 +420,6 @@ public class ClickGUI extends Screen {
             RenderUtils.drawRoundedRect(
                stack, windowX + 5.0F, windowY + 20.0F + renderModuleHeight + this.categoryMotionY.value, 120.0F, 25.0F, 5.0F, hoveringColor
             );
-            
-            // 对于不可禁用的模块，添加一个视觉标识
-            if (categoryModule.isCannotDisable()) {
-                // 绘制一个锁定图标或文字来表示模块不可禁用
-                opensans.setAlpha((float)alpha / 255.0F);
-                opensans.render(
-                   stack,
-                   "*",
-                   (double)(windowX + 110.0F),
-                   (double)(windowY + 25.0F + renderModuleHeight + this.categoryMotionY.value),
-                   Color.YELLOW,
-                   true,
-                   0.4F
-                );
-            }
-            
             opensans.setAlpha((float)alpha / 255.0F);
             opensans.render(
                stack,
@@ -447,9 +428,37 @@ public class ClickGUI extends Screen {
                (double)(windowY + 25.0F + renderModuleHeight + this.categoryMotionY.value),
                Color.WHITE,
                true,
-               0.4F
+               0.4
             );
-            renderModuleHeight += 25.0F;
+            opensans.setAlpha(1.0F);
+            renderModuleHeight += 30.0F;
+         }
+
+         this.finalModuleHeight = renderModuleHeight + 20.0F - windowHeight;
+         this.minCatY -= renderModuleHeight - 5.0F;
+         float totalHeight = this.finalModuleHeight + windowHeight;
+         if (totalHeight > windowHeight - 25.0F) {
+            this.moduleAlphaAnimation.update(true);
+            if (this.moduleAlphaTimer.delay(1000.0)) {
+               this.moduleAlphaAnimation.target = 0.0F;
+            } else {
+               this.moduleAlphaAnimation.target = 255.0F;
+            }
+
+            float viewable = windowHeight - 25.0F;
+            float progress = (float)MathUtils.clamp((double)(-this.categoryMotionY.value / -this.minCatY), 0.0, 1.0);
+            float ratio = viewable / totalHeight * viewable;
+            float barHeight = Math.max(ratio, 20.0F);
+            float position = progress * (viewable - barHeight);
+            RenderUtils.drawRoundedRect(
+               stack,
+               windowX + 127.0F,
+               windowY + 20.0F + position,
+               3.0F,
+               barHeight,
+               1.5F,
+               RenderUtils.reAlpha(3630060, this.moduleAlphaAnimation.value / 255.0F)
+            );
          }
       }
 

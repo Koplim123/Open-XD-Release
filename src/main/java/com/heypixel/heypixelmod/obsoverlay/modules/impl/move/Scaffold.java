@@ -17,9 +17,11 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -131,13 +133,13 @@ public class Scaffold extends Module {
     private int lastSneakTicks;
     public int baseY = -1;
 
-    public ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Normal", "Sigmoid").setDefaultModeIndex(0).build().getModeValue();
+    public ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Normal", "Sigmoid", "Acceleration").setDefaultModeIndex(0).build().getModeValue();
     public FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Acceleration"))
             .build()
             .getFloatValue();
     public FloatValue turnSpeedY = ValueBuilder.create(this, "Turn Speed Y")
@@ -145,7 +147,7 @@ public class Scaffold extends Module {
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Acceleration"))
             .build()
             .getFloatValue();
 
@@ -154,7 +156,7 @@ public class Scaffold extends Module {
             .setFloatStep(0.1F)
             .setMinFloatValue(-10.0F)
             .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal") || this.rotationType.isCurrentMode("Acceleration"))
             .build()
             .getFloatValue();
 
@@ -163,9 +165,58 @@ public class Scaffold extends Module {
             .setFloatStep(0.1F)
             .setMinFloatValue(-10.0F)
             .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal") || this.rotationType.isCurrentMode("Acceleration"))
             .build()
             .getFloatValue();
+
+    // 加速模式的参数
+    private float currentSpeedX = 0.0f;
+    private float currentSpeedY = 0.0f;
+    public FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
+            .setDefaultFloatValue(2.0f)
+            .setFloatStep(0.1f)
+            .setMinFloatValue(0.1f)
+            .setMaxFloatValue(10.0f)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Acceleration"))
+            .build()
+            .getFloatValue();
+    public FloatValue deceleration = ValueBuilder.create(this, "Deceleration")
+            .setDefaultFloatValue(5.0f)
+            .setFloatStep(0.1f)
+            .setMinFloatValue(0.1f)
+            .setMaxFloatValue(10.0f)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Acceleration"))
+            .build()
+            .getFloatValue();
+
+    // 新增的自救功能
+    public BooleanValue safewalk = ValueBuilder.create(this, "Safewalk")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+    public FloatValue safewalkBoost = ValueBuilder.create(this, "Safewalk Boost")
+            .setDefaultFloatValue(2.0f)
+            .setFloatStep(0.1f)
+            .setMinFloatValue(1.0f)
+            .setMaxFloatValue(5.0f)
+            .setVisibility(() -> this.safewalk.getCurrentValue() && (this.rotationType.isCurrentMode("Acceleration") || this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid")))
+            .build()
+            .getFloatValue();
+
+    // 新增的方块搜索距离
+    public FloatValue blockSearchDistance = ValueBuilder.create(this, "Block Search Distance")
+            .setDefaultFloatValue(6.0f)
+            .setFloatStep(1.0f)
+            .setMinFloatValue(1.0f)
+            .setMaxFloatValue(10.0f)
+            .build()
+            .getFloatValue();
+
+    // 默认恢复功能的开关
+    public BooleanValue defaultPitch = ValueBuilder.create(this, "Default Pitch")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
 
     private float blockCounterWidth;
     private float blockCounterHeight;
@@ -220,6 +271,9 @@ public class Scaffold extends Module {
             this.lastRots.set(mc.player.yRotO, mc.player.xRotO);
             this.pos = null;
             this.baseY = 10000;
+            // 重置加速模式的速度
+            this.currentSpeedX = 0.0f;
+            this.currentSpeedY = 0.0f;
         }
     }
 
@@ -275,14 +329,19 @@ public class Scaffold extends Module {
 
             this.getBlockPos();
             if (this.pos != null) {
+                // 如果找到方块，则正常进行转头
                 this.correctRotation = this.getPlayerYawRotation();
                 this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
                 this.correctRotation.setY(this.correctRotation.getY() + this.pitchAdjust.getCurrentValue());
 
+                // 检查是否需要自救加速
+                boolean isFalling = this.safewalk.getCurrentValue() && !mc.player.onGround() && mc.player.getDeltaMovement().y < -0.1;
+                float boostFactor = isFalling ? this.safewalkBoost.getCurrentValue() : 1.0f;
+
                 if (this.rotationType.isCurrentMode("Linear")) {
-                    this.updateLinearRotations(this.correctRotation);
+                    this.updateLinearRotations(this.correctRotation, boostFactor);
                 } else if (this.rotationType.isCurrentMode("Sigmoid")) {
-                    this.updateSigmoidRotations(this.correctRotation);
+                    this.updateSigmoidRotations(this.correctRotation, boostFactor);
                 } else if (this.rotationType.isCurrentMode("Normal")) {
                     if (this.snap.getCurrentValue() && !isHoldingJump) {
                         this.doSnap();
@@ -290,8 +349,15 @@ public class Scaffold extends Module {
                         this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
                         this.rots.setY(this.correctRotation.getY());
                     }
+                } else if (this.rotationType.isCurrentMode("Acceleration")) {
+                    this.updateAccelerationRotations(this.correctRotation, boostFactor);
                 } else {
                     this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+                }
+            } else {
+                // 如果 defaultPitch 开关启用，并且找不到方块，则将偏航角设置为当前玩家的反方向，俯仰角设置为90度（完全向下）
+                if (this.defaultPitch.getCurrentValue()) {
+                    this.rots.set(mc.player.yRotO + 180.0F, 90.0F);
                 }
             }
 
@@ -329,11 +395,11 @@ public class Scaffold extends Module {
         }
     }
 
-    private void updateLinearRotations(Vector2f targetRotations) {
+    private void updateLinearRotations(Vector2f targetRotations, float boostFactor) {
         float targetYaw = targetRotations.x;
         float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue();
-        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float maxSpeedX = this.turnSpeedX.getCurrentValue() * boostFactor;
+        float maxSpeedY = this.turnSpeedY.getCurrentValue() * boostFactor;
 
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
@@ -344,11 +410,11 @@ public class Scaffold extends Module {
         this.rots.set(newYaw, newPitch);
     }
 
-    private void updateSigmoidRotations(Vector2f targetRotations) {
+    private void updateSigmoidRotations(Vector2f targetRotations, float boostFactor) {
         float targetYaw = targetRotations.x;
         float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue();
-        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float maxSpeedX = this.turnSpeedX.getCurrentValue() * boostFactor;
+        float maxSpeedY = this.turnSpeedY.getCurrentValue() * boostFactor;
         float smoothingFactor = 0.5f;
 
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
@@ -364,6 +430,34 @@ public class Scaffold extends Module {
         float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), turnRateY) * Math.signum(deltaPitch);
 
         this.rots.set(newYaw, newPitch);
+    }
+
+    private void updateAccelerationRotations(Vector2f targetRotations, float boostFactor) {
+        float targetYaw = targetRotations.x;
+        float targetPitch = targetRotations.y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float accel = this.acceleration.getCurrentValue();
+        float decel = this.deceleration.getCurrentValue();
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
+
+        if (Math.abs(deltaYaw) > 1.0f) {
+            this.currentSpeedX = Math.min(this.currentSpeedX + accel, maxSpeedX);
+        } else {
+            this.currentSpeedX = Math.max(0.0f, this.currentSpeedX - decel);
+        }
+        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), this.currentSpeedX * boostFactor) * Math.signum(deltaYaw);
+
+        if (Math.abs(deltaPitch) > 1.0f) {
+            this.currentSpeedY = Math.min(this.currentSpeedY + accel, maxSpeedY);
+        } else {
+            this.currentSpeedY = Math.max(0.0f, this.currentSpeedY - decel);
+        }
+        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), this.currentSpeedY * boostFactor) * Math.signum(deltaPitch);
+
+        this.rots.set(Mth.wrapDegrees(newYaw), newPitch);
     }
 
     private void doSnap() {
@@ -443,9 +537,11 @@ public class Scaffold extends Module {
         BlockPos base = BlockPos.containing(baseVec.x, (double)((float)this.baseY + 0.1F), baseVec.z);
         int baseX = base.getX();
         int baseZ = base.getZ();
+        int searchDistance = (int) this.blockSearchDistance.getCurrentValue();
+
         if (!mc.level.getBlockState(base).entityCanStandOn(mc.level, base, mc.player)) {
             if (!this.checkBlock(baseVec, base)) {
-                for (int d = 1; d <= 6; d++) {
+                for (int d = 1; d <= searchDistance; d++) {
                     if (this.checkBlock(baseVec, new BlockPos(baseX, this.baseY - d, baseZ))) {
                         return;
                     }
