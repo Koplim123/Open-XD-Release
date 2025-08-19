@@ -6,6 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchModuleException;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
+
 import java.util.List;
 import java.util.stream.Collectors;
 

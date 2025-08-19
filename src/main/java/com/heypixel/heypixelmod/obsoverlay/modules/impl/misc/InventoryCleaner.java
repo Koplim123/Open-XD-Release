@@ -576,11 +576,13 @@ public class InventoryCleaner extends Module {
          }
 
          if (this.switchAxe.getCurrentValue()) {
-            if (PreferWeapon.getPriority().equals("God Axe")) {
-               return;
-            }
             int slotxxx = (int)(this.axeSlot.getCurrentValue() - 1.0F);
             ItemStack bestAxe = InventoryUtils.getBestAxe();
+
+            if (bestAxe != null && InventoryUtils.isGodAxe(bestAxe)) {
+               return;
+            }
+
             ItemStack currentAxe = (ItemStack)mc.player.getInventory().items.get(slotxxx);
             if (bestAxe != null
                     && bestAxe.getItem() instanceof AxeItem

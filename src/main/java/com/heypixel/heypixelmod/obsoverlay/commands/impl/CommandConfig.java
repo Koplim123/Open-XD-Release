@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.commands.impl;
 import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
+
 import java.io.IOException;
 
 @CommandInfo(

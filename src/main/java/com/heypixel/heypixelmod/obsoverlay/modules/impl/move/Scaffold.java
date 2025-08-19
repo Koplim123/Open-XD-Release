@@ -296,19 +296,20 @@ public class Scaffold extends Module {
             int slotID = -1;
             this.useOffhand = false;
 
-            for (int i = 0; i < 9; i++) {
-                ItemStack stack = mc.player.getInventory().getItem(i);
-                if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
-                    slotID = i;
-                    break;
-                }
+            ItemStack offhandStack = mc.player.getOffhandItem();
+            if (offhandStack.getItem() instanceof BlockItem && isValidStack(offhandStack)) {
+                slotID = -2;
+                this.useOffhand = true;
             }
 
             if (slotID == -1) {
-                ItemStack offhandStack = mc.player.getOffhandItem();
-                if (offhandStack.getItem() instanceof BlockItem && isValidStack(offhandStack)) {
-                    slotID = -2;
-                    this.useOffhand = true;
+                for (int i = 0; i < 9; i++) {
+                    ItemStack stack = mc.player.getInventory().getItem(i);
+                    if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
+                        slotID = i;
+                        this.useOffhand = false;
+                        break;
+                    }
                 }
             }
 

@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.heypixel.heypixelmod.mixin.O",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "Naven-Modern.refmap.json",
+  "refmap": "Naven-XD.refmap.json",
   "mixins": [],
   "client": [
     "CapabilityTrackerMixin",
