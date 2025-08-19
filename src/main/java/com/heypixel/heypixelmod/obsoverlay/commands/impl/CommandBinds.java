@@ -27,12 +27,10 @@ public class CommandBinds extends Command {
         for (Module module : modules) {
             int key = module.getKey();
 
-            // 检查按键是否被绑定
             if (key != InputConstants.UNKNOWN.getValue()) {
                 String moduleName = module.getName();
                 String keyName = InputConstants.getKey(key, 0).getDisplayName().getString().toUpperCase();
 
-                // 确保转换后的按键名不等于 "KEY.KEYBOARD.0"
                 if (!"KEY.KEYBOARD.0".equalsIgnoreCase(keyName)) {
                     ChatUtils.addChatMessage(String.format("%s: %s", moduleName, keyName));
                     foundBinds = true;

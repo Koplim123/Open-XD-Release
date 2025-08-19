@@ -21,12 +21,12 @@ public class CommandConfig extends Command {
    public void onCommand(String[] args) {
       if (args.length == 0) {
          ChatUtils.addChatMessage("§7=======§6Config System§7=======");
-         ChatUtils.addChatMessage("§7注意配置名不含后缀.cfg");
-         ChatUtils.addChatMessage("§7父命令:.config / .cfg");
-         ChatUtils.addChatMessage("§7.config open : 打开配置文件夹");
-         ChatUtils.addChatMessage("§7.config list  : 查看可用配置列表");
-         ChatUtils.addChatMessage("§7.config load <配置名称> : 加载配置");
-         ChatUtils.addChatMessage("§7.config save <配置名称> : 保存配置");
+         ChatUtils.addChatMessage("§7Note: The config name does not include the .cfg suffix.");
+         ChatUtils.addChatMessage("§7Parent command: .config / .cfg");
+         ChatUtils.addChatMessage("§7.config open : Opens the config folder");
+         ChatUtils.addChatMessage("§7.config list  : Lists available configs");
+         ChatUtils.addChatMessage("§7.config load <config_name> : Loads a config");
+         ChatUtils.addChatMessage("§7.config save <config_name> : Saves a config");
          return;
       }
 
@@ -35,30 +35,27 @@ public class CommandConfig extends Command {
       switch (subCommand) {
          case "open":
             try {
-               // 打开正确的配置文件夹
                Runtime.getRuntime().exec("explorer " + FileManager.configFolder.getAbsolutePath());
             } catch (IOException var3) {
-               ChatUtils.addChatMessage("§c无法打开配置文件文件夹。");
+               ChatUtils.addChatMessage("§cCould not open the config folder.");
             }
             break;
          case "load":
             if (args.length < 2) {
-               ChatUtils.addChatMessage("§c用法: .config load <配置名>");
+               ChatUtils.addChatMessage("§cUsage: .config load <config_name>");
                return;
             }
-            // 直接传递文件名，不在命令中添加后缀
             Naven.getInstance().getFileManager().load(args[1]);
             break;
          case "save":
             if (args.length < 2) {
-               ChatUtils.addChatMessage("§c用法: .config save <配置名>");
+               ChatUtils.addChatMessage("§cUsage: .config save <config_name>");
                return;
             }
-            // 直接传递文件名，不在命令中添加后缀
             Naven.getInstance().getFileManager().save(args[1]);
             break;
          case "list":
-            ChatUtils.addChatMessage("§7--- §6可用配置列表 §7---");
+            ChatUtils.addChatMessage("§7--- §6Available Configs §7---");
             try (Stream<Path> paths = Files.list(FileManager.configFolder.toPath())) {
                paths.filter(Files::isRegularFile)
                        .map(Path::getFileName)
@@ -66,12 +63,12 @@ public class CommandConfig extends Command {
                        .filter(name -> name.endsWith(".cfg"))
                        .forEach(name -> ChatUtils.addChatMessage("§7- §b" + name.replace(".cfg", "")));
             } catch (IOException e) {
-               ChatUtils.addChatMessage("§c无法读取配置文件列表。");
+               ChatUtils.addChatMessage("§cCould not read the config file list.");
             }
             ChatUtils.addChatMessage("§7--------------------");
             break;
          default:
-            ChatUtils.addChatMessage("§c未知命令: " + subCommand + " ,请使用.config查看命令列表");
+            ChatUtils.addChatMessage("§cUnknown command: " + subCommand + ", use .config to see the command list.");
             break;
       }
    }

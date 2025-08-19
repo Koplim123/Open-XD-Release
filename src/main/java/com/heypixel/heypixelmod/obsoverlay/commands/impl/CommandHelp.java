@@ -14,14 +14,14 @@ public class CommandHelp extends Command {
     @Override
     public void onCommand(String[] args) {
         ChatUtils.addChatMessage("========Naven-XD========");
-        ChatUtils.addChatMessage(".help .hp 当前帮助列表");
-        ChatUtils.addChatMessage(".binds .bds 绑定按键列表");
-        ChatUtils.addChatMessage(".hide .h 隐藏或显示指定功能");
-        ChatUtils.addChatMessage(".config .cfg 配置文件系统");
-        ChatUtils.addChatMessage(".bind .b 绑定按键");
-        ChatUtils.addChatMessage(".language .lang 语言");
-        ChatUtils.addChatMessage(".proxy .prox 代理设置");
-        ChatUtils.addChatMessage(".toggle .t 功能切换");
+        ChatUtils.addChatMessage(".help .hp Current help list");
+        ChatUtils.addChatMessage(".binds .bds List of key binds");
+        ChatUtils.addChatMessage(".hide .h Hide or show a specific feature");
+        ChatUtils.addChatMessage(".config .cfg Config file system");
+        ChatUtils.addChatMessage(".bind .b Bind a key");
+        ChatUtils.addChatMessage(".language .lang Language settings");
+        ChatUtils.addChatMessage(".proxy .prox Proxy settings");
+        ChatUtils.addChatMessage(".toggle .t Toggle a feature");
 
     }
 
