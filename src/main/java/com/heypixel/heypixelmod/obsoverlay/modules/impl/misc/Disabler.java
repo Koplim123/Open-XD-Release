@@ -11,28 +11,27 @@ import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Field;
 import java.util.Random;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
+import sun.misc.Unsafe;
 
 @ModuleInfo(
-   name = "Disabler",
-   category = Category.MISC,
-   description = "Disables some checks of the anti cheat."
+        name = "Disabler",
+        category = Category.MISC,
+        description = "Disables some checks of the anti cheat."
 )
 public class Disabler extends Module {
    private final BooleanValue logging = ValueBuilder.create(this, "Logging").setDefaultBooleanValue(false).build().getBooleanValue();
    private final BooleanValue acaaimstep = ValueBuilder.create(this, "ACAAimStep").setDefaultBooleanValue(false).build().getBooleanValue();
    private final BooleanValue acaperfectrotation = ValueBuilder.create(this, "ACAPerfectRotation").setDefaultBooleanValue(false).build().getBooleanValue();
    private final BooleanValue grimDuplicateRotPlace = ValueBuilder.create(this, "GrimDuplicateRotPlace")
-      .setDefaultBooleanValue(false)
-      .build()
-      .getBooleanValue();
+           .setDefaultBooleanValue(false)
+           .build()
+           .getBooleanValue();
    private float playerYaw;
    private float deltaYaw;
    private float lastPlacedDeltaYaw;
@@ -229,43 +228,60 @@ public class Disabler extends Module {
    public void duplicateRotPlaceDisabler(EventPacket e) {
       if (this.grimDuplicateRotPlace.currentValue && e.getType() == EventType.SEND && !e.isCancelled() && mc.player != null) {
          if (e.getPacket() instanceof ServerboundMovePlayerPacket) {
-            ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket)e.getPacket();
+            ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) e.getPacket();
             if (packet.hasRotation()) {
-               if (packet.getYRot(0.0F) < 360.0F && packet.getYRot(0.0F) > -360.0F) {
-                  if (packet.hasPosition()) {
-                     e.setPacket(
-                        new PosRot(
-                           packet.getX(0.0), packet.getY(0.0), packet.getZ(0.0), packet.getYRot(0.0F) + 720.0F, packet.getXRot(0.0F), packet.isOnGround()
-                        )
-                     );
-                  } else {
-                     e.setPacket(new Rot(packet.getYRot(0.0F) + 720.0F, packet.getXRot(0.0F), packet.isOnGround()));
-                  }
-               }
+               float yaw = packet.getYRot(0.0F);
+               float xRot = packet.getXRot(0.0F);
+               boolean modified = false;
+               float newYaw = yaw;
 
-               float lastPlayerYaw = this.playerYaw;
-               this.playerYaw = packet.getYRot(0.0F);
-               this.deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
-               this.rotated = true;
-               if (this.deltaYaw > 2.0F) {
-                  float xDiff = Math.abs(this.deltaYaw - this.lastPlacedDeltaYaw);
-                  if ((double)xDiff < 1.0E-4) {
-                     this.log("Disabling DuplicateRotPlace!");
-                     if (packet.hasPosition()) {
-                        e.setPacket(
-                           new PosRot(
-                              packet.getX(0.0), packet.getY(0.0), packet.getZ(0.0), packet.getYRot(0.0F) + 0.002F, packet.getXRot(0.0F), packet.isOnGround()
-                           )
-                        );
-                     } else {
-                        e.setPacket(new Rot(packet.getYRot(0.0F) + 0.002F, packet.getXRot(0.0F), packet.isOnGround()));
+               // 1. 先处理重复旋转检测逻辑
+               if (this.rotated) {
+                  float deltaYaw = Math.abs(yaw - this.playerYaw);
+                  if (deltaYaw > 2.0F) {
+                     float xDiff = Math.abs(deltaYaw - this.lastPlacedDeltaYaw);
+                     if (xDiff < 1.0E-4) {
+                        this.log("Disabling DuplicateRotPlace!");
+                        newYaw = yaw + 0.002F; // 添加微小偏移破坏重复模式
+                        modified = true;
                      }
                   }
                }
+
+               // 2. 更新旋转状态（必须在包修改前记录原始值）
+               float lastPlayerYaw = this.playerYaw;
+               this.playerYaw = modified ? newYaw : yaw; // 记录修改后的yaw
+               this.deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
+               this.rotated = true;
+
+               // 3. 应用720度偏移（避免干扰重复检测）
+               if (yaw > -360.0F && yaw < 360.0F) {
+                  newYaw += 720.0F;
+                  modified = true;
+               }
+
+               // 4. 应用所有修改
+               if (modified) {
+                  if (packet.hasPosition()) {
+                     e.setPacket(new PosRot(
+                             packet.getX(0.0),
+                             packet.getY(0.0),
+                             packet.getZ(0.0),
+                             newYaw,
+                             xRot,
+                             packet.isOnGround()
+                     ));
+                  } else {
+                     e.setPacket(new Rot(newYaw, xRot, packet.isOnGround()));
+                  }
+               }
             }
-         } else if (e.getPacket() instanceof ServerboundUseItemOnPacket && this.rotated) {
-            this.lastPlacedDeltaYaw = this.deltaYaw;
-            this.rotated = false;
+         } else if (e.getPacket() instanceof ServerboundUseItemOnPacket) {
+            // 只在确实有旋转时记录（避免误触发）
+            if (this.rotated) {
+               this.lastPlacedDeltaYaw = this.deltaYaw;
+               this.rotated = false;
+            }
          }
       }
 
