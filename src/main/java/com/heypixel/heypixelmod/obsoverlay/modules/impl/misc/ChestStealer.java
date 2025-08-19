@@ -3,7 +3,6 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMouseClick;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
@@ -13,83 +12,34 @@ import com.heypixel.heypixelmod.obsoverlay.utils.TickTimeHelper;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.FishingRodItem;
-import net.minecraft.world.item.ItemNameBlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
-import net.minecraft.world.item.ShovelItem;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.EnderChestBlock;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.item.*;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @ModuleInfo(
         name = "ChestStealer",
-        description = "Automatically steals items and interacts with entities from a distance",
+        description = "Automatically steals items from chests",
         category = Category.MISC
 )
 public class ChestStealer extends Module {
-    private final Minecraft mc = Minecraft.getInstance();
     private static final TickTimeHelper timer = new TickTimeHelper();
-    private Screen lastTickScreen;
-    private long lastMultiStackClick = 0;
-
-    private final FloatValue closeDelay = ValueBuilder.create(this, "Close Delay (Ticks)")
-            .setDefaultFloatValue(1.0F)
+    private final FloatValue delay = ValueBuilder.create(this, "Delay (Ticks)")
+            .setDefaultFloatValue(3.0F)
             .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
+            .setMinFloatValue(3.0F)
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    private final FloatValue multiStackDelay = ValueBuilder.create(this, "Multi Stack Delay (Ticks)")
-            .setDefaultFloatValue(1.0F)
-            .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
-            .setMaxFloatValue(10.0F)
-            .build()
-            .getFloatValue();
-    private final BooleanValue instant = ValueBuilder.create(this, "Instant").setDefaultBooleanValue(false).build().getBooleanValue();
     private final BooleanValue pickEnderChest = ValueBuilder.create(this, "Ender Chest").setDefaultBooleanValue(false).build().getBooleanValue();
-
-    private final BooleanValue ghostHandChests = ValueBuilder.create(this, "GhostHand Chests")
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    private final BooleanValue ghostHandEnderChests = ValueBuilder.create(this, "GhostHand EnderChests")
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
+    private Screen lastTickScreen;
 
     public static boolean isWorking() {
         return !timer.delay(3);
@@ -103,126 +53,36 @@ public class ChestStealer extends Module {
                 ChestMenu menu = (ChestMenu)container.getMenu();
                 if (currentScreen != this.lastTickScreen) {
                     timer.reset();
-                }
+                } else {
+                    String chestTitle = container.getTitle().getString();
+                    String chest = Component.translatable("container.chest").getString();
+                    String largeChest = Component.translatable("container.chestDouble").getString();
+                    String enderChest = Component.translatable("container.enderchest").getString();
+                    if (chestTitle.equals(chest)
+                            || chestTitle.equals(largeChest)
+                            || chestTitle.equals("Chest")
+                            || this.pickEnderChest.getCurrentValue() && chestTitle.equals(enderChest)) {
+                        if (this.isChestEmpty(menu) && timer.delay(this.delay.getCurrentValue())) {
+                            mc.player.closeContainer();
+                        } else {
+                            List<Integer> slots = IntStream.range(0, menu.getRowCount() * 9).boxed().collect(Collectors.toList());
+                            Collections.shuffle(slots);
 
-                String chestTitle = container.getTitle().getString();
-                String chest = Component.translatable("container.chest").getString();
-                String largeChest = Component.translatable("container.chestDouble").getString();
-                String enderChest = Component.translatable("container.enderchest").getString();
-
-                if (chestTitle.equals(chest)
-                        || chestTitle.equals(largeChest)
-                        || chestTitle.equals("Chest")
-                        || this.pickEnderChest.getCurrentValue() && chestTitle.equals(enderChest)) {
-                    if (this.isChestEmpty(menu) && timer.delay(this.closeDelay.getCurrentValue())) {
-                        mc.player.closeContainer();
-                    } else {
-                        List<Integer> slots = IntStream.range(0, menu.getRowCount() * 9).boxed().collect(Collectors.toList());
-                        Collections.shuffle(slots);
-
-                        for (Integer pSlotId : slots) {
-                            ItemStack stack = menu.getSlot(pSlotId).getItem();
-                            if (isItemUseful(stack) && this.isBestItemInChest(menu, stack)) {
-                                if (this.instant.getCurrentValue()) {
+                            for (Integer pSlotId : slots) {
+                                ItemStack stack = menu.getSlot(pSlotId).getItem();
+                                if (isItemUseful(stack) && this.isBestItemInChest(menu, stack) && timer.delay(this.delay.getCurrentValue())) {
                                     mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
-                                } else if (System.currentTimeMillis() - this.lastMultiStackClick > this.multiStackDelay.getCurrentValue() * 50) {
-                                    mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
-                                    this.lastMultiStackClick = System.currentTimeMillis();
+                                    timer.reset();
+                                    break;
                                 }
-                                break;
                             }
                         }
                     }
                 }
             }
+
             this.lastTickScreen = currentScreen;
         }
-    }
-
-    @EventTarget
-    public void onMouseClick(EventMouseClick event) {
-        if (event.getKey() == 1 && event.isState()) {
-            LocalPlayer player = mc.player;
-            if (player != null) {
-                double defaultRange = mc.gameMode.getPickRange();
-                BlockPos targetPos = null;
-
-                if (ghostHandChests.getCurrentValue()) {
-                    targetPos = findChestAtCrosshair(player, player.level(), defaultRange);
-                }
-
-                if (targetPos == null && ghostHandEnderChests.getCurrentValue()) {
-                    targetPos = findEnderChestAtCrosshair(player, player.level(), defaultRange);
-                }
-
-                if (targetPos != null) {
-                    openChest(targetPos);
-                } else {
-                    Entity targetEntity = findEntityAtCrosshair(player, defaultRange);
-                    if (targetEntity != null) {
-                        interactWithEntity(targetEntity);
-                    }
-                }
-            }
-        }
-    }
-
-    private BlockPos findChestAtCrosshair(LocalPlayer player, Level level, double range) {
-        Vec3 lookVec = player.getLookAngle();
-        Vec3 startPos = player.getEyePosition(1.0F);
-
-        for (double i = 0.5; i <= range; i += 0.01) {
-            Vec3 currentPos = startPos.add(lookVec.scale(i));
-            BlockPos blockPos = BlockPos.containing(currentPos);
-            if (level.getBlockState(blockPos).getBlock() instanceof ChestBlock) {
-                return blockPos;
-            }
-        }
-        return null;
-    }
-
-    private BlockPos findEnderChestAtCrosshair(LocalPlayer player, Level level, double range) {
-        Vec3 lookVec = player.getLookAngle();
-        Vec3 startPos = player.getEyePosition(1.0F);
-
-        for (double i = 0.5; i <= range; i += 0.01) {
-            Vec3 currentPos = startPos.add(lookVec.scale(i));
-            BlockPos blockPos = BlockPos.containing(currentPos);
-            if (level.getBlockState(blockPos).getBlock() instanceof EnderChestBlock) {
-                return blockPos;
-            }
-        }
-        return null;
-    }
-
-    private Entity findEntityAtCrosshair(LocalPlayer player, double range) {
-        // Implementation for finding entities
-        return null;
-    }
-
-    private boolean isTarget(Entity entity) {
-        // Implementation for checking if entity is a target
-        return false;
-    }
-
-    private void interactWithEntity(Entity entity) {
-        mc.getConnection().send(ServerboundInteractPacket.createInteractionPacket(entity, false, InteractionHand.MAIN_HAND));
-        mc.player.swing(InteractionHand.MAIN_HAND);
-    }
-
-    private void openChest(BlockPos pos) {
-        BlockHitResult hitResult = new BlockHitResult(
-                new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5),
-                Direction.UP,
-                pos,
-                false
-        );
-        mc.getConnection().send(new ServerboundUseItemOnPacket(
-                InteractionHand.MAIN_HAND,
-                hitResult,
-                0
-        ));
-        mc.player.swing(InteractionHand.MAIN_HAND);
     }
 
     private boolean isBestItemInChest(ChestMenu menu, ItemStack stack) {
@@ -253,6 +113,7 @@ public class ChestStealer extends Module {
                     return false;
                 }
             }
+
             return true;
         } else {
             return true;
@@ -266,6 +127,7 @@ public class ChestStealer extends Module {
                 return false;
             }
         }
+
         return true;
     }
 

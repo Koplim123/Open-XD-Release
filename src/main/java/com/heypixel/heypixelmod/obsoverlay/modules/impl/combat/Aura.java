@@ -3,13 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventAttackSlowdown;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRespawn;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
@@ -18,14 +12,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
-import com.heypixel.heypixelmod.obsoverlay.utils.BlinkingPlayer;
-import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.FriendManager;
-import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
@@ -35,14 +22,6 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
@@ -61,10 +40,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @ModuleInfo(
         name = "KillAura",
@@ -137,7 +124,7 @@ public class Aura extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    FloatValue fov = ValueBuilder.create(this, "FoV")
+    FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(360.0F)
             .setFloatStep(1.0F)
             .setMinFloatValue(10.0F)
@@ -151,7 +138,7 @@ public class Aura extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "FoV", "Range", "None").build().getModeValue();
+    ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
     FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
             .setDefaultFloatValue(20.0F)
             .setFloatStep(1.0F)
@@ -344,7 +331,6 @@ public class Aura extends Module {
             this.rotationData = null;
 
             if (aimingTarget != null) {
-                // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
                 this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget, this.aimPointMode.getCurrentMode());
                 if (this.rotationData.getRotation() != null) {
                     if (this.rotationType.isCurrentMode("Linear")) {
@@ -389,7 +375,6 @@ public class Aura extends Module {
                     }
 
                     Entity nextTarget = targets.get(this.index);
-                    // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
                     RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget, this.aimPointMode.getCurrentMode());
                     if (data.getDistance() < 3.0) {
                         break;
@@ -665,7 +650,7 @@ public class Aura extends Module {
         List<Entity> possibleTargets = stream.collect(Collectors.toList());
         if (this.priority.isCurrentMode("Range")) {
             possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
-        } else if (this.priority.isCurrentMode("FoV")) {
+        } else if (this.priority.isCurrentMode("Fov")) {
             possibleTargets.sort(
                     Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
             );
