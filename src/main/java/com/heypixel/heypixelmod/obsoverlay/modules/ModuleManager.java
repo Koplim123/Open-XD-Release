@@ -22,6 +22,7 @@ public class ModuleManager {
    private final Map<String, Module> nameMap = new HashMap<>();
    private final Map<Integer, Boolean> pressedState = new HashMap<>();
    private final Set<Integer> pressedKeys = new HashSet<>();
+   BanWarn banWarn = new BanWarn();
 
    public ModuleManager() {
       try {
@@ -63,7 +64,9 @@ public class ModuleManager {
          new Disabler(),
          new Projectile(),
          new TimeChanger(),
+         new BanWarn(),
          new FullBright(),
+         new SilenceFixMode(),
          new NameProtect(),
          new NoHurtCam(),
          new AutoClicker(),
@@ -98,6 +101,7 @@ public class ModuleManager {
          new MidPearl()
 
       );
+      banWarn.setEnabled(true);
    }
 
     private void registerModule(Module... modules) {

@@ -10,6 +10,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.SilenceFixMode;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -145,6 +146,22 @@ public class HUD extends Module {
     List<Vector4f> blurMatrices = new ArrayList<>();
 
     public String getModuleDisplayName(Module module) {
+        if (module instanceof SilenceFixMode) {
+            String currentMode = ((SilenceFixMode) module).silencemode.getCurrentMode();
+            switch (currentMode) {
+                case "SkyWarsPerformance":
+                    return "------------空岛高性能模式------------";
+                case "SkyWars":
+                    return "------------空岛模式------------";
+                case "BedWarsPerformance":
+                    return "------------起床高性能模式------------";
+                case "BedWars":
+                    return "------------起床模式------------";
+                default:
+                    return "SilenceFixMode";
+            }
+        }
+
         String name = this.prettyModuleName.getCurrentValue() ? module.getPrettyName() : module.getName();
         return name + (module.getSuffix() == null ? "" : " §7" + module.getSuffix());
     }
@@ -246,11 +263,12 @@ public class HUD extends Module {
 
                 if (animation.value > 0.0F) {
                     String displayName = this.getModuleDisplayName(module);
-                    float stringWidth = font.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
+                    CustomTextRenderer currentFont = com.heypixel.heypixelmod.obsoverlay.utils.StringUtils.containChinese(displayName) ? Fonts.harmony : Fonts.opensans;
+
+                    float stringWidth = currentFont.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
                     float left = -stringWidth * (1.0F - animation.value / 100.0F);
                     float right = maxWidth - stringWidth * (animation.value / 100.0F);
                     float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
-
                     RenderUtils.fillBound(
                             e.getStack(),
                             arrayListX + innerX,
@@ -259,18 +277,20 @@ public class HUD extends Module {
                             (float)((double)(animation.value / 100.0F) * fontHeight),
                             backgroundColor
                     );
-
-                    this.blurMatrices.add(
-                            new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
-                    );
-
-                    int color = this.rainbow.getCurrentValue()
-                            ? RenderUtils.getRainbowOpaque((int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F)
-                            : -1;
+                    this.blurMatrices
+                            .add(
+                                    new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
+                            );
+                    int color = -1;
+                    if (this.rainbow.getCurrentValue()) {
+                        color = RenderUtils.getRainbowOpaque(
+                                (int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
+                        );
+                    }
 
                     float alpha = animation.value / 100.0F;
-                    font.setAlpha(alpha);
-                    font.render(
+                    currentFont.setAlpha(alpha);
+                    currentFont.render(
                             e.getStack(),
                             displayName,
                             (double)(arrayListX + innerX + 1.5F),
