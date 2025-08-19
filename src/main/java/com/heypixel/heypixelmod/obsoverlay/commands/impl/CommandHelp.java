@@ -17,6 +17,7 @@ public class CommandHelp extends Command {
         ChatUtils.addChatMessage(".help .hp 当前帮助列表");
         ChatUtils.addChatMessage(".binds .bds 绑定按键列表");
         ChatUtils.addChatMessage(".hide .h 隐藏或显示指定功能");
+        ChatUtils.addChatMessage(".config .cfg 配置文件系统");
         ChatUtils.addChatMessage(".bind .b 绑定按键");
         ChatUtils.addChatMessage(".language .lang 语言");
         ChatUtils.addChatMessage(".proxy .prox 代理设置");
