@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 @ModuleInfo(
-   name = "CrystalAura",
+   name = "AttackCrystal",
    category = Category.COMBAT,
    description = "Automatically attacks end crystals"
 )

@@ -17,14 +17,12 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -96,12 +94,6 @@ public class Scaffold extends Module {
             Blocks.REDSTONE_TORCH,
             Blocks.FLOWER_POT
     );
-
-    public BooleanValue scaffoldblocks = ValueBuilder.create(this, "BlocksNumberRender")
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    public ModeValue scaffoldblocksstyles = ValueBuilder.create(this, "BlocksRenderStyles").setVisibility(() -> this.scaffoldblocks.getCurrentValue()).setDefaultModeIndex(0).setModes("None", "Simple", "Normal", "Naven", "LingDong").build().getModeValue();
     public Vector2f correctRotation = new Vector2f();
     public Vector2f rots = new Vector2f();
     public Vector2f lastRots = new Vector2f();
@@ -124,6 +116,7 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
 
     public BooleanValue keepFov = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue fov = ValueBuilder.create(this, "Fov")
@@ -223,107 +216,6 @@ public class Scaffold extends Module {
     private float blockCounterWidth;
     private float blockCounterHeight;
     private boolean useOffhand = false;
-
-    @EventTarget
-    public void onRender2D(EventRender2D e) {
-        // 确保开关开启
-        if (!scaffoldblocks.getCurrentValue()) {
-            return;
-        }
-
-        if (scaffoldblocksstyles.isCurrentMode("Simple")) {
-            renderSimple(e.getGuiGraphics());
-        } else if (scaffoldblocksstyles.isCurrentMode("Normal")) {
-            renderNormal(e.getGuiGraphics());
-        } else if (scaffoldblocksstyles.isCurrentMode("Naven")) {
-            renderNaven(e);
-        }
-    }
-
-    private void renderSimple(GuiGraphics graphics) {
-        String text = "§bBlocks: §f" + getTotalBlocksInHotbar();
-        float scale = 0.3F;
-
-        // 使用 GUI 缩放后的坐标
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-        float textWidth = Fonts.harmony.getWidth(text, scale);
-        float x = (screenWidth - textWidth) / 2.0F;
-        float y = screenHeight / 2.0F + 10; // 屏幕中心下方10像素
-
-        Fonts.harmony.render(graphics.pose(), text, x, y, Color.WHITE, true, scale);
-    }
-
-    private boolean isValidBlockForCounting(ItemStack stack) {
-        if (stack == null || !(stack.getItem() instanceof BlockItem)) return false;
-
-        // 检查名称黑名单
-        String displayName = stack.getDisplayName().getString();
-        if (displayName.contains("Click") || displayName.contains("点击")) {
-            return false;
-        }
-
-        // 检查特殊物品类型
-        if (stack.getItem() instanceof ItemNameBlockItem) {
-            return false;
-        }
-
-        // 检查方块类型黑名单
-        Block block = ((BlockItem) stack.getItem()).getBlock();
-        return !(block instanceof FlowerBlock) &&
-                !(block instanceof BushBlock) &&
-                !(block instanceof FungusBlock) &&
-                !(block instanceof CropBlock) &&
-                !(block instanceof SlabBlock) &&
-                !blacklistedBlocks.contains(block);
-    }
-
-    public int getTotalBlocksInHotbar() {
-        if (mc.player == null) return 0;
-
-        int totalBlocks = 0;
-        Inventory inventory = mc.player.getInventory();
-
-        // 只遍历快捷栏（0-8号槽位）
-        for (int i = 0; i < 9; i++) {
-            ItemStack stack = inventory.getItem(i);
-            if (stack != null && stack.getItem() instanceof BlockItem) {
-                // 使用自定义方法检查方块有效性（排除黑名单）
-                if (isValidBlockForCounting(stack)) {
-                    totalBlocks += stack.getCount();
-                }
-            }
-        }
-        return totalBlocks;
-    }
-
-    // 修复后的 renderNormal 方法
-    private void renderNormal(GuiGraphics graphics) {
-        String text = "Blocks: " + getTotalBlocksInHotbar();
-        float textScale = 0.3F;
-
-        // 使用 GUI 缩放后的坐标
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-        float textWidth = Fonts.harmony.getWidth(text, textScale);
-        float textHeight = (float) Fonts.harmony.getHeight(true, textScale);
-        float padding = 4.0F;
-
-        // 计算 HUD 位置和大小
-        float hudWidth = textWidth + padding * 2;
-        float hudHeight = textHeight + padding * 2;
-        float x = (screenWidth - hudWidth) / 2.0F;
-        float y = screenHeight * 0.75F - hudHeight / 2; // 屏幕75%高度位置
-
-        // **使用带有模糊效果和颜色覆盖层的圆角矩形背景**
-        // 第一个 8.0F 是圆角半径，第二个 8 是模糊强度，最后一个是颜色
-        RenderUtils.drawStencilRoundedRect(graphics, x, y, hudWidth, hudHeight, 8.0F, 8, new Color(0, 0, 0, 100).getRGB());
-
-        // 绘制文字
-        Fonts.harmony.render(graphics.pose(), text, x + padding, y + padding, Color.WHITE, true, textScale);
-    }
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -727,19 +619,19 @@ public class Scaffold extends Module {
     }
 
     @EventTarget
-    public void renderNavenShader(EventShader e) {
-        if (this.scaffoldblocksstyles.isCurrentMode("Naven") && this.scaffoldblocks.getCurrentValue() && mc.player != null) {
+    public void onShader(EventShader e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
             float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
             float y = screenHeight / 2.0F + 15.0F;
-
             RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
         }
     }
 
-    public void renderNaven(EventRender2D e) {
-        if (this.scaffoldblocksstyles.isCurrentMode("Naven") && mc.player != null) {
+    @EventTarget
+    public void onRender(EventRender2D e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
             int blockCount = 0;
             for (ItemStack itemStack : mc.player.getInventory().items) {
                 if (itemStack.getItem() instanceof BlockItem) {

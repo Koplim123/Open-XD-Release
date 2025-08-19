@@ -6,7 +6,6 @@
   "refmap": "Naven-XD.refmap.json",
   "mixins": [],
   "client": [
-    "TabMenuBlocker",
     "CapabilityTrackerMixin",
     "MixinAbstractClientPlayer",
     "MixinCamera",

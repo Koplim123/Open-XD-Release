@@ -11,13 +11,14 @@ import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
-import java.lang.reflect.Field;
-import java.util.Random;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
+import java.util.Random;
 
 @ModuleInfo(
         name = "Disabler",

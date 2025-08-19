@@ -185,7 +185,6 @@ public class Aura extends Module {
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
 
-            // 传入正确的 GuiGraphics 对象
             this.blurMatrix = com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD.render(
                     e.getGuiGraphics(),
                     living,

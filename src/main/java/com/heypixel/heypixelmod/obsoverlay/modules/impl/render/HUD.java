@@ -10,8 +10,6 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.SilenceFixMode;
-import com.heypixel.heypixelmod.obsoverlay.ui.lingdong.LingDong;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -43,12 +41,6 @@ public class HUD extends Module {
     private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 
     public BooleanValue waterMark = ValueBuilder.create(this, "Water Mark").setDefaultBooleanValue(true).build().getBooleanValue();
-    public ModeValue waterMarkMode = ValueBuilder.create(this, "WaterMark Mode")
-            .setVisibility(this.waterMark::getCurrentValue) // 仅当水印开启时显示
-            .setDefaultModeIndex(0)
-            .setModes("Naven", "LingDong")
-            .build()
-            .getModeValue();
     public FloatValue watermarkSize = ValueBuilder.create(this, "Watermark Size")
             .setVisibility(this.waterMark::getCurrentValue)
             .setDefaultFloatValue(0.4F)
@@ -80,7 +72,6 @@ public class HUD extends Module {
             .getBooleanValue();
 
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
-    public BooleanValue bettertab = ValueBuilder.create(this, "BetterTab").setDefaultBooleanValue(false).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
 
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -154,22 +145,6 @@ public class HUD extends Module {
     List<Vector4f> blurMatrices = new ArrayList<>();
 
     public String getModuleDisplayName(Module module) {
-        if (module instanceof SilenceFixMode) {
-            String currentMode = ((SilenceFixMode) module).silencemode.getCurrentMode();
-            switch (currentMode) {
-                case "SkyWarsPerformance":
-                    return "------------空岛高性能模式------------";
-                case "SkyWars":
-                    return "------------空岛模式------------";
-                case "BedWarsPerformance":
-                    return "------------起床高性能模式------------";
-                case "BedWars":
-                    return "------------起床模式------------";
-                default:
-                    return "SilenceFixMode";
-            }
-        }
-
         String name = this.prettyModuleName.getCurrentValue() ? module.getPrettyName() : module.getName();
         return name + (module.getSuffix() == null ? "" : " §7" + module.getSuffix());
     }
@@ -186,7 +161,7 @@ public class HUD extends Module {
         if (this.notification.getCurrentValue() && e.getType() == EventType.SHADOW) {
             Naven.getInstance().getNotificationManager().onRenderShadow(e);
         }
-        if (this.waterMark.getCurrentValue() && waterMarkMode.isCurrentMode("Naven")) {
+        if (this.waterMark.getCurrentValue()) {
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
         }
         if (this.arrayList.getCurrentValue()) {
@@ -201,7 +176,7 @@ public class HUD extends Module {
         CustomTextRenderer font = Fonts.opensans;
 
         // WaterMark
-        if (this.waterMarkMode.isCurrentMode("Naven")) {
+        if (this.waterMark.getCurrentValue()) {
             e.getStack().pushPose();
             StringBuilder watermarkText = new StringBuilder("Naven");
 
@@ -220,36 +195,16 @@ public class HUD extends Module {
 
             String text = watermarkText.toString();
 
-            // 将大小等比例放大1倍
-            double newWatermarkSize = (double)this.watermarkSize.getCurrentValue() * 1.5;
-            this.width = font.getWidth(text, newWatermarkSize) + 14.0F;
-            this.watermarkHeight = (float)font.getHeight(true, newWatermarkSize);
-
+            this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
+            this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
             StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
             StencilUtils.erase(true);
             RenderUtils.fill(e.getStack(), 5.0F, 5.0F, 9.0F + this.width, 8.0F, headerColor);
             RenderUtils.fill(e.getStack(), 5.0F, 8.0F, 9.0F + this.width, 16.0F + this.watermarkHeight, bodyColor);
-            font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, newWatermarkSize);
+            font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, (double)this.watermarkSize.getCurrentValue());
             StencilUtils.dispose();
-        } else if(this.waterMarkMode.isCurrentMode("LingDong")){
-            // 获取ModuleManager实例
-            ModuleManager moduleManager = Naven.getInstance().getModuleManager();
-
-            // 调用LingDong渲染器，传入moduleManager
-            LingDong.render(
-                    e.getGuiGraphics(),
-                    font,
-                    Version.getVersion(),
-                    StringUtils.split(mc.fpsString, " ")[0],
-                    "Dev",
-                    this.watermarkSize.getCurrentValue(),
-                    moduleManager // 传入moduleManager
-            );
-
-            // 更新尺寸变量
-            this.width = 600.0F * this.watermarkSize.getCurrentValue();
-            this.watermarkHeight = 90.0F * this.watermarkSize.getCurrentValue();
+            e.getStack().popPose();
         }
 
         // ArrayList
@@ -291,12 +246,11 @@ public class HUD extends Module {
 
                 if (animation.value > 0.0F) {
                     String displayName = this.getModuleDisplayName(module);
-                    CustomTextRenderer currentFont = com.heypixel.heypixelmod.obsoverlay.utils.StringUtils.containChinese(displayName) ? Fonts.harmony : Fonts.opensans;
-
-                    float stringWidth = currentFont.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
+                    float stringWidth = font.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
                     float left = -stringWidth * (1.0F - animation.value / 100.0F);
                     float right = maxWidth - stringWidth * (animation.value / 100.0F);
                     float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
+
                     RenderUtils.fillBound(
                             e.getStack(),
                             arrayListX + innerX,
@@ -305,20 +259,18 @@ public class HUD extends Module {
                             (float)((double)(animation.value / 100.0F) * fontHeight),
                             backgroundColor
                     );
-                    this.blurMatrices
-                            .add(
-                                    new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
-                            );
-                    int color = -1;
-                    if (this.rainbow.getCurrentValue()) {
-                        color = RenderUtils.getRainbowOpaque(
-                                (int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
-                        );
-                    }
+
+                    this.blurMatrices.add(
+                            new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
+                    );
+
+                    int color = this.rainbow.getCurrentValue()
+                            ? RenderUtils.getRainbowOpaque((int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F)
+                            : -1;
 
                     float alpha = animation.value / 100.0F;
-                    currentFont.setAlpha(alpha);
-                    currentFont.render(
+                    font.setAlpha(alpha);
+                    font.render(
                             e.getStack(),
                             displayName,
                             (double)(arrayListX + innerX + 1.5F),

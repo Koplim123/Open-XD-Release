@@ -237,11 +237,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 180) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -254,11 +254,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 90) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -271,11 +271,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 270) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -288,11 +288,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)i / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -561,6 +561,6 @@ public class RenderUtils {
       BufferUploader.drawWithShader(bufferBuilder.end());
    }
 
-    public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
-    }
+   public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
+   }
 }
