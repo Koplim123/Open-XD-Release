@@ -6,10 +6,11 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import java.util.Objects;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.Objects;
 
 @ModuleInfo(
    name = "Teams",

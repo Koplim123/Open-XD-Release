@@ -6,23 +6,20 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.EntityWatcher;
-import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.ProjectionUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.SharedESPData;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
-import java.awt.Color;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.world.entity.Entity;
 import org.antlr.v4.runtime.misc.OrderedHashSet;
+
+import java.awt.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @ModuleInfo(
    name = "EffectTags",

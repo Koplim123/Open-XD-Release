@@ -6,43 +6,22 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventKey;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMouseClick;
 import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchModuleException;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.*;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.Velocity;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.*;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiBlindness;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.AntiNausea;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ChestESP;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Compass;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.EffectDisplay;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.FullBright;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Glow;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ItemTags;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.MotionBlur;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NameProtect;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NameTags;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NoHurtCam;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NoRender;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.PostProcess;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Projectile;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Scoreboard;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ScoreboardSpoof;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.TimeChanger;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ViewClip;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.*;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.*;
 
 public class ModuleManager {
    private static final Logger log = LogManager.getLogger(ModuleManager.class);
    private final List<Module> modules = new ArrayList<>();
    private final Map<Class<? extends Module>, Module> classMap = new HashMap<>();
    private final Map<String, Module> nameMap = new HashMap<>();
+   private final Map<Integer, Boolean> pressedState = new HashMap<>();
+   private final Set<Integer> pressedKeys = new HashSet<>();
 
    public ModuleManager() {
       try {
@@ -111,6 +90,7 @@ public class ModuleManager {
          new JumpReset(),
          new GhostHand(),
          new BetaVelocity(),
+         new PreferWeapon(),
          new Speed(),
          new TNTWarning(),
          new LegitKillAura(),
@@ -166,11 +146,15 @@ public class ModuleManager {
    @EventTarget
    public void onKey(EventKey e) {
       if (e.isState() && Minecraft.getInstance().screen == null) {
-         for (Module module : this.modules) {
-            if (module.getKey() == e.getKey()) {
-               module.toggle();
+         if (pressedKeys.add(e.getKey())) {
+            for (Module module : this.modules) {
+               if (module.getKey() == e.getKey() && module.isToggleableWithKey()) {
+                  module.toggle();
+               }
             }
          }
+      } else {
+         pressedKeys.remove(e.getKey());
       }
    }
 
@@ -178,12 +162,13 @@ public class ModuleManager {
    public void onKey(EventMouseClick e) {
       if (!e.isState() && (e.getKey() == 3 || e.getKey() == 4)) {
          for (Module module : this.modules) {
-            if (module.getKey() == -e.getKey()) {
+            if (module.getKey() == -e.getKey() && module.isToggleableWithKey()) {
                module.toggle();
             }
          }
       }
    }
+
 
    public List<Module> getModules() {
       return this.modules;

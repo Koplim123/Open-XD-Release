@@ -14,19 +14,20 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.ints.IntListIterator;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.GameType;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @ModuleInfo(
    name = "AntiBots",
@@ -97,7 +98,6 @@ public class AntiBots extends Module {
       if (e.getType() == EventType.PRE) {
          for (Entry<UUID, Long> entry : uuids.entrySet()) {
             if (System.currentTimeMillis() - entry.getValue() > 500L) {
-               ChatUtils.addChatMessage("Fake Staff Detected! (" + uuidDisplayNames.get(entry.getKey()) + ")");
                uuids.remove(entry.getKey());
             }
          }

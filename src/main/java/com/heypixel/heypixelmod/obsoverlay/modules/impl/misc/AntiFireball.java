@@ -8,12 +8,13 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.LongJump;
-import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Fireball;
+
+import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @ModuleInfo(
    name = "AntiFireball",

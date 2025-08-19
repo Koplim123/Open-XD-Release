@@ -103,6 +103,16 @@ public class InventoryUtils {
       }
    }
 
+   public static ItemStack getItemStack(Item item) {
+      for (int i = 0; i < mc.player.getInventory().items.size(); i++) {
+         ItemStack itemStack = (ItemStack)mc.player.getInventory().items.get(i);
+         if (!itemStack.isEmpty() && itemStack.getItem() == item) {
+            return itemStack;
+         }
+      }
+      return null;
+   }
+
    public static int findEmptyInventory() {
       for (int i = 9; i < mc.player.getInventory().items.size(); i++) {
          if (((ItemStack)mc.player.getInventory().items.get(i)).isEmpty()) {
@@ -583,6 +593,14 @@ public class InventoryUtils {
 
          return (float)valence;
       }
+   }
+
+   public static ItemStack getGodAxe() {
+      return getAllItems()
+              .stream()
+              .filter(item -> !item.isEmpty() && isGodAxe(item) && isItemValid(item))
+              .max(Comparator.comparingInt(s -> EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, s)))
+              .orElse(null);
    }
 
    public static boolean isGodItem(ItemStack stack) {

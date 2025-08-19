@@ -19,35 +19,16 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.network.protocol.game.*;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.FishingRodItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemNameBlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
-import net.minecraft.world.item.ShovelItem;
-import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.*;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @ModuleInfo(
    name = "InventoryManager",
@@ -376,7 +357,7 @@ public class InventoryCleaner extends Module {
       if (e.getType() == EventType.PRE) {
          if (!(mc.screen instanceof ClickGUI) && !this.checkConfig()) {
             Notification notification = new Notification(
-               NotificationLevel.ERROR, "Duplicate slot config in Inventory Manager! Please check your config!", 8000L
+                    NotificationLevel.ERROR, "Duplicate slot config in Inventory Manager! Please check your config!", 8000L
             );
             Naven.getInstance().getNotificationManager().addNotification(notification);
             this.toggle();
@@ -394,8 +375,8 @@ public class InventoryCleaner extends Module {
          }
 
          if (ChestStealer.isWorking()
-            || Naven.getInstance().getModuleManager().getModule(Scaffold.class).isEnabled()
-            || (this.inventoryOnly.getCurrentValue() ? !(mc.screen instanceof InventoryScreen) : this.noMoveTicks <= 1)) {
+                 || Naven.getInstance().getModuleManager().getModule(Scaffold.class).isEnabled()
+                 || (this.inventoryOnly.getCurrentValue() ? !(mc.screen instanceof InventoryScreen) : this.noMoveTicks <= 1)) {
             this.clickOffHand = false;
             return;
          }
@@ -410,8 +391,8 @@ public class InventoryCleaner extends Module {
                if (stack.getItem() instanceof ArmorItem) {
                   ArmorItem item = (ArmorItem)stack.getItem();
                   if (!stack.isEmpty()
-                     && timer.delay(this.delay.getCurrentValue())
-                     && InventoryUtils.getBestArmorScore(item.getEquipmentSlot()) > InventoryUtils.getProtection(stack)) {
+                          && timer.delay(this.delay.getCurrentValue())
+                          && InventoryUtils.getBestArmorScore(item.getEquipmentSlot()) > InventoryUtils.getProtection(stack)) {
                      mc.gameMode.handleInventoryMouseClick(mc.player.inventoryMenu.containerId, 4 + (4 - i), 1, ClickType.THROW, mc.player);
                      this.inventoryOpen = true;
                      timer.reset();
@@ -519,8 +500,8 @@ public class InventoryCleaner extends Module {
             ItemStack currentBlock = (ItemStack)mc.player.getInventory().items.get(blockSlot);
             ItemStack bestBlock = InventoryUtils.getBestBlock();
             if (bestBlock != null
-               && (bestBlock.getCount() > currentBlock.getCount() || !Scaffold.isValidStack(currentBlock))
-               && !this.offhandItems.isCurrentMode("Block")) {
+                    && (bestBlock.getCount() > currentBlock.getCount() || !Scaffold.isValidStack(currentBlock))
+                    && !this.offhandItems.isCurrentMode("Block")) {
                this.swapItem(blockSlot, bestBlock);
             }
 
@@ -531,23 +512,52 @@ public class InventoryCleaner extends Module {
          }
 
          if (this.switchSword.getCurrentValue()) {
-            int slotxx = (int)(this.swordSlot.getCurrentValue() - 1.0F);
-            ItemStack currentSword = (ItemStack)mc.player.getInventory().items.get(slotxx);
-            ItemStack bestSword = InventoryUtils.getBestSword();
-            ItemStack bestShapeAxe = InventoryUtils.getBestShapeAxe();
-            if (InventoryUtils.getAxeDamage(bestShapeAxe) > InventoryUtils.getSwordDamage(bestSword)) {
-               bestSword = bestShapeAxe;
+            int swordSlotIndex = (int)(this.swordSlot.getCurrentValue() - 1.0F);
+            ItemStack currentItem = (ItemStack) mc.player.getInventory().items.get(swordSlotIndex);
+
+            String priority = PreferWeapon.getPriority();
+            ItemStack itemToSwap = null;
+
+            switch (priority) {
+               case "Sword":
+                  ItemStack bestSword = InventoryUtils.getBestSword();
+                  ItemStack bestShapeAxe = InventoryUtils.getBestShapeAxe();
+
+                  if (bestSword != null && bestShapeAxe != null) {
+                     if (InventoryUtils.getAxeDamage(bestShapeAxe) > InventoryUtils.getSwordDamage(bestSword)) {
+                        itemToSwap = bestShapeAxe;
+                     } else {
+                        itemToSwap = bestSword;
+                     }
+                  } else if (bestSword != null) {
+                     itemToSwap = bestSword;
+                  } else if (bestShapeAxe != null) {
+                     itemToSwap = bestShapeAxe;
+                  }
+                  break;
+               case "God Axe":
+                  itemToSwap = InventoryUtils.getGodAxe();
+                  if (itemToSwap == null || itemToSwap.isEmpty()) {
+                     itemToSwap = InventoryUtils.getBestSword();
+                  }
+                  break;
+               case "KB Ball":
+                  itemToSwap = InventoryUtils.getItemStack(Items.SLIME_BALL);
+                  if (itemToSwap == null || itemToSwap.isEmpty()) {
+                     itemToSwap = InventoryUtils.getBestSword();
+                  }
+                  break;
+               case "End Crystal":
+                  itemToSwap = InventoryUtils.getItemStack(Items.END_CRYSTAL);
+                  if (itemToSwap == null || itemToSwap.isEmpty()) {
+                     itemToSwap = InventoryUtils.getBestSword();
+                  }
+                  break;
             }
 
-            if (bestSword != null) {
-               float currentDamage = currentSword.getItem() instanceof SwordItem
-                  ? InventoryUtils.getSwordDamage(currentSword)
-                  : InventoryUtils.getAxeDamage(currentSword);
-               float bestWeaponDamage = bestSword.getItem() instanceof SwordItem
-                  ? InventoryUtils.getSwordDamage(bestSword)
-                  : InventoryUtils.getAxeDamage(bestSword);
-               if (bestWeaponDamage > currentDamage) {
-                  this.swapItem(slotxx, bestSword);
+            if (itemToSwap != null && !itemToSwap.isEmpty()) {
+               if (currentItem.isEmpty() || currentItem.getItem() != itemToSwap.getItem()) {
+                  this.swapItem(swordSlotIndex, itemToSwap);
                }
             }
          }
@@ -557,21 +567,24 @@ public class InventoryCleaner extends Module {
             ItemStack bestPickaxe = InventoryUtils.getBestPickaxe();
             ItemStack currentPickaxe = (ItemStack)mc.player.getInventory().items.get(slotxxx);
             if (bestPickaxe != null
-               && bestPickaxe.getItem() instanceof PickaxeItem
-               && (InventoryUtils.getToolScore(bestPickaxe) > InventoryUtils.getToolScore(currentPickaxe) || !(currentPickaxe.getItem() instanceof PickaxeItem))
-               )
-             {
+                    && bestPickaxe.getItem() instanceof PickaxeItem
+                    && (InventoryUtils.getToolScore(bestPickaxe) > InventoryUtils.getToolScore(currentPickaxe) || !(currentPickaxe.getItem() instanceof PickaxeItem))
+            )
+            {
                this.swapItem(slotxxx, bestPickaxe);
             }
          }
 
          if (this.switchAxe.getCurrentValue()) {
+            if (PreferWeapon.getPriority().equals("God Axe")) {
+               return;
+            }
             int slotxxx = (int)(this.axeSlot.getCurrentValue() - 1.0F);
             ItemStack bestAxe = InventoryUtils.getBestAxe();
             ItemStack currentAxe = (ItemStack)mc.player.getInventory().items.get(slotxxx);
             if (bestAxe != null
-               && bestAxe.getItem() instanceof AxeItem
-               && (InventoryUtils.getToolScore(bestAxe) > InventoryUtils.getToolScore(currentAxe) || !(currentAxe.getItem() instanceof AxeItem))) {
+                    && bestAxe.getItem() instanceof AxeItem
+                    && (InventoryUtils.getToolScore(bestAxe) > InventoryUtils.getToolScore(currentAxe) || !(currentAxe.getItem() instanceof AxeItem))) {
                this.swapItem(slotxxx, bestAxe);
             }
          }

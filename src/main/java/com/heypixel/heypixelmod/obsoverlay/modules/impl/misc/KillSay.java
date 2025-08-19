@@ -14,16 +14,12 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArraySet;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @ModuleInfo(
    name = "KillSay",

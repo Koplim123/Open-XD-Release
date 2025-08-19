@@ -8,8 +8,8 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.ProjectionUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
-import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.phys.Vec3;
 
 import java.awt.*;

@@ -12,6 +12,7 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
