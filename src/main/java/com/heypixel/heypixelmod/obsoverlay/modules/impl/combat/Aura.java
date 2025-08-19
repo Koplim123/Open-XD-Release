@@ -73,6 +73,7 @@ public class Aura extends Module {
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
+    BooleanValue Cooldown = ValueBuilder.create(this, "Cooldown").setDefaultBooleanValue(false).build().getBooleanValue();
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
     ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
     public ModeValue TargetHUDStyle = ValueBuilder.create(this, "TargetHUD Style")
@@ -110,6 +111,7 @@ public class Aura extends Module {
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(20.0F)
+            .setVisibility(() -> !this.Cooldown.getCurrentValue())
             .build()
             .getFloatValue();
     FloatValue switchSize = ValueBuilder.create(this, "Switch Size")
@@ -363,7 +365,9 @@ public class Aura extends Module {
             }
 
             target = targets.get(this.index);
-            this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            if (!this.Cooldown.getCurrentValue()) {
+                this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            }
         }
     }
 
@@ -374,9 +378,18 @@ public class Aura extends Module {
                 && Naven.skipTasks.isEmpty()
                 && !NetworkUtils.isServerLag()
                 && !Naven.getInstance().getModuleManager().getModule(Blink.class).isEnabled()) {
-            while (this.attacks >= 1.0F) {
-                this.doAttack();
-                this.attacks--;
+            if (this.Cooldown.getCurrentValue()) {
+                if (targets != null && !targets.isEmpty() && aimingTarget != null) {
+                    if (mc.player.getAttackStrengthScale(0.5F) >= 1.0F) {
+                        this.doAttack();
+                        mc.player.resetAttackStrengthTicker();
+                    }
+                }
+            } else {
+                while (this.attacks >= 1.0F) {
+                    this.doAttack();
+                    this.attacks--;
+                }
             }
         }
     }
@@ -411,6 +424,10 @@ public class Aura extends Module {
                 }
             }
 
+            if (hitResult.getType() != Type.ENTITY) {
+                return;
+            }
+
             if (this.multi.getCurrentValue()) {
                 int attacked = 0;
 
@@ -441,7 +458,6 @@ public class Aura extends Module {
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
-        // 优化：当距离目标角度很近时，直接使用剩余角度，实现平滑减速
         if (Math.abs(deltaYaw) < maxSpeedX) {
             yawSpeed = deltaYaw;
         }
@@ -507,21 +523,18 @@ public class Aura extends Module {
         float newSpeedX = this.currentSpeed.x;
         float newSpeedY = this.currentSpeed.y;
 
-        // 根据方向加速
         newSpeedX += accel * Math.signum(deltaYaw);
         newSpeedY += accel * Math.signum(deltaPitch);
 
-        // 优化：当角度差小于当前速度时，平滑减速，而不是直接急停
         if (Math.abs(deltaYaw) < Math.abs(newSpeedX) || Math.signum(deltaYaw) != Math.signum(newSpeedX)) {
-            newSpeedX = deltaYaw / 2.0f; // 简单地将速度减半以平滑
-            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw; // 接近时直接赋值
+            newSpeedX = deltaYaw / 2.0f;
+            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw;
         }
         if (Math.abs(deltaPitch) < Math.abs(newSpeedY) || Math.signum(deltaPitch) != Math.signum(newSpeedY)) {
             newSpeedY = deltaPitch / 2.0f;
             if (Math.abs(newSpeedY) < 1.0f) newSpeedY = deltaPitch;
         }
 
-        // 限制最大速度
         newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(newSpeedX);
         newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(newSpeedY);
 
