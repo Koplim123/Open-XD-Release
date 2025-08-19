@@ -11,6 +11,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.SilenceFixMode;
+import com.heypixel.heypixelmod.obsoverlay.ui.lingdong.LingDong;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -42,6 +43,12 @@ public class HUD extends Module {
     private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 
     public BooleanValue waterMark = ValueBuilder.create(this, "Water Mark").setDefaultBooleanValue(true).build().getBooleanValue();
+    public ModeValue waterMarkMode = ValueBuilder.create(this, "WaterMark Mode")
+            .setVisibility(this.waterMark::getCurrentValue) // 仅当水印开启时显示
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "LingDong")
+            .build()
+            .getModeValue();
     public FloatValue watermarkSize = ValueBuilder.create(this, "Watermark Size")
             .setVisibility(this.waterMark::getCurrentValue)
             .setDefaultFloatValue(0.4F)
@@ -73,6 +80,7 @@ public class HUD extends Module {
             .getBooleanValue();
 
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue bettertab = ValueBuilder.create(this, "BetterTab").setDefaultBooleanValue(false).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
 
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -178,7 +186,7 @@ public class HUD extends Module {
         if (this.notification.getCurrentValue() && e.getType() == EventType.SHADOW) {
             Naven.getInstance().getNotificationManager().onRenderShadow(e);
         }
-        if (this.waterMark.getCurrentValue()) {
+        if (this.waterMark.getCurrentValue() && waterMarkMode.isCurrentMode("Naven")) {
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
         }
         if (this.arrayList.getCurrentValue()) {
@@ -193,7 +201,7 @@ public class HUD extends Module {
         CustomTextRenderer font = Fonts.opensans;
 
         // WaterMark
-        if (this.waterMark.getCurrentValue()) {
+        if (this.waterMarkMode.isCurrentMode("Naven")) {
             e.getStack().pushPose();
             StringBuilder watermarkText = new StringBuilder("Naven");
 
@@ -212,16 +220,36 @@ public class HUD extends Module {
 
             String text = watermarkText.toString();
 
-            this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
-            this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
+            // 将大小等比例放大1倍
+            double newWatermarkSize = (double)this.watermarkSize.getCurrentValue() * 1.5;
+            this.width = font.getWidth(text, newWatermarkSize) + 14.0F;
+            this.watermarkHeight = (float)font.getHeight(true, newWatermarkSize);
+
             StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
             StencilUtils.erase(true);
             RenderUtils.fill(e.getStack(), 5.0F, 5.0F, 9.0F + this.width, 8.0F, headerColor);
             RenderUtils.fill(e.getStack(), 5.0F, 8.0F, 9.0F + this.width, 16.0F + this.watermarkHeight, bodyColor);
-            font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, (double)this.watermarkSize.getCurrentValue());
+            font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, newWatermarkSize);
             StencilUtils.dispose();
-            e.getStack().popPose();
+        } else if(this.waterMarkMode.isCurrentMode("LingDong")){
+            // 获取ModuleManager实例
+            ModuleManager moduleManager = Naven.getInstance().getModuleManager();
+
+            // 调用LingDong渲染器，传入moduleManager
+            LingDong.render(
+                    e.getGuiGraphics(),
+                    font,
+                    Version.getVersion(),
+                    StringUtils.split(mc.fpsString, " ")[0],
+                    "Dev",
+                    this.watermarkSize.getCurrentValue(),
+                    moduleManager // 传入moduleManager
+            );
+
+            // 更新尺寸变量
+            this.width = 600.0F * this.watermarkSize.getCurrentValue();
+            this.watermarkHeight = 90.0F * this.watermarkSize.getCurrentValue();
         }
 
         // ArrayList

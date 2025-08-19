@@ -1,17 +1,16 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
 import java.awt.Color;
+import java.nio.ByteBuffer;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.FastColor.ARGB32;
@@ -458,6 +457,73 @@ public class RenderUtils {
       float right = left + width;
       float bottom = top + height;
       fill(stack, left, top, right, bottom, color);
+   }
+
+   public static void drawStencilRoundedRect(GuiGraphics graphics, float x, float y, float width, float height, float cornerRadius, int blurStrength, int color) {
+      RenderSystem.assertOnRenderThread();
+      int textureId = -1;
+
+      try {
+         // 1. 准备模板缓冲区
+         StencilUtils.write(false);
+         RenderUtils.drawRoundedRect(graphics.pose(), x, y, width, height, cornerRadius, 0xFFFFFFFF);
+         StencilUtils.erase(true);
+
+         // 2. 捕获屏幕区域
+         Minecraft mc = Minecraft.getInstance();
+         int windowWidth = mc.getWindow().getWidth();
+         int windowHeight = mc.getWindow().getHeight();
+         int scaledWidth = mc.getWindow().getGuiScaledWidth();
+         int scaledHeight = mc.getWindow().getGuiScaledHeight();
+
+         int pixelX = (int) (x * windowWidth / scaledWidth);
+         int pixelY = (int) (y * windowHeight / scaledHeight);
+         int pixelWidth = (int) (width * windowWidth / scaledWidth);
+         int pixelHeight = (int) (height * windowHeight / scaledHeight);
+
+         pixelX = Math.max(0, pixelX);
+         pixelY = Math.max(0, pixelY);
+         pixelWidth = Math.min(windowWidth - pixelX, pixelWidth);
+         pixelHeight = Math.min(windowHeight - pixelY, pixelHeight);
+
+         // 创建一个临时纹理
+         textureId = TextureUtil.generateTextureId();
+         RenderSystem.bindTexture(textureId);
+
+         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, pixelWidth, pixelHeight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+
+         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+
+         ByteBuffer buffer = ByteBuffer.allocateDirect(pixelWidth * pixelHeight * 4);
+         GL11.glReadPixels(pixelX, windowHeight - pixelY - pixelHeight, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+         GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+         // 3. 绘制模糊纹理
+         RenderSystem.setShader(GameRenderer::getPositionTexShader);
+         RenderSystem.setShaderTexture(0, textureId);
+
+         Matrix4f matrix = graphics.pose().last().pose();
+         BufferBuilder builder = Tesselator.getInstance().getBuilder();
+         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+         builder.vertex(matrix, x, y + height, 0).uv(0, 1).endVertex();
+         builder.vertex(matrix, x + width, y + height, 0).uv(1, 1).endVertex();
+         builder.vertex(matrix, x + width, y, 0).uv(1, 0).endVertex();
+         builder.vertex(matrix, x, y, 0).uv(0, 0).endVertex();
+         Tesselator.getInstance().end();
+
+         // 4. 在模糊纹理之上绘制半透明覆盖层
+         RenderSystem.setShader(GameRenderer::getPositionColorShader);
+         RenderUtils.fillBound(graphics.pose(), x, y, width, height, color);
+
+         StencilUtils.dispose();
+
+      } finally {
+         if (textureId != -1) {
+            RenderSystem.deleteTexture(textureId);
+         }
+         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+      }
    }
 
    public static void 装女人(BufferBuilder bufferBuilder, Matrix4f matrix, AABB box) {
