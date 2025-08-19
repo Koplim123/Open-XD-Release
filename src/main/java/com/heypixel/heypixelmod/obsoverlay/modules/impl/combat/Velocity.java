@@ -26,11 +26,18 @@ import net.minecraft.world.phys.Vec3;
         category = Category.MOVEMENT
 )
 public class Velocity extends Module {
-   private final BooleanValue NoXZ = ValueBuilder.create(this, "NoXZ")
+   private final BooleanValue reduce = ValueBuilder.create(this, "Reduce")
            .setDefaultBooleanValue(true)
            .build()
            .getBooleanValue();
-   private final FloatValue attacks = ValueBuilder.create(this, "NoXZ Count")
+   private final FloatValue knockbackReductionValue = ValueBuilder.create(this, "Knockback Reduction")
+           .setDefaultFloatValue(0.07776F)
+           .setMinFloatValue(0.0F)
+           .setMaxFloatValue(1.0F)
+           .setFloatStep(0.0001F)
+           .build()
+           .getFloatValue();
+   private final FloatValue attacks = ValueBuilder.create(this, "Attack Count")
            .setDefaultFloatValue(4.0F)
            .setMinFloatValue(4.0F)
            .setMaxFloatValue(11.0F)
@@ -56,8 +63,8 @@ public class Velocity extends Module {
 
    private final FloatValue fovLimitValue = ValueBuilder.create(this, "FOV Limit")
            .setDefaultFloatValue(45.0F)
-           .setMinFloatValue(30.0F)  // 最小值设为30
-           .setMaxFloatValue(180.0F) // 最大值设为180
+           .setMinFloatValue(30.0F)
+           .setMaxFloatValue(180.0F)
            .setFloatStep(1.0F)
            .build()
            .getFloatValue();
@@ -136,7 +143,7 @@ public class Velocity extends Module {
             }
          }
 
-         if (this.NoXZ.getCurrentValue() && this.targetEntity != null && inFOV) {
+         if (this.reduce.getCurrentValue() && this.targetEntity != null && inFOV) {
             boolean wasSprintingBefore = mc.player.isSprinting();
 
             if (!wasSprintingBefore) {
@@ -184,10 +191,11 @@ public class Velocity extends Module {
 
       if (this.velocityInput && this.attacked) {
          if (this.targetEntity != null && mc.hitResult != null && mc.hitResult.getType() == Type.ENTITY) {
+            float reductionFactor = this.knockbackReductionValue.getCurrentValue();
             mc.player.setDeltaMovement(
-                    mc.player.getDeltaMovement().x * 0.07776,
+                    mc.player.getDeltaMovement().x * reductionFactor,
                     mc.player.getDeltaMovement().y,
-                    mc.player.getDeltaMovement().z * 0.07776
+                    mc.player.getDeltaMovement().z * reductionFactor
             );
 
             if (this.debugMessageValue.getCurrentValue()) {
