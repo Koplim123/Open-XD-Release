@@ -58,6 +58,60 @@ public class RenderUtils {
       GL11.glDisable(2848);
    }
 
+   public static void drawHealthRing(PoseStack poseStack, float centerX, float centerY,
+                                     float radius, float thickness, float progress) {
+      if (progress <= 0) return;
+
+      Matrix4f matrix = poseStack.last().pose();
+      Tesselator tessellator = Tesselator.getInstance();
+      BufferBuilder buffer = tessellator.getBuilder();
+
+      // 设置渲染状态
+      RenderSystem.enableBlend();
+      RenderSystem.defaultBlendFunc();
+      RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+      // 纯白色不透明
+      float r = 1.0f; // 红
+      float g = 1.0f; // 绿
+      float b = 1.0f; // 蓝
+      float a = 1.0f; // 透明度
+
+      // 计算圆弧长度
+      float sweepAngle = progress * 360.0f;
+
+      // 计算顶点数量
+      int segments = (int) (Math.min(360, Math.max(36, sweepAngle)));
+      float angleStep = sweepAngle / segments;
+
+      // 起始角度（从顶部开始）
+      float startAngle = -90.0f;
+
+      // 使用POSITION_COLOR格式
+      buffer.begin(Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+
+      for (int i = 0; i <= segments; i++) {
+         float angle = (float) Math.toRadians(startAngle + i * angleStep);
+
+         // 外圈点（带颜色）
+         float outerX = centerX + (float)Math.cos(angle) * radius;
+         float outerY = centerY + (float)Math.sin(angle) * radius;
+         buffer.vertex(matrix, outerX, outerY, 0)
+                 .color(r, g, b, a)
+                 .endVertex();
+
+         // 内圈点（带颜色）
+         float innerX = centerX + (float)Math.cos(angle) * (radius - thickness);
+         float innerY = centerY + (float)Math.sin(angle) * (radius - thickness);
+         buffer.vertex(matrix, innerX, innerY, 0)
+                 .color(r, g, b, a)
+                 .endVertex();
+      }
+
+      tessellator.end();
+      RenderSystem.disableBlend();
+   }
+
    public static int getRainbowOpaque(int index, float saturation, float brightness, float speed) {
       float hue = (float)((System.currentTimeMillis() + (long)index) % (long)((int)speed)) / speed;
       return Color.HSBtoRGB(hue, saturation, brightness);

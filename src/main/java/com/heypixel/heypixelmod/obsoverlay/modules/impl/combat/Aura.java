@@ -11,9 +11,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
@@ -45,7 +43,6 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -78,6 +75,12 @@ public class Aura extends Module {
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
     ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
+    public ModeValue TargetHUDStyle = ValueBuilder.create(this, "TargetHUD Style")
+            .setVisibility(this.targetHud::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "New", "MoonLightV2", "Rise")
+            .build()
+            .getModeValue();
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -176,47 +179,21 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
-        // TargetHUD
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
             LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
-            String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
-            float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
-            this.blurMatrix = new Vector4f(x, y, width, 30.0F);
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
-            StencilUtils.erase(true);
-            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
-            RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
-            StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
-            Fonts.harmony
-                    .render(
-                            e.getStack(),
-                            "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double)(x + 5.0F),
-                            (double)(y + 17.0F),
-                            Color.WHITE,
-                            true,
-                            0.35F
-                    );
-            e.getStack().popPose();
-        }
 
-        if (!this.rotationType.isCurrentMode("None") && aimingTarget != null) {
-            e.getStack().pushPose();
-            RenderSystem.enableBlend();
-            RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderUtils.drawCircle(
-                    (float) mc.getWindow().getGuiScaledWidth() / 2.0F,
-                    (float) mc.getWindow().getGuiScaledHeight() / 2.0F,
-                    2.0F,
-                    10,
-                    new Color(255, 0, 0, 255).getRGB()
+            // 传入正确的 GuiGraphics 对象
+            this.blurMatrix = com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD.render(
+                    e.getGuiGraphics(),
+                    living,
+                    this.TargetHUDStyle.getCurrentMode(),
+                    x,
+                    y
             );
-            RenderSystem.disableBlend();
+
             e.getStack().popPose();
         }
     }
