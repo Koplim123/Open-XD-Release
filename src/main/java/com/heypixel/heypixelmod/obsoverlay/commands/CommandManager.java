@@ -29,6 +29,7 @@ public class CommandManager {
       this.registerCommand(new CommandToggle());
       this.registerCommand(new CommandConfig());
       this.registerCommand(new CommandLanguage());
+      this.registerCommand(new CommandHelp());
       this.registerCommand(new CommandProxy());
       this.registerCommand(new CommandHide());
    }
