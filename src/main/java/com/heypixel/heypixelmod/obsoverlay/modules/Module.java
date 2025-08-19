@@ -24,6 +24,7 @@ public class Module extends HasValue {
    private int minPermission = 0;
    private int key;
    private boolean toggleableWithKey = true;
+   private boolean hidden = false;
 
    public Module(String name, String description, Category category) {
       this.name = name;
@@ -82,7 +83,7 @@ public class Module extends HasValue {
          if (this.cannotDisable && !enabled) {
             return;
          }
-         
+
          Naven naven = Naven.getInstance();
          if (enabled) {
             this.enabled = true;
@@ -184,5 +185,16 @@ public class Module extends HasValue {
 
    public void setKey(int key) {
       this.key = key;
+   }
+
+   public boolean isHidden() {
+      return this.hidden;
+   }
+
+   public void setHidden(boolean hidden) {
+      if (this.hidden != hidden) {
+         this.hidden = hidden;
+         update = true;
+      }
    }
 }
