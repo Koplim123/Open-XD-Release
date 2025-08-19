@@ -1,17 +1,16 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
 import java.awt.Color;
+import java.nio.ByteBuffer;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.FastColor.ARGB32;
@@ -56,6 +55,60 @@ public class RenderUtils {
       GL11.glEnable(2929);
       GL11.glDepthMask(true);
       GL11.glDisable(2848);
+   }
+
+   public static void drawHealthRing(PoseStack poseStack, float centerX, float centerY,
+                                     float radius, float thickness, float progress) {
+      if (progress <= 0) return;
+
+      Matrix4f matrix = poseStack.last().pose();
+      Tesselator tessellator = Tesselator.getInstance();
+      BufferBuilder buffer = tessellator.getBuilder();
+
+      // 设置渲染状态
+      RenderSystem.enableBlend();
+      RenderSystem.defaultBlendFunc();
+      RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+      // 纯白色不透明
+      float r = 1.0f; // 红
+      float g = 1.0f; // 绿
+      float b = 1.0f; // 蓝
+      float a = 1.0f; // 透明度
+
+      // 计算圆弧长度
+      float sweepAngle = progress * 360.0f;
+
+      // 计算顶点数量
+      int segments = (int) (Math.min(360, Math.max(36, sweepAngle)));
+      float angleStep = sweepAngle / segments;
+
+      // 起始角度（从顶部开始）
+      float startAngle = -90.0f;
+
+      // 使用POSITION_COLOR格式
+      buffer.begin(Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+
+      for (int i = 0; i <= segments; i++) {
+         float angle = (float) Math.toRadians(startAngle + i * angleStep);
+
+         // 外圈点（带颜色）
+         float outerX = centerX + (float)Math.cos(angle) * radius;
+         float outerY = centerY + (float)Math.sin(angle) * radius;
+         buffer.vertex(matrix, outerX, outerY, 0)
+                 .color(r, g, b, a)
+                 .endVertex();
+
+         // 内圈点（带颜色）
+         float innerX = centerX + (float)Math.cos(angle) * (radius - thickness);
+         float innerY = centerY + (float)Math.sin(angle) * (radius - thickness);
+         buffer.vertex(matrix, innerX, innerY, 0)
+                 .color(r, g, b, a)
+                 .endVertex();
+      }
+
+      tessellator.end();
+      RenderSystem.disableBlend();
    }
 
    public static int getRainbowOpaque(int index, float saturation, float brightness, float speed) {
@@ -184,11 +237,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 180) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -201,11 +254,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 90) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -218,11 +271,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)(i + 270) / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -235,11 +288,11 @@ public class RenderUtils {
       for (int i = 0; i <= vertices; i++) {
          double angleRadians = (Math.PI * 2) * (double)i / (double)(vertices * 4);
          color(
-            buffer,
-            matrix,
-            (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
-            (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
-            color
+                 buffer,
+                 matrix,
+                 (float)((double)centerX + Math.sin(angleRadians) * (double)edgeRadius),
+                 (float)((double)centerY + Math.cos(angleRadians) * (double)edgeRadius),
+                 color
          );
       }
 
@@ -406,6 +459,73 @@ public class RenderUtils {
       fill(stack, left, top, right, bottom, color);
    }
 
+   public static void drawStencilRoundedRect(GuiGraphics graphics, float x, float y, float width, float height, float cornerRadius, int blurStrength, int color) {
+      RenderSystem.assertOnRenderThread();
+      int textureId = -1;
+
+      try {
+         // 1. 准备模板缓冲区
+         StencilUtils.write(false);
+         RenderUtils.drawRoundedRect(graphics.pose(), x, y, width, height, cornerRadius, 0xFFFFFFFF);
+         StencilUtils.erase(true);
+
+         // 2. 捕获屏幕区域
+         Minecraft mc = Minecraft.getInstance();
+         int windowWidth = mc.getWindow().getWidth();
+         int windowHeight = mc.getWindow().getHeight();
+         int scaledWidth = mc.getWindow().getGuiScaledWidth();
+         int scaledHeight = mc.getWindow().getGuiScaledHeight();
+
+         int pixelX = (int) (x * windowWidth / scaledWidth);
+         int pixelY = (int) (y * windowHeight / scaledHeight);
+         int pixelWidth = (int) (width * windowWidth / scaledWidth);
+         int pixelHeight = (int) (height * windowHeight / scaledHeight);
+
+         pixelX = Math.max(0, pixelX);
+         pixelY = Math.max(0, pixelY);
+         pixelWidth = Math.min(windowWidth - pixelX, pixelWidth);
+         pixelHeight = Math.min(windowHeight - pixelY, pixelHeight);
+
+         // 创建一个临时纹理
+         textureId = TextureUtil.generateTextureId();
+         RenderSystem.bindTexture(textureId);
+
+         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, pixelWidth, pixelHeight, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+
+         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+
+         ByteBuffer buffer = ByteBuffer.allocateDirect(pixelWidth * pixelHeight * 4);
+         GL11.glReadPixels(pixelX, windowHeight - pixelY - pixelHeight, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+         GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+         // 3. 绘制模糊纹理
+         RenderSystem.setShader(GameRenderer::getPositionTexShader);
+         RenderSystem.setShaderTexture(0, textureId);
+
+         Matrix4f matrix = graphics.pose().last().pose();
+         BufferBuilder builder = Tesselator.getInstance().getBuilder();
+         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+         builder.vertex(matrix, x, y + height, 0).uv(0, 1).endVertex();
+         builder.vertex(matrix, x + width, y + height, 0).uv(1, 1).endVertex();
+         builder.vertex(matrix, x + width, y, 0).uv(1, 0).endVertex();
+         builder.vertex(matrix, x, y, 0).uv(0, 0).endVertex();
+         Tesselator.getInstance().end();
+
+         // 4. 在模糊纹理之上绘制半透明覆盖层
+         RenderSystem.setShader(GameRenderer::getPositionColorShader);
+         RenderUtils.fillBound(graphics.pose(), x, y, width, height, color);
+
+         StencilUtils.dispose();
+
+      } finally {
+         if (textureId != -1) {
+            RenderSystem.deleteTexture(textureId);
+         }
+         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+      }
+   }
+
    public static void 装女人(BufferBuilder bufferBuilder, Matrix4f matrix, AABB box) {
       float minX = (float)(box.minX - mc.getEntityRenderDispatcher().camera.getPosition().x());
       float minY = (float)(box.minY - mc.getEntityRenderDispatcher().camera.getPosition().y());
@@ -441,6 +561,6 @@ public class RenderUtils {
       BufferUploader.drawWithShader(bufferBuilder.end());
    }
 
-    public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
-    }
+   public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
+   }
 }

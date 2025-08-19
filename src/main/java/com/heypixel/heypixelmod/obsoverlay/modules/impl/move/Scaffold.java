@@ -118,13 +118,13 @@ public class Scaffold extends Module {
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
 
-    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue keepFov = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(1.15F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(1.0F)
             .setFloatStep(0.05F)
-            .setVisibility(() -> this.keepFoV.getCurrentValue())
+            .setVisibility(() -> this.keepFov.getCurrentValue())
             .build()
             .getFloatValue();
     int oldSlot;
@@ -168,7 +168,6 @@ public class Scaffold extends Module {
             .build()
             .getFloatValue();
 
-    // 加速模式的参数
     private float currentSpeedX = 0.0f;
     private float currentSpeedY = 0.0f;
     public FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
@@ -188,7 +187,6 @@ public class Scaffold extends Module {
             .build()
             .getFloatValue();
 
-    // 新增的自救功能
     public BooleanValue safewalk = ValueBuilder.create(this, "Safewalk")
             .setDefaultBooleanValue(false)
             .build()
@@ -202,7 +200,6 @@ public class Scaffold extends Module {
             .build()
             .getFloatValue();
 
-    // 新增的方块搜索距离
     public FloatValue blockSearchDistance = ValueBuilder.create(this, "Block Search Distance")
             .setDefaultFloatValue(6.0f)
             .setFloatStep(1.0f)
@@ -211,7 +208,6 @@ public class Scaffold extends Module {
             .build()
             .getFloatValue();
 
-    // 默认恢复功能的开关
     public BooleanValue defaultPitch = ValueBuilder.create(this, "Default Pitch")
             .setDefaultBooleanValue(false)
             .build()
@@ -219,6 +215,7 @@ public class Scaffold extends Module {
 
     private float blockCounterWidth;
     private float blockCounterHeight;
+    private boolean useOffhand = false;
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -256,8 +253,8 @@ public class Scaffold extends Module {
     }
 
     @EventTarget
-    public void onFoV(EventUpdateFoV e) {
-        if (this.keepFoV.getCurrentValue() && MoveUtils.isMoving()) {
+    public void onFov(EventUpdateFoV e) {
+        if (this.keepFov.getCurrentValue() && MoveUtils.isMoving()) {
             e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
         }
     }
@@ -270,7 +267,6 @@ public class Scaffold extends Module {
             this.lastRots.set(mc.player.yRotO, mc.player.xRotO);
             this.pos = null;
             this.baseY = 10000;
-            // 重置加速模式的速度
             this.currentSpeedX = 0.0f;
             this.currentSpeedY = 0.0f;
         }
@@ -289,7 +285,7 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onUpdateHeldItem(EventUpdateHeldItem e) {
-        if (this.renderItemSpoof.getCurrentValue() && e.getHand() == InteractionHand.MAIN_HAND) {
+        if (this.renderItemSpoof.getCurrentValue() && e.getHand() == InteractionHand.MAIN_HAND && !this.useOffhand) {
             e.setItem(mc.player.getInventory().getItem(this.oldSlot));
         }
     }
@@ -298,11 +294,22 @@ public class Scaffold extends Module {
     public void onEventEarlyTick(EventRunTicks e) {
         if (e.getType() == EventType.PRE && mc.screen == null && mc.player != null) {
             int slotID = -1;
-            for (int i = 0; i < 9; i++) {
-                ItemStack stack = mc.player.getInventory().getItem(i);
-                if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
-                    slotID = i;
-                    break;
+            this.useOffhand = false;
+
+            ItemStack offhandStack = mc.player.getOffhandItem();
+            if (offhandStack.getItem() instanceof BlockItem && isValidStack(offhandStack)) {
+                slotID = -2;
+                this.useOffhand = true;
+            }
+
+            if (slotID == -1) {
+                for (int i = 0; i < 9; i++) {
+                    ItemStack stack = mc.player.getInventory().getItem(i);
+                    if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
+                        slotID = i;
+                        this.useOffhand = false;
+                        break;
+                    }
                 }
             }
 
@@ -313,7 +320,9 @@ public class Scaffold extends Module {
             }
 
             if (slotID != -1 && mc.player.getInventory().selected != slotID) {
-                mc.player.getInventory().selected = slotID;
+                if (!this.useOffhand) {
+                    mc.player.getInventory().selected = slotID;
+                }
             }
 
             boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
@@ -328,12 +337,10 @@ public class Scaffold extends Module {
 
             this.getBlockPos();
             if (this.pos != null) {
-                // 如果找到方块，则正常进行转头
                 this.correctRotation = this.getPlayerYawRotation();
                 this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
                 this.correctRotation.setY(this.correctRotation.getY() + this.pitchAdjust.getCurrentValue());
 
-                // 检查是否需要自救加速
                 boolean isFalling = this.safewalk.getCurrentValue() && !mc.player.onGround() && mc.player.getDeltaMovement().y < -0.1;
                 float boostFactor = isFalling ? this.safewalkBoost.getCurrentValue() : 1.0f;
 
@@ -354,7 +361,6 @@ public class Scaffold extends Module {
                     this.rots.set(mc.player.getYRot(), mc.player.getXRot());
                 }
             } else {
-                // 如果 defaultPitch 开关启用，并且找不到方块，则将偏航角设置为当前玩家的反方向，俯仰角设置为90度（完全向下）
                 if (this.defaultPitch.getCurrentValue()) {
                     this.rots.set(mc.player.yRotO + 180.0F, 90.0F);
                 }
@@ -479,7 +485,7 @@ public class Scaffold extends Module {
         e.setCancelled(true);
         if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
             if (this.checkPlace(this.pos)) {
-                this.placeBlock();
+                this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
             }
         }
     }
@@ -493,18 +499,21 @@ public class Scaffold extends Module {
         return relevant.lengthSqr() <= 20.25 && relevant.normalize().dot(Vec3.atLowerCornerOf(data.facing.getNormal().multiply(-1)).normalize()) >= 0.0;
     }
 
-    private void placeBlock() {
-        if (this.pos != null && isValidStack(mc.player.getMainHandItem())) {
-            Direction sbFace = this.pos.facing();
-            boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
-            if (sbFace != null
-                    && (sbFace != Direction.UP || mc.player.onGround() || !PlayerUtils.movementInput() || isHoldingJump || this.mode.isCurrentMode("Normal"))
-                    && this.shouldBuild()) {
-                InteractionResult result = mc.gameMode
-                        .useItemOn(mc.player, InteractionHand.MAIN_HAND, new BlockHitResult(getVec3(this.pos.position(), sbFace), sbFace, this.pos.position(), false));
-                if (result == InteractionResult.SUCCESS) {
-                    mc.player.swing(InteractionHand.MAIN_HAND);
-                    this.pos = null;
+    private void placeBlock(InteractionHand hand) {
+        if (this.pos != null) {
+            ItemStack itemStack = hand == InteractionHand.MAIN_HAND ? mc.player.getMainHandItem() : mc.player.getOffhandItem();
+            if (isValidStack(itemStack)) {
+                Direction sbFace = this.pos.facing();
+                boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
+                if (sbFace != null
+                        && (sbFace != Direction.UP || mc.player.onGround() || !PlayerUtils.movementInput() || isHoldingJump || this.mode.isCurrentMode("Normal"))
+                        && this.shouldBuild()) {
+                    InteractionResult result = mc.gameMode
+                            .useItemOn(mc.player, hand, new BlockHitResult(getVec3(this.pos.position(), sbFace), sbFace, this.pos.position(), false));
+                    if (result == InteractionResult.SUCCESS) {
+                        mc.player.swing(hand);
+                        this.pos = null;
+                    }
                 }
             }
         }
@@ -520,7 +529,8 @@ public class Scaffold extends Module {
 
     private boolean shouldBuild() {
         BlockPos playerPos = BlockPos.containing(mc.player.getX(), mc.player.getY() - 0.5, mc.player.getZ());
-        return mc.level.isEmptyBlock(playerPos) && isValidStack(mc.player.getMainHandItem());
+        ItemStack itemStack = this.useOffhand ? mc.player.getOffhandItem() : mc.player.getMainHandItem();
+        return mc.level.isEmptyBlock(playerPos) && isValidStack(itemStack);
     }
 
     @FlowExclude
@@ -628,6 +638,11 @@ public class Scaffold extends Module {
                     blockCount += itemStack.getCount();
                 }
             }
+            ItemStack offhandStack = mc.player.getOffhandItem();
+            if (offhandStack.getItem() instanceof BlockItem) {
+                blockCount += offhandStack.getCount();
+            }
+
             String text = "Blocks: " + blockCount;
             double backgroundScale = 0.4;
             double textScale = 0.35;

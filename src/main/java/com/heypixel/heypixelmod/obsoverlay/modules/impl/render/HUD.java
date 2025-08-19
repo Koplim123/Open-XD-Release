@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @ModuleInfo(
         name = "HUD",
@@ -212,7 +213,10 @@ public class HUD extends Module {
             e.getStack().pushPose();
             ModuleManager moduleManager = Naven.getInstance().getModuleManager();
             if (update || this.renderModules == null) {
-                this.renderModules = new ArrayList<>(moduleManager.getModules());
+                this.renderModules = moduleManager.getModules().stream()
+                        .filter(module -> !module.isHidden())
+                        .collect(Collectors.toList());
+
                 if (this.hideRenderModules.getCurrentValue()) {
                     this.renderModules.removeIf(modulex -> modulex.getCategory() == Category.RENDER);
                 }

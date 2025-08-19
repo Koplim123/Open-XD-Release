@@ -1,14 +1,11 @@
 package com.heypixel.heypixelmod.obsoverlay.commands;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
-import com.heypixel.heypixelmod.obsoverlay.commands.impl.CommandBind;
-import com.heypixel.heypixelmod.obsoverlay.commands.impl.CommandConfig;
-import com.heypixel.heypixelmod.obsoverlay.commands.impl.CommandLanguage;
-import com.heypixel.heypixelmod.obsoverlay.commands.impl.CommandProxy;
-import com.heypixel.heypixelmod.obsoverlay.commands.impl.CommandToggle;
+import com.heypixel.heypixelmod.obsoverlay.commands.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClientChat;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,10 +25,13 @@ public class CommandManager {
 
    private void initCommands() {
       this.registerCommand(new CommandBind());
+      this.registerCommand(new CommandBinds());
       this.registerCommand(new CommandToggle());
       this.registerCommand(new CommandConfig());
       this.registerCommand(new CommandLanguage());
+      this.registerCommand(new CommandHelp());
       this.registerCommand(new CommandProxy());
+      this.registerCommand(new CommandHide());
    }
 
    private void registerCommand(Command command) {

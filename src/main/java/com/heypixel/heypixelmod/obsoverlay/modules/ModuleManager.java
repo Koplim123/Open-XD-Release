@@ -60,6 +60,10 @@ public class ModuleManager {
          new ScoreboardSpoof(),
          new AutoTools(),
          new ViewClip(),
+         new AnchorExploder(),
+         new AutoTotem(),
+         new AutoHitCrystal(),
+         new AnchorPlacer(),
          new Disabler(),
          new Projectile(),
          new TimeChanger(),
@@ -95,6 +99,8 @@ public class ModuleManager {
          new TNTWarning(),
          new LegitKillAura(),
          new BetaBowAim(),
+         new CrystalOptimizer(),
+         new AutoCrystal(),
          new MidPearl()
 
       );

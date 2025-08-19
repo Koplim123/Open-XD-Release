@@ -32,7 +32,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.common.MinecraftForge;
 
 public class Naven {
-   public static final String CLIENT_NAME = "Naven-Modern";
+   public static final String CLIENT_NAME = "Naven-XD";
    public static final String CLIENT_DISPLAY_NAME = "Naven";
    private static Naven instance;
    private final EventManager eventManager;

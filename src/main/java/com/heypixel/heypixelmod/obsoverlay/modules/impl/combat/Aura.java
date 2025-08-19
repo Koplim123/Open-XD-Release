@@ -3,13 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventAttackSlowdown;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRespawn;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
@@ -17,16 +11,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
-import com.heypixel.heypixelmod.obsoverlay.utils.BlinkingPlayer;
-import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.FriendManager;
-import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
@@ -35,14 +20,6 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
@@ -61,10 +38,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @ModuleInfo(
         name = "KillAura",
@@ -89,8 +73,15 @@ public class Aura extends Module {
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
+    BooleanValue Cooldown = ValueBuilder.create(this, "Cooldown").setDefaultBooleanValue(false).build().getBooleanValue();
     ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
     ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
+    public ModeValue TargetHUDStyle = ValueBuilder.create(this, "TargetHUD Style")
+            .setVisibility(this.targetHud::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "New", "MoonLightV2", "Rise")
+            .build()
+            .getModeValue();
     FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
@@ -120,6 +111,7 @@ public class Aura extends Module {
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(20.0F)
+            .setVisibility(() -> !this.Cooldown.getCurrentValue())
             .build()
             .getFloatValue();
     FloatValue switchSize = ValueBuilder.create(this, "Switch Size")
@@ -137,7 +129,7 @@ public class Aura extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    FloatValue fov = ValueBuilder.create(this, "FoV")
+    FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(360.0F)
             .setFloatStep(1.0F)
             .setMinFloatValue(10.0F)
@@ -151,7 +143,7 @@ public class Aura extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "FoV", "Range", "None").build().getModeValue();
+    ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
     FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
             .setDefaultFloatValue(20.0F)
             .setFloatStep(1.0F)
@@ -189,47 +181,20 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
-        // TargetHUD
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
             LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
-            String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
-            float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
-            this.blurMatrix = new Vector4f(x, y, width, 30.0F);
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
-            StencilUtils.erase(true);
-            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
-            RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
-            StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
-            Fonts.harmony
-                    .render(
-                            e.getStack(),
-                            "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double)(x + 5.0F),
-                            (double)(y + 17.0F),
-                            Color.WHITE,
-                            true,
-                            0.35F
-                    );
-            e.getStack().popPose();
-        }
 
-        if (!this.rotationType.isCurrentMode("None") && aimingTarget != null) {
-            e.getStack().pushPose();
-            RenderSystem.enableBlend();
-            RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderUtils.drawCircle(
-                    (float) mc.getWindow().getGuiScaledWidth() / 2.0F,
-                    (float) mc.getWindow().getGuiScaledHeight() / 2.0F,
-                    2.0F,
-                    10,
-                    new Color(255, 0, 0, 255).getRGB()
+            this.blurMatrix = com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD.render(
+                    e.getGuiGraphics(),
+                    living,
+                    this.TargetHUDStyle.getCurrentMode(),
+                    x,
+                    y
             );
-            RenderSystem.disableBlend();
+
             e.getStack().popPose();
         }
     }
@@ -344,7 +309,6 @@ public class Aura extends Module {
             this.rotationData = null;
 
             if (aimingTarget != null) {
-                // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
                 this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget, this.aimPointMode.getCurrentMode());
                 if (this.rotationData.getRotation() != null) {
                     if (this.rotationType.isCurrentMode("Linear")) {
@@ -389,7 +353,6 @@ public class Aura extends Module {
                     }
 
                     Entity nextTarget = targets.get(this.index);
-                    // FIX: 在这里将 aimPointMode 参数传递给 RotationUtils.getRotationDataToEntity
                     RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget, this.aimPointMode.getCurrentMode());
                     if (data.getDistance() < 3.0) {
                         break;
@@ -402,7 +365,9 @@ public class Aura extends Module {
             }
 
             target = targets.get(this.index);
-            this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            if (!this.Cooldown.getCurrentValue()) {
+                this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            }
         }
     }
 
@@ -413,9 +378,18 @@ public class Aura extends Module {
                 && Naven.skipTasks.isEmpty()
                 && !NetworkUtils.isServerLag()
                 && !Naven.getInstance().getModuleManager().getModule(Blink.class).isEnabled()) {
-            while (this.attacks >= 1.0F) {
-                this.doAttack();
-                this.attacks--;
+            if (this.Cooldown.getCurrentValue()) {
+                if (targets != null && !targets.isEmpty() && aimingTarget != null) {
+                    if (mc.player.getAttackStrengthScale(0.5F) >= 1.0F) {
+                        this.doAttack();
+                        mc.player.resetAttackStrengthTicker();
+                    }
+                }
+            } else {
+                while (this.attacks >= 1.0F) {
+                    this.doAttack();
+                    this.attacks--;
+                }
             }
         }
     }
@@ -450,6 +424,10 @@ public class Aura extends Module {
                 }
             }
 
+            if (hitResult.getType() != Type.ENTITY) {
+                return;
+            }
+
             if (this.multi.getCurrentValue()) {
                 int attacked = 0;
 
@@ -480,7 +458,6 @@ public class Aura extends Module {
         float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
         float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
 
-        // 优化：当距离目标角度很近时，直接使用剩余角度，实现平滑减速
         if (Math.abs(deltaYaw) < maxSpeedX) {
             yawSpeed = deltaYaw;
         }
@@ -546,21 +523,18 @@ public class Aura extends Module {
         float newSpeedX = this.currentSpeed.x;
         float newSpeedY = this.currentSpeed.y;
 
-        // 根据方向加速
         newSpeedX += accel * Math.signum(deltaYaw);
         newSpeedY += accel * Math.signum(deltaPitch);
 
-        // 优化：当角度差小于当前速度时，平滑减速，而不是直接急停
         if (Math.abs(deltaYaw) < Math.abs(newSpeedX) || Math.signum(deltaYaw) != Math.signum(newSpeedX)) {
-            newSpeedX = deltaYaw / 2.0f; // 简单地将速度减半以平滑
-            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw; // 接近时直接赋值
+            newSpeedX = deltaYaw / 2.0f;
+            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw;
         }
         if (Math.abs(deltaPitch) < Math.abs(newSpeedY) || Math.signum(deltaPitch) != Math.signum(newSpeedY)) {
             newSpeedY = deltaPitch / 2.0f;
             if (Math.abs(newSpeedY) < 1.0f) newSpeedY = deltaPitch;
         }
 
-        // 限制最大速度
         newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(newSpeedX);
         newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(newSpeedY);
 
@@ -665,7 +639,7 @@ public class Aura extends Module {
         List<Entity> possibleTargets = stream.collect(Collectors.toList());
         if (this.priority.isCurrentMode("Range")) {
             possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
-        } else if (this.priority.isCurrentMode("FoV")) {
+        } else if (this.priority.isCurrentMode("Fov")) {
             possibleTargets.sort(
                     Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
             );

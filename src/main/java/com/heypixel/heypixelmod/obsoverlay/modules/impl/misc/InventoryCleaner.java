@@ -31,187 +31,187 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @ModuleInfo(
-   name = "InventoryManager",
-   description = "Automatically manage your inventory",
-   category = Category.MISC
+        name = "InventoryManager",
+        description = "Automatically manage your inventory",
+        category = Category.MISC
 )
 public class InventoryCleaner extends Module {
    private static final TickTimeHelper timer = new TickTimeHelper();
    private final FloatValue delay = ValueBuilder.create(this, "Delay (Ticks)")
-      .setDefaultFloatValue(3.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(3.0F)
-      .setMaxFloatValue(10.0F)
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(3.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(3.0F)
+           .setMaxFloatValue(10.0F)
+           .build()
+           .getFloatValue();
    ModeValue offhandItems = ValueBuilder.create(this, "Offhand Items")
-      .setModes("None", "Golden Apple", "Projectile", "Fishing Rod", "Block")
-      .build()
-      .getModeValue();
+           .setModes("None", "Golden Apple", "Projectile", "Fishing Rod", "Block")
+           .build()
+           .getModeValue();
    BooleanValue autoArmor = ValueBuilder.create(this, "Auto Armor").setDefaultBooleanValue(true).build().getBooleanValue();
    BooleanValue inventoryOnly = ValueBuilder.create(this, "Inventory Only").setDefaultBooleanValue(true).build().getBooleanValue();
    BooleanValue switchSword = ValueBuilder.create(this, "Switch Sword").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue swordSlot = ValueBuilder.create(this, "Sword Slot")
-      .setDefaultFloatValue(1.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchSword.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(1.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchSword.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchBlock = ValueBuilder.create(this, "Switch Block")
-      .setVisibility(() -> !this.offhandItems.isCurrentMode("Block"))
-      .setDefaultBooleanValue(true)
-      .build()
-      .getBooleanValue();
+           .setVisibility(() -> !this.offhandItems.isCurrentMode("Block"))
+           .setDefaultBooleanValue(true)
+           .build()
+           .getBooleanValue();
    FloatValue blockSlot = ValueBuilder.create(this, "Block Slot")
-      .setDefaultFloatValue(2.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchBlock.getCurrentValue() && !this.offhandItems.isCurrentMode("Block"))
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(2.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchBlock.getCurrentValue() && !this.offhandItems.isCurrentMode("Block"))
+           .build()
+           .getFloatValue();
    FloatValue maxBlockSize = ValueBuilder.create(this, "Max Block Size")
-      .setDefaultFloatValue(256.0F)
-      .setFloatStep(64.0F)
-      .setMinFloatValue(64.0F)
-      .setMaxFloatValue(512.0F)
-      .setVisibility(() -> this.switchBlock.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(256.0F)
+           .setFloatStep(64.0F)
+           .setMinFloatValue(64.0F)
+           .setMaxFloatValue(512.0F)
+           .setVisibility(() -> this.switchBlock.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchPickaxe = ValueBuilder.create(this, "Switch Pickaxe").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue pickaxeSlot = ValueBuilder.create(this, "Pickaxe Slot")
-      .setDefaultFloatValue(3.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchPickaxe.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(3.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchPickaxe.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchAxe = ValueBuilder.create(this, "Switch Axe").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue axeSlot = ValueBuilder.create(this, "Axe Slot")
-      .setDefaultFloatValue(4.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchAxe.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(4.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchAxe.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchBow = ValueBuilder.create(this, "Switch Bow or Crossbow").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue bowSlot = ValueBuilder.create(this, "Bow Slot")
-      .setDefaultFloatValue(5.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchBow.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(5.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchBow.getCurrentValue())
+           .build()
+           .getFloatValue();
    ModeValue preferBow = ValueBuilder.create(this, "Bow Priority")
-      .setModes("Crossbow", "Power Bow", "Punch Bow")
-      .setVisibility(() -> this.switchBow.getCurrentValue())
-      .build()
-      .getModeValue();
+           .setModes("Crossbow", "Power Bow", "Punch Bow")
+           .setVisibility(() -> this.switchBow.getCurrentValue())
+           .build()
+           .getModeValue();
    FloatValue maxArrowSize = ValueBuilder.create(this, "Max Arrow Size")
-      .setDefaultFloatValue(256.0F)
-      .setFloatStep(64.0F)
-      .setMinFloatValue(64.0F)
-      .setMaxFloatValue(512.0F)
-      .setVisibility(() -> this.switchBow.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(256.0F)
+           .setFloatStep(64.0F)
+           .setMinFloatValue(64.0F)
+           .setMaxFloatValue(512.0F)
+           .setVisibility(() -> this.switchBow.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchWaterBucket = ValueBuilder.create(this, "Switch Water Bucket").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue waterBucketSlot = ValueBuilder.create(this, "Water Bucket Slot")
-      .setDefaultFloatValue(6.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchWaterBucket.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(6.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchWaterBucket.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchEnderPearl = ValueBuilder.create(this, "Switch Ender Pearl").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue enderPearlSlot = ValueBuilder.create(this, "Ender Pearl Slot")
-      .setDefaultFloatValue(7.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchEnderPearl.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(7.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchEnderPearl.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchFireball = ValueBuilder.create(this, "Switch Fireball").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue fireballSlot = ValueBuilder.create(this, "Fireball Slot")
-      .setDefaultFloatValue(8.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchFireball.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(8.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchFireball.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchGoldenApple = ValueBuilder.create(this, "Switch Golden Apple")
-      .setVisibility(() -> !this.offhandItems.isCurrentMode("Golden Apple"))
-      .setDefaultBooleanValue(true)
-      .build()
-      .getBooleanValue();
+           .setVisibility(() -> !this.offhandItems.isCurrentMode("Golden Apple"))
+           .setDefaultBooleanValue(true)
+           .build()
+           .getBooleanValue();
    FloatValue goldenAppleSlot = ValueBuilder.create(this, "Golden Apple Slot")
-      .setDefaultFloatValue(9.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchGoldenApple.getCurrentValue() && !this.offhandItems.isCurrentMode("Golden Apple"))
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(9.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchGoldenApple.getCurrentValue() && !this.offhandItems.isCurrentMode("Golden Apple"))
+           .build()
+           .getFloatValue();
    BooleanValue throwItems = ValueBuilder.create(this, "Throw Items").setDefaultBooleanValue(true).build().getBooleanValue();
    FloatValue waterBucketCount = ValueBuilder.create(this, "Keep Water Buckets")
-      .setDefaultFloatValue(1.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(5.0F)
-      .setVisibility(() -> this.throwItems.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(1.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(0.0F)
+           .setMaxFloatValue(5.0F)
+           .setVisibility(() -> this.throwItems.getCurrentValue())
+           .build()
+           .getFloatValue();
    FloatValue lavaBucketCount = ValueBuilder.create(this, "Keep Lava Buckets")
-      .setDefaultFloatValue(1.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(5.0F)
-      .setVisibility(() -> this.throwItems.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(1.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(0.0F)
+           .setMaxFloatValue(5.0F)
+           .setVisibility(() -> this.throwItems.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue keepProjectile = ValueBuilder.create(this, "Keep Eggs & Snowballs").setDefaultBooleanValue(true).build().getBooleanValue();
    BooleanValue switchProjectile = ValueBuilder.create(this, "Switch Eggs & Snowballs")
-      .setDefaultBooleanValue(false)
-      .setVisibility(() -> this.keepProjectile.getCurrentValue() && !this.offhandItems.isCurrentMode("Projectile"))
-      .build()
-      .getBooleanValue();
+           .setDefaultBooleanValue(false)
+           .setVisibility(() -> this.keepProjectile.getCurrentValue() && !this.offhandItems.isCurrentMode("Projectile"))
+           .build()
+           .getBooleanValue();
    FloatValue projectileSlot = ValueBuilder.create(this, "Eggs & Snowballs Slot")
-      .setDefaultFloatValue(9.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchProjectile.getCurrentValue() && this.keepProjectile.getCurrentValue() && !this.offhandItems.isCurrentMode("Projectile"))
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(9.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchProjectile.getCurrentValue() && this.keepProjectile.getCurrentValue() && !this.offhandItems.isCurrentMode("Projectile"))
+           .build()
+           .getFloatValue();
    FloatValue maxProjectileSize = ValueBuilder.create(this, "Max Eggs & Snowballs Size")
-      .setDefaultFloatValue(64.0F)
-      .setFloatStep(16.0F)
-      .setMinFloatValue(16.0F)
-      .setMaxFloatValue(256.0F)
-      .setVisibility(() -> this.keepProjectile.getCurrentValue())
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(64.0F)
+           .setFloatStep(16.0F)
+           .setMinFloatValue(16.0F)
+           .setMaxFloatValue(256.0F)
+           .setVisibility(() -> this.keepProjectile.getCurrentValue())
+           .build()
+           .getFloatValue();
    BooleanValue switchRod = ValueBuilder.create(this, "Switch Rod")
-      .setVisibility(() -> !this.offhandItems.isCurrentMode("Fishing Rod"))
-      .setDefaultBooleanValue(false)
-      .build()
-      .getBooleanValue();
+           .setVisibility(() -> !this.offhandItems.isCurrentMode("Fishing Rod"))
+           .setDefaultBooleanValue(false)
+           .build()
+           .getBooleanValue();
    FloatValue rodSlot = ValueBuilder.create(this, "Rod Slot")
-      .setDefaultFloatValue(9.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(9.0F)
-      .setVisibility(() -> this.switchRod.getCurrentValue() && !this.offhandItems.isCurrentMode("Fishing Rod"))
-      .build()
-      .getFloatValue();
+           .setDefaultFloatValue(9.0F)
+           .setFloatStep(1.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(9.0F)
+           .setVisibility(() -> this.switchRod.getCurrentValue() && !this.offhandItems.isCurrentMode("Fishing Rod"))
+           .build()
+           .getFloatValue();
    int noMoveTicks = 0;
    private boolean clickOffHand = false;
    private boolean inventoryOpen = false;
@@ -298,9 +298,9 @@ public class InventoryCleaner extends Module {
                   mc.getConnection().send(new ServerboundContainerClosePacket(mc.player.inventoryMenu.containerId));
                }
             } else if (e.getPacket() instanceof ServerboundUseItemOnPacket
-               || e.getPacket() instanceof ServerboundUseItemPacket
-               || e.getPacket() instanceof ServerboundInteractPacket
-               || e.getPacket() instanceof ServerboundPlayerActionPacket) {
+                    || e.getPacket() instanceof ServerboundUseItemPacket
+                    || e.getPacket() instanceof ServerboundInteractPacket
+                    || e.getPacket() instanceof ServerboundPlayerActionPacket) {
                mc.getConnection().send(new ServerboundContainerClosePacket(mc.player.inventoryMenu.containerId));
             }
          }
@@ -520,37 +520,24 @@ public class InventoryCleaner extends Module {
 
             switch (priority) {
                case "Sword":
-                  ItemStack bestSword = InventoryUtils.getBestSword();
-                  ItemStack bestShapeAxe = InventoryUtils.getBestShapeAxe();
-
-                  if (bestSword != null && bestShapeAxe != null) {
-                     if (InventoryUtils.getAxeDamage(bestShapeAxe) > InventoryUtils.getSwordDamage(bestSword)) {
-                        itemToSwap = bestShapeAxe;
-                     } else {
-                        itemToSwap = bestSword;
-                     }
-                  } else if (bestSword != null) {
-                     itemToSwap = bestSword;
-                  } else if (bestShapeAxe != null) {
-                     itemToSwap = bestShapeAxe;
-                  }
+                  itemToSwap = this.getBestSwordOrShapeAxe();
                   break;
                case "God Axe":
                   itemToSwap = InventoryUtils.getGodAxe();
                   if (itemToSwap == null || itemToSwap.isEmpty()) {
-                     itemToSwap = InventoryUtils.getBestSword();
+                     itemToSwap = this.getBestSwordOrShapeAxe();
                   }
                   break;
                case "KB Ball":
                   itemToSwap = InventoryUtils.getItemStack(Items.SLIME_BALL);
                   if (itemToSwap == null || itemToSwap.isEmpty()) {
-                     itemToSwap = InventoryUtils.getBestSword();
+                     itemToSwap = this.getBestSwordOrShapeAxe();
                   }
                   break;
                case "End Crystal":
                   itemToSwap = InventoryUtils.getItemStack(Items.END_CRYSTAL);
                   if (itemToSwap == null || itemToSwap.isEmpty()) {
-                     itemToSwap = InventoryUtils.getBestSword();
+                     itemToSwap = this.getBestSwordOrShapeAxe();
                   }
                   break;
             }
@@ -576,11 +563,11 @@ public class InventoryCleaner extends Module {
          }
 
          if (this.switchAxe.getCurrentValue()) {
-            if (PreferWeapon.getPriority().equals("God Axe")) {
-               return;
-            }
             int slotxxx = (int)(this.axeSlot.getCurrentValue() - 1.0F);
             ItemStack bestAxe = InventoryUtils.getBestAxe();
+            if (bestAxe != null && InventoryUtils.isGodAxe(bestAxe)) {
+               return;
+            }
             ItemStack currentAxe = (ItemStack)mc.player.getInventory().items.get(slotxxx);
             if (bestAxe != null
                     && bestAxe.getItem() instanceof AxeItem
@@ -686,6 +673,25 @@ public class InventoryCleaner extends Module {
             }
          }
       }
+   }
+
+   private ItemStack getBestSwordOrShapeAxe() {
+      ItemStack bestSword = InventoryUtils.getBestSword();
+      ItemStack bestShapeAxe = InventoryUtils.getBestShapeAxe();
+
+      if (bestSword != null && bestShapeAxe != null) {
+         if (InventoryUtils.getAxeDamage(bestShapeAxe) > InventoryUtils.getSwordDamage(bestSword)) {
+            return bestShapeAxe;
+         } else {
+            return bestSword;
+         }
+      } else if (bestSword != null) {
+         return bestSword;
+      } else if (bestShapeAxe != null) {
+         return bestShapeAxe;
+      }
+
+      return null;
    }
 
    private void swapOffHand(int slot) {

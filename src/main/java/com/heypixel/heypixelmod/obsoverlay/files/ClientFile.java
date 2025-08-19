@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public abstract class ClientFile {
    private final String fileName;
-   private final File file;
+   protected File file;
 
    public ClientFile(String fileName) {
       this.fileName = fileName;

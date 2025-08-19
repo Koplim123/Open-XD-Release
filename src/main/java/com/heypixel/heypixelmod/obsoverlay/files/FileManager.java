@@ -1,12 +1,14 @@
 package com.heypixel.heypixelmod.obsoverlay.files;
 
 import com.heypixel.heypixelmod.obsoverlay.files.impl.CGuiFile;
+import com.heypixel.heypixelmod.obsoverlay.files.impl.ConfigFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.FriendFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.KillSaysFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.ModuleFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.ProxyFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.SpammerFile;
 import com.heypixel.heypixelmod.obsoverlay.files.impl.ValueFile;
+import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -18,21 +20,23 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.codec.digest.DigestUtils;
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import oshi.SystemInfo;
-import oshi.hardware.HWDiskStore;
 
 public class FileManager {
    public static final Logger logger = LogManager.getLogger(FileManager.class);
    public static final File clientFolder;
+   public static final File configFolder;
    public static Object trash = new BigInteger("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
    private final List<ClientFile> files = new ArrayList<>();
 
    public FileManager() {
       if (!clientFolder.exists() && clientFolder.mkdir()) {
          logger.info("Created client folder!");
+      }
+      if (!configFolder.exists() && configFolder.mkdir()) {
+         logger.info("Created config folder!");
       }
 
       this.files.add(new KillSaysFile());
@@ -89,12 +93,52 @@ public class FileManager {
       }
    }
 
+
+   public void load(String fileName) {
+      ConfigFile configFile = new ConfigFile(fileName + ".cfg");
+      File file = configFile.getFile();
+
+      if (!file.exists()) {
+         ChatUtils.addChatMessage("§c未找到配置 §6" + fileName + "§c!");
+         logger.warn("Config file does not exist: {}", fileName);
+         return;
+      }
+
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
+         configFile.read(reader);
+         ChatUtils.addChatMessage("§a已加载配置 §6" + fileName + "§a!");
+         logger.info("Successfully loaded config file: {}", fileName);
+      } catch (IOException e) {
+         ChatUtils.addChatMessage("§c加载配置 §6" + fileName + "§c 时发生错误!");
+         logger.error("Failed to load config file: {}", fileName, e);
+      }
+   }
+
+   public void save(String fileName) {
+      ConfigFile configFile = new ConfigFile(fileName + ".cfg");
+      File file = configFile.getFile();
+
+      try {
+         if (!file.exists() && file.createNewFile()) {
+            logger.info("Created new config file: {}", fileName);
+         }
+         // 注意：Java的OutputStream默认会覆盖同名文件，所以无需额外检查。
+         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+            configFile.save(writer);
+            writer.flush();
+            ChatUtils.addChatMessage("§a已写入配置 §6" + fileName + "§a!");
+            logger.info("Successfully saved config file: {}", fileName);
+         }
+      } catch (IOException e) {
+         ChatUtils.addChatMessage("§c写入配置 §6" + fileName + "§c 时发生错误!");
+         logger.error("Failed to save config file: {}", fileName, e);
+      }
+   }
+
    static {
-      List<HWDiskStore> diskStores = new SystemInfo().getHardware().getDiskStores();
-      clientFolder = new File(
-         System.getenv("APPDATA")
-            + "\\"
-            + DigestUtils.md5Hex((diskStores.isEmpty() ? "NO_DISK_FOUND" : diskStores.get(0).getSerial()).getBytes(StandardCharsets.UTF_8))
-      );
+      // 使用 FMLPaths 获取游戏版本目录
+      File gameDir = FMLPaths.GAMEDIR.get().toFile();
+      clientFolder = new File(gameDir, "Naven-XD");
+      configFolder = new File(clientFolder, "config");
    }
 }
