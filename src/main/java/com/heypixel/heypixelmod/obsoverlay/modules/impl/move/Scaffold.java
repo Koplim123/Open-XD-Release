@@ -217,6 +217,9 @@ public class Scaffold extends Module {
     private float blockCounterHeight;
     private boolean useOffhand = false;
 
+    // 新增: 用于控制 Acceleration 模式初始低头动作的变量
+    private boolean initialPitchSet = false;
+
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
             return false;
@@ -229,7 +232,7 @@ public class Scaffold extends Module {
             } else if (stack.getItem() instanceof ItemNameBlockItem) {
                 return false;
             } else {
-                Block block = ((BlockItem)stack.getItem()).getBlock();
+                Block block = ((BlockItem) stack.getItem()).getBlock();
                 if (block instanceof FlowerBlock) {
                     return false;
                 } else if (block instanceof BushBlock) {
@@ -247,7 +250,7 @@ public class Scaffold extends Module {
 
     public static boolean isOnBlockEdge(float sensitivity) {
         return !mc.level
-                .getCollisions(mc.player, mc.player.getBoundingBox().move(0.0, -0.5, 0.0).inflate((double)(-sensitivity), 0.0, (double)(-sensitivity)))
+                .getCollisions(mc.player, mc.player.getBoundingBox().move(0.0, -0.5, 0.0).inflate((double) (-sensitivity), 0.0, (double) (-sensitivity)))
                 .iterator()
                 .hasNext();
     }
@@ -255,7 +258,7 @@ public class Scaffold extends Module {
     @EventTarget
     public void onFov(EventUpdateFoV e) {
         if (this.keepFov.getCurrentValue() && MoveUtils.isMoving()) {
-            e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
+            e.setFov(this.fov.getCurrentValue() + (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
         }
     }
 
@@ -269,6 +272,7 @@ public class Scaffold extends Module {
             this.baseY = 10000;
             this.currentSpeedX = 0.0f;
             this.currentSpeedY = 0.0f;
+            this.initialPitchSet = false; // 新增：重置初始低头状态
         }
     }
 
@@ -327,15 +331,22 @@ public class Scaffold extends Module {
 
             boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
             if (this.baseY == -1
-                    || this.baseY > (int)Math.floor(mc.player.getY()) - 1
+                    || this.baseY > (int) Math.floor(mc.player.getY()) - 1
                     || mc.player.onGround()
                     || !PlayerUtils.movementInput()
                     || isHoldingJump
                     || this.mode.isCurrentMode("Normal")) {
-                this.baseY = (int)Math.floor(mc.player.getY()) - 1;
+                this.baseY = (int) Math.floor(mc.player.getY()) - 1;
             }
 
             this.getBlockPos();
+
+            // 新增: Acceleration 模式的初始低头动作
+            if (this.rotationType.isCurrentMode("Acceleration") && !this.initialPitchSet) {
+                RotationManager.rotations.set(mc.player.getYRot() + 180.0F, 90.0F);
+                this.initialPitchSet = true; // 标记为已执行，确保只执行一次
+            }
+
             if (this.pos != null) {
                 this.correctRotation = this.getPlayerYawRotation();
                 this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
@@ -367,6 +378,17 @@ public class Scaffold extends Module {
             }
 
             RotationManager.rotations.set(this.rots);
+
+            // 修复: 只有当转头完成后才尝试放置方块
+            boolean rotationsMatch = RotationUtils.normalizeAngle(this.rots.x - this.correctRotation.x) < 1.0f && RotationUtils.normalizeAngle(this.rots.y - this.correctRotation.y) < 1.0f;
+            if (rotationsMatch) {
+                // 仅当转头到位后，才尝试放置方块
+                if (this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
+                    if (this.checkPlace(this.pos)) {
+                        this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+                    }
+                }
+            }
 
             if (this.sneak.getCurrentValue()) {
                 this.lastSneakTicks++;
@@ -448,6 +470,7 @@ public class Scaffold extends Module {
         float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
         float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
 
+        // 加速逻辑
         if (Math.abs(deltaYaw) > 1.0f) {
             this.currentSpeedX = Math.min(this.currentSpeedX + accel, maxSpeedX);
         } else {
@@ -462,6 +485,14 @@ public class Scaffold extends Module {
         }
         float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), this.currentSpeedY * boostFactor) * Math.signum(deltaPitch);
 
+        // 新增: 当接近目标时平滑减速
+        if (Math.abs(deltaYaw) < 10.0f) {
+            newYaw = this.rots.x + deltaYaw * 0.2f;
+        }
+        if (Math.abs(deltaPitch) < 10.0f) {
+            newPitch = this.rots.y + deltaPitch * 0.2f;
+        }
+
         this.rots.set(Mth.wrapDegrees(newYaw), newPitch);
     }
 
@@ -469,7 +500,7 @@ public class Scaffold extends Module {
         boolean shouldPlaceBlock = false;
         HitResult objectPosition = RayTraceUtils.rayCast(1.0F, this.rots);
         if (objectPosition.getType() == Type.BLOCK) {
-            BlockHitResult position = (BlockHitResult)objectPosition;
+            BlockHitResult position = (BlockHitResult) objectPosition;
             if (position.getBlockPos().equals(this.pos.position) && position.getDirection() != Direction.UP) {
                 shouldPlaceBlock = true;
             }
@@ -482,18 +513,14 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onClick(EventClick e) {
-        e.setCancelled(true);
-        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
-            if (this.checkPlace(this.pos)) {
-                this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
-            }
-        }
+        // 注释掉原有的 onClick 逻辑，将其集成到 onEventEarlyTick 中
+        // e.setCancelled(true);
     }
 
     private boolean checkPlace(Scaffold.BlockPosWithFacing data) {
-        Vec3 center = new Vec3((double)data.position.getX() + 0.5, (double)((float)data.position.getY() + 0.5F), (double)data.position.getZ() + 0.5);
+        Vec3 center = new Vec3((double) data.position.getX() + 0.5, (double) ((float) data.position.getY() + 0.5F), (double) data.position.getZ() + 0.5);
         Vec3 hit = center.add(
-                new Vec3((double)data.facing.getNormal().getX() * 0.5, (double)data.facing.getNormal().getY() * 0.5, (double)data.facing.getNormal().getZ() * 0.5)
+                new Vec3((double) data.facing.getNormal().getX() * 0.5, (double) data.facing.getNormal().getY() * 0.5, (double) data.facing.getNormal().getZ() * 0.5)
         );
         Vec3 relevant = hit.subtract(mc.player.getEyePosition());
         return relevant.lengthSqr() <= 20.25 && relevant.normalize().dot(Vec3.atLowerCornerOf(data.facing.getNormal().multiply(-1)).normalize()) >= 0.0;
@@ -540,10 +567,10 @@ public class Scaffold extends Module {
         if (mc.player.getDeltaMovement().y < 0.01) {
             FallingPlayer fallingPlayer = new FallingPlayer(mc.player);
             fallingPlayer.calculate(2);
-            baseVec = new Vec3(baseVec.x, Math.max(fallingPlayer.y + (double)mc.player.getEyeHeight(), baseVec.y), baseVec.z);
+            baseVec = new Vec3(baseVec.x, Math.max(fallingPlayer.y + (double) mc.player.getEyeHeight(), baseVec.y), baseVec.z);
         }
 
-        BlockPos base = BlockPos.containing(baseVec.x, (double)((float)this.baseY + 0.1F), baseVec.z);
+        BlockPos base = BlockPos.containing(baseVec.x, (double) ((float) this.baseY + 0.1F), baseVec.z);
         int baseX = base.getX();
         int baseZ = base.getZ();
         int searchDistance = (int) this.blockSearchDistance.getCurrentValue();
@@ -577,11 +604,11 @@ public class Scaffold extends Module {
         if (!(mc.level.getBlockState(bp).getBlock() instanceof AirBlock)) {
             return false;
         } else {
-            Vec3 center = new Vec3((double)bp.getX() + 0.5, (double)((float)bp.getY() + 0.5F), (double)bp.getZ() + 0.5);
+            Vec3 center = new Vec3((double) bp.getX() + 0.5, (double) ((float) bp.getY() + 0.5F), (double) bp.getZ() + 0.5);
 
             for (Direction sbface : Direction.values()) {
                 Vec3 hit = center.add(
-                        new Vec3((double)sbface.getNormal().getX() * 0.5, (double)sbface.getNormal().getY() * 0.5, (double)sbface.getNormal().getZ() * 0.5)
+                        new Vec3((double) sbface.getNormal().getX() * 0.5, (double) sbface.getNormal().getY() * 0.5, (double) sbface.getNormal().getZ() * 0.5)
                 );
                 Vec3i baseBlock = bp.offset(sbface.getNormal());
                 BlockPos po = new BlockPos(baseBlock.getX(), baseBlock.getY(), baseBlock.getZ());
@@ -600,9 +627,9 @@ public class Scaffold extends Module {
     @FlowExclude
     @ParameterObfuscationExclude
     public static Vec3 getVec3(BlockPos pos, Direction face) {
-        double x = (double)pos.getX() + 0.5;
-        double y = (double)pos.getY() + 0.5;
-        double z = (double)pos.getZ() + 0.5;
+        double x = (double) pos.getX() + 0.5;
+        double y = (double) pos.getY() + 0.5;
+        double z = (double) pos.getZ() + 0.5;
         if (face != Direction.UP && face != Direction.DOWN) {
             y += 0.08;
         } else {

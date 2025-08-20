@@ -11,190 +11,189 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.sounds.SoundEvents;
 
 public class Module extends HasValue {
-   protected static final Minecraft mc = Minecraft.getInstance();
-   public static boolean update = true;
-   private final SmoothAnimationTimer animation = new SmoothAnimationTimer(100.0F);
-   private String name;
-   private String prettyName;
-   private String description;
-   private String suffix;
-   private Category category;
-   private boolean enabled;
-   private boolean cannotDisable = false;
-   private int minPermission = 0;
-   private int key;
-   private boolean toggleableWithKey = true;
-   private boolean hidden = false;
+    public static final Minecraft mc = Minecraft.getInstance();
+    public static boolean update = true;
+    private final SmoothAnimationTimer animation = new SmoothAnimationTimer(100.0F);
+    private String name;
+    private String prettyName;
+    private String description;
+    private String suffix;
+    private Category category;
+    private boolean enabled;
+    private boolean cannotDisable = false;
+    private int minPermission = 0;
+    private int key;
+    private boolean toggleableWithKey = true;
+    private boolean hidden = false;
 
-   public Module(String name, String description, Category category) {
-      this.name = name;
-      this.description = description;
-      this.category = category;
-      super.setName(name);
-      this.setPrettyName();
-   }
+    public Module(String name, String description, Category category) {
+        this.name = name;
+        this.description = description;
+        this.category = category;
+        super.setName(name);
+        this.setPrettyName();
+    }
 
-   public void setSuffix(String suffix) {
-      if (suffix == null) {
-         this.suffix = null;
-         update = true;
-      } else if (!suffix.equals(this.suffix)) {
-         this.suffix = suffix;
-         update = true;
-      }
-   }
+    public void setSuffix(String suffix) {
+        if (suffix == null) {
+            this.suffix = null;
+            update = true;
+        } else if (!suffix.equals(this.suffix)) {
+            this.suffix = suffix;
+            update = true;
+        }
+    }
 
-   private void setPrettyName() {
-      StringBuilder builder = new StringBuilder();
-      char[] chars = this.name.toCharArray();
+    private void setPrettyName() {
+        StringBuilder builder = new StringBuilder();
+        char[] chars = this.name.toCharArray();
 
-      for (int i = 0; i < chars.length - 1; i++) {
-         if (Character.isLowerCase(chars[i]) && Character.isUpperCase(chars[i + 1])) {
-            builder.append(chars[i]).append(" ");
-         } else {
-            builder.append(chars[i]);
-         }
-      }
+        for (int i = 0; i < chars.length - 1; i++) {
+            if (Character.isLowerCase(chars[i]) && Character.isUpperCase(chars[i + 1])) {
+                builder.append(chars[i]).append(" ");
+            } else {
+                builder.append(chars[i]);
+            }
+        }
 
-      builder.append(chars[chars.length - 1]);
-      this.prettyName = builder.toString();
-   }
+        builder.append(chars[chars.length - 1]);
+        this.prettyName = builder.toString();
+    }
 
-   protected void initModule() {
-      if (this.getClass().isAnnotationPresent(ModuleInfo.class)) {
-         ModuleInfo moduleInfo = this.getClass().getAnnotation(ModuleInfo.class);
-         this.name = moduleInfo.name();
-         this.description = moduleInfo.description();
-         this.category = moduleInfo.category();
-         super.setName(this.name);
-         this.setPrettyName();
-         Naven.getInstance().getHasValueManager().registerHasValue(this);
-      }
-   }
+    protected void initModule() {
+        if (this.getClass().isAnnotationPresent(ModuleInfo.class)) {
+            ModuleInfo moduleInfo = this.getClass().getAnnotation(ModuleInfo.class);
+            this.name = moduleInfo.name();
+            this.description = moduleInfo.description();
+            this.category = moduleInfo.category();
+            super.setName(this.name);
+            this.setPrettyName();
+            Naven.getInstance().getHasValueManager().registerHasValue(this);
+        }
+    }
 
-   public void onEnable() {
-   }
+    public void onEnable() {
+    }
 
-   public void onDisable() {
-   }
+    public void onDisable() {
+    }
 
-   public void setEnabled(boolean enabled) {
-      try {
-         if (this.cannotDisable && !enabled) {
+    public void setEnabled(boolean enabled) {
+        try {
+            if (this.cannotDisable && !enabled) {
+                return;
+            }
+
+            Naven naven = Naven.getInstance();
+            if (enabled) {
+                this.enabled = true;
+                naven.getEventManager().register(this);
+                this.onEnable();
+                if (!(this instanceof ClickGUIModule)) {
+                    HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
+                    if (module.moduleToggleSound.getCurrentValue()) {
+                        mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
+                    }
+                    Notification notification = new Notification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
+                    naven.getNotificationManager().addNotification(notification);
+                }
+            } else {
+                this.enabled = false;
+                naven.getEventManager().unregister(this);
+                this.onDisable();
+                if (!(this instanceof ClickGUIModule)) {
+                    HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
+                    if (module.moduleToggleSound.getCurrentValue()) {
+                        mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.8F);
+                    }
+                    Notification notification = new Notification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
+                    naven.getNotificationManager().addNotification(notification);
+                }
+            }
+        } catch (Exception var5) {
+        }
+    }
+
+    public void toggle() {
+        if (this.cannotDisable && this.enabled) {
             return;
-         }
+        }
+        this.setEnabled(!this.enabled);
+    }
 
-         Naven naven = Naven.getInstance();
-         if (enabled) {
-            this.enabled = true;
-            naven.getEventManager().register(this);
-            this.onEnable();
-            if (!(this instanceof ClickGUIModule)) {
-               HUD module = (HUD)Naven.getInstance().getModuleManager().getModule(HUD.class);
-               if (module.moduleToggleSound.getCurrentValue()) {
-                  mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
-               }
+    public boolean isToggleableWithKey() {
+        return toggleableWithKey;
+    }
 
-               Notification notification = new Notification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
-               naven.getNotificationManager().addNotification(notification);
-            }
-         } else {
-            this.enabled = false;
-            naven.getEventManager().unregister(this);
-            this.onDisable();
-            if (!(this instanceof ClickGUIModule)) {
-               HUD module = (HUD)Naven.getInstance().getModuleManager().getModule(HUD.class);
-               if (module.moduleToggleSound.getCurrentValue()) {
-                  mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.8F);
-               }
+    public void setToggleableWithKey(boolean toggleableWithKey) {
+        this.toggleableWithKey = toggleableWithKey;
+    }
 
-               Notification notification = new Notification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
-               naven.getNotificationManager().addNotification(notification);
-            }
-         }
-      } catch (Exception var5) {
-      }
-   }
+    public SmoothAnimationTimer getAnimation() {
+        return this.animation;
+    }
 
-   public void toggle() {
-      if (this.cannotDisable && this.enabled) {
-         return;
-      }
-      this.setEnabled(!this.enabled);
-   }
+    @Override
+    public String getName() {
+        return this.name;
+    }
 
-   public boolean isToggleableWithKey() {
-      return toggleableWithKey;
-   }
+    public String getPrettyName() {
+        return this.prettyName;
+    }
 
-   public void setToggleableWithKey(boolean toggleableWithKey) {
-      this.toggleableWithKey = toggleableWithKey;
-   }
+    public String getDescription() {
+        return this.description;
+    }
 
-   public SmoothAnimationTimer getAnimation() {
-      return this.animation;
-   }
+    public String getSuffix() {
+        return this.suffix;
+    }
 
-   @Override
-   public String getName() {
-      return this.name;
-   }
+    public Category getCategory() {
+        return this.category;
+    }
 
-   public String getPrettyName() {
-      return this.prettyName;
-   }
+    public boolean isEnabled() {
+        return this.enabled;
+    }
 
-   public String getDescription() {
-      return this.description;
-   }
+    public boolean isCannotDisable() {
+        return this.cannotDisable;
+    }
 
-   public String getSuffix() {
-      return this.suffix;
-   }
+    public void setCannotDisable(boolean cannotDisable) {
+        this.cannotDisable = cannotDisable;
+        update = true;
+    }
 
-   public Category getCategory() {
-      return this.category;
-   }
+    public int getMinPermission() {
+        return this.minPermission;
+    }
 
-   public boolean isEnabled() {
-      return this.enabled;
-   }
+    public int getKey() {
+        return this.key;
+    }
 
-   public boolean isCannotDisable() {
-      return this.cannotDisable;
-   }
+    public Module() {
+    }
 
-   public void setCannotDisable(boolean cannotDisable) {
-      this.cannotDisable = cannotDisable;
-   }
+    public void setMinPermission(int minPermission) {
+        this.minPermission = minPermission;
+    }
 
-   public int getMinPermission() {
-      return this.minPermission;
-   }
+    public void setKey(int key) {
+        this.key = key;
+    }
 
-   public int getKey() {
-      return this.key;
-   }
+    public boolean isHidden() {
+        return this.hidden;
+    }
 
-   public Module() {
-   }
-
-   public void setMinPermission(int minPermission) {
-      this.minPermission = minPermission;
-   }
-
-   public void setKey(int key) {
-      this.key = key;
-   }
-
-   public boolean isHidden() {
-      return this.hidden;
-   }
-
-   public void setHidden(boolean hidden) {
-      if (this.hidden != hidden) {
-         this.hidden = hidden;
-         update = true;
-      }
-   }
+    public void setHidden(boolean hidden) {
+        if (this.hidden != hidden) {
+            this.hidden = hidden;
+            update = true;
+        }
+    }
 }
