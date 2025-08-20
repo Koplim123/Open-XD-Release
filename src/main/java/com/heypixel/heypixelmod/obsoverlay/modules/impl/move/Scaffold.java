@@ -220,6 +220,11 @@ public class Scaffold extends Module {
     // 新增: 用于控制 Acceleration 模式初始低头动作的变量
     private boolean initialPitchSet = false;
 
+    // 新增: RayCast 功能开关
+    public BooleanValue rayCast = ValueBuilder.create(this, "RayCast").setDefaultBooleanValue(true).build().getBooleanValue();
+    // 新增: Sprint 功能开关
+    public BooleanValue sprint = ValueBuilder.create(this, "Sprint").setDefaultBooleanValue(true).build().getBooleanValue();
+
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
             return false;
@@ -282,6 +287,8 @@ public class Scaffold extends Module {
         boolean isHoldingShift = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyShift.getKey().getValue());
         mc.options.keyJump.setDown(isHoldingJump);
         mc.options.keyShift.setDown(isHoldingShift);
+        // 新增: 禁用时恢复冲刺状态
+        mc.options.keySprint.setDown(false);
         mc.options.keyUse.setDown(false);
         mc.player.getInventory().selected = this.oldSlot;
         RotationManager.rotations.set(mc.player.getYRot(), mc.player.getXRot());
@@ -384,10 +391,21 @@ public class Scaffold extends Module {
             if (rotationsMatch) {
                 // 仅当转头到位后，才尝试放置方块
                 if (this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
-                    if (this.checkPlace(this.pos)) {
+                    // 新增: RayCast 开关控制
+                    if (this.rayCast.getCurrentValue()) {
+                        if (this.checkPlace(this.pos)) {
+                            this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+                        }
+                    } else {
                         this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
                     }
                 }
+            }
+
+            // 新增: Sprint 开关控制
+            if (!this.sprint.getCurrentValue() && mc.player.isSprinting()) {
+                mc.options.keySprint.setDown(false);
+                mc.player.setSprinting(false);
             }
 
             if (this.sneak.getCurrentValue()) {
