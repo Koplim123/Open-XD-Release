@@ -28,8 +28,10 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent.ClientTickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class Naven {
    public static final String CLIENT_NAME = "Naven-XD";
@@ -46,6 +48,7 @@ public class Naven {
    private final NotificationManager notificationManager;
    public static float TICK_TIMER = 1.0F;
    public static Queue<Runnable> skipTasks = new ConcurrentLinkedQueue<>();
+   private static boolean ircScreenDisplayed = false; // 添加一个标志，防止重复显示
 
    private Naven() {
       System.out.println("Naven Init");
@@ -79,41 +82,29 @@ public class Naven {
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       MinecraftForge.EVENT_BUS.register(this.eventWrapper);
+      MinecraftForge.EVENT_BUS.register(this); // 注册到 Forge 事件总线
    }
 
    public static void modRegister() {
       try {
          new Naven();
-         // 在主菜单显示时检查是否需要进行IRC登录
-         checkAndShowIRCLogin();
       } catch (Exception var1) {
          System.err.println("Failed to load client");
          var1.printStackTrace(System.err);
       }
    }
 
-   /**
-    * 检查是否需要显示IRC登录界面
-    */
-   private static void checkAndShowIRCLogin() {
-      // 注册一个事件监听器，在游戏tick时检查当前屏幕
-      Naven.getInstance().getEventManager().register(new Object() {
-         @EventTarget
-         public void onTick(EventRunTicks event) {
-            Minecraft mc = Minecraft.getInstance();
-            Screen currentScreen = mc.screen;
-            
-            // 如果当前屏幕是标题屏幕（主菜单）且IRC未登录
-            if (currentScreen != null && currentScreen.getClass().getSimpleName().contains("TitleScreen")) {
-               if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
-                  // 显示IRC登录界面
-                  mc.setScreen(new IRCLoginScreen());
-                  // 取消监听，避免重复显示
-                  Naven.getInstance().getEventManager().unregister(this);
-               }
-            }
+   // 使用 @SubscribeEvent 来监听客户端的Tick事件
+   @SubscribeEvent
+   public void onClientTick(ClientTickEvent event) {
+      // 只有当游戏在主菜单，并且我们还没有显示过IRC登录屏幕时才执行
+      if (!ircScreenDisplayed && Minecraft.getInstance().screen instanceof TitleScreen) {
+         // 假设 IRCLoginManager.userId == -1 表示未登录
+         if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
+            Minecraft.getInstance().setScreen(new IRCLoginScreen());
+            ircScreenDisplayed = true; // 设置标志，防止再次显示
          }
-      });
+      }
    }
 
    @EventTarget
