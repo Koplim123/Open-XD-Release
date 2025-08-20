@@ -67,7 +67,11 @@ public class IRCLoginManager {
         }
         return false;
     }
-    
+
+    public static String getUsername() {
+        return username;
+    }
+
     public static void openRegisterPage() {
         Screen currentScreen = Minecraft.getInstance().screen;
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen((accepted) -> {
