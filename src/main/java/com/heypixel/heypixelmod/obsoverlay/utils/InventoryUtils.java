@@ -1,9 +1,10 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Scaffold;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Scaffold;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobType;
