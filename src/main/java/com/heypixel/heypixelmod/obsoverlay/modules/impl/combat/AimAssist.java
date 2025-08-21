@@ -158,7 +158,7 @@ public class AimAssist extends Module {
          if (closestPoint.distanceTo(mc.player.getEyePosition()) > (double)this.aimRange.getCurrentValue()) {
             return false;
          } else {
-            boolean b = RotationUtils.inFoV(entity, this.fov.getCurrentValue() / 2.0F);
+            boolean b = RotationUtils.inFov(entity, this.fov.getCurrentValue() / 2.0F);
             if (entity.getName().getString().equals("Standing")) {
                System.out.println(b);
             }

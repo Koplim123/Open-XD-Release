@@ -1,18 +1,12 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 
-import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRenderTabOverlay;
+import com.heypixel.heypixelmod.obsoverlay.IRC.IRC;
+import com.heypixel.heypixelmod.obsoverlay.IRC.IRCUsernameManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
-import com.heypixel.heypixelmod.obsoverlay.IRC.IRCUsernameManager;
-import com.heypixel.heypixelmod.obsoverlay.IRC.IRC;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-
-import java.net.URISyntaxException;
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 
 @ModuleInfo(
         name = "IRC",

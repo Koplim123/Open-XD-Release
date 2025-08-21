@@ -10,7 +10,6 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
-import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
@@ -115,57 +114,20 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
+    public BooleanValue keepFov = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(1.15F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(1.0F)
             .setFloatStep(0.05F)
-            .setVisibility(() -> this.keepFoV.getCurrentValue())
+            .setVisibility(() -> this.keepFov.getCurrentValue())
             .build()
             .getFloatValue();
     int oldSlot;
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
     public int baseY = -1;
-
-    public ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Normal", "Sigmoid").setDefaultModeIndex(0).build().getModeValue();
-    public FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
-            .setDefaultFloatValue(10.0F)
-            .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
-            .build()
-            .getFloatValue();
-    public FloatValue turnSpeedY = ValueBuilder.create(this, "Turn Speed Y")
-            .setDefaultFloatValue(10.0F)
-            .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
-            .build()
-            .getFloatValue();
-
-    public FloatValue yawAdjust = ValueBuilder.create(this, "Yaw Adjust")
-            .setDefaultFloatValue(0.0F)
-            .setFloatStep(0.1F)
-            .setMinFloatValue(-10.0F)
-            .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
-            .build()
-            .getFloatValue();
-
-    public FloatValue pitchAdjust = ValueBuilder.create(this, "Pitch Adjust")
-            .setDefaultFloatValue(0.0F)
-            .setFloatStep(0.1F)
-            .setMinFloatValue(-10.0F)
-            .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
-            .build()
-            .getFloatValue();
-
-    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
 
     private float blockCounterWidth;
     private float blockCounterHeight;
@@ -207,7 +169,7 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onFoV(EventUpdateFoV e) {
-        if (this.keepFoV.getCurrentValue() && MoveUtils.isMoving()) {
+        if (this.keepFov.getCurrentValue() && MoveUtils.isMoving()) {
             e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
         }
     }
@@ -216,8 +178,8 @@ public class Scaffold extends Module {
     public void onEnable() {
         if (mc.player != null) {
             this.oldSlot = mc.player.getInventory().selected;
-            this.rots.set(mc.player.getYRot(), mc.player.getXRot());
-            this.lastRots.set(mc.player.yRotO, mc.player.xRotO);
+            this.rots.set(mc.player.getYRot() - 180.0F, mc.player.getXRot());
+            this.lastRots.set(mc.player.yRotO - 180.0F, mc.player.xRotO);
             this.pos = null;
             this.baseY = 10000;
         }
@@ -231,7 +193,6 @@ public class Scaffold extends Module {
         mc.options.keyShift.setDown(isHoldingShift);
         mc.options.keyUse.setDown(false);
         mc.player.getInventory().selected = this.oldSlot;
-        RotationManager.rotations.set(mc.player.getYRot(), mc.player.getXRot());
     }
 
     @EventTarget
@@ -245,6 +206,7 @@ public class Scaffold extends Module {
     public void onEventEarlyTick(EventRunTicks e) {
         if (e.getType() == EventType.PRE && mc.screen == null && mc.player != null) {
             int slotID = -1;
+
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = mc.player.getInventory().getItem(i);
                 if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
@@ -276,34 +238,24 @@ public class Scaffold extends Module {
             this.getBlockPos();
             if (this.pos != null) {
                 this.correctRotation = this.getPlayerYawRotation();
-                this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
-                this.correctRotation.setY(this.correctRotation.getY() + this.pitchAdjust.getCurrentValue());
-
-                if (this.rotationType.isCurrentMode("Linear")) {
-                    this.updateLinearRotations(this.correctRotation);
-                } else if (this.rotationType.isCurrentMode("Sigmoid")) {
-                    this.updateSigmoidRotations(this.correctRotation);
-                } else if (this.rotationType.isCurrentMode("Normal")) {
-                    if (this.snap.getCurrentValue() && !isHoldingJump) {
-                        this.doSnap();
-                    } else {
-                        this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
-                        this.rots.setY(this.correctRotation.getY());
-                    }
+                if (this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue()) {
+                    this.rots.setX(this.correctRotation.getX());
                 } else {
-                    this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
                 }
-            }
 
-            RotationManager.rotations.set(this.rots);
+                this.rots.setY(this.correctRotation.getY());
+            }
 
             if (this.sneak.getCurrentValue()) {
                 this.lastSneakTicks++;
+                System.out.println(this.lastSneakTicks);
                 if (this.lastSneakTicks == 18) {
                     if (mc.player.isSprinting()) {
                         mc.options.keySprint.setDown(false);
                         mc.player.setSprinting(false);
                     }
+
                     mc.options.keyShift.setDown(true);
                 } else if (this.lastSneakTicks >= 21) {
                     mc.options.keyShift.setDown(false);
@@ -324,46 +276,14 @@ public class Scaffold extends Module {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
                 }
+
+                if (this.snap.getCurrentValue() && !isHoldingJump) {
+                    this.doSnap();
+                }
             }
+
             this.lastRots.set(this.rots.getX(), this.rots.getY());
         }
-    }
-
-    private void updateLinearRotations(Vector2f targetRotations) {
-        float targetYaw = targetRotations.x;
-        float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue();
-        float maxSpeedY = this.turnSpeedY.getCurrentValue();
-
-        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
-        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
-
-        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
-        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
-
-        this.rots.set(newYaw, newPitch);
-    }
-
-    private void updateSigmoidRotations(Vector2f targetRotations) {
-        float targetYaw = targetRotations.x;
-        float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue();
-        float maxSpeedY = this.turnSpeedY.getCurrentValue();
-        float smoothingFactor = 0.5f;
-
-        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
-        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
-
-        float sigmoidX = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaYaw) * smoothingFactor)));
-        float sigmoidY = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaPitch) * smoothingFactor)));
-
-        float turnRateX = sigmoidX * maxSpeedX;
-        float turnRateY = sigmoidY * maxSpeedY;
-
-        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), turnRateX) * Math.signum(deltaYaw);
-        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), turnRateY) * Math.signum(deltaPitch);
-
-        this.rots.set(newYaw, newPitch);
     }
 
     private void doSnap() {
@@ -371,7 +291,7 @@ public class Scaffold extends Module {
         HitResult objectPosition = RayTraceUtils.rayCast(1.0F, this.rots);
         if (objectPosition.getType() == Type.BLOCK) {
             BlockHitResult position = (BlockHitResult)objectPosition;
-            if (position.getBlockPos().equals(this.pos.position) && position.getDirection() != Direction.UP) {
+            if (position.getBlockPos().equals(this.pos) && position.getDirection() != Direction.UP) {
                 shouldPlaceBlock = true;
             }
         }
@@ -385,9 +305,11 @@ public class Scaffold extends Module {
     public void onClick(EventClick e) {
         e.setCancelled(true);
         if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
-            if (this.checkPlace(this.pos)) {
-                this.placeBlock();
+            if (!this.checkPlace(this.pos)) {
+                return;
             }
+
+            this.placeBlock();
         }
     }
 
@@ -488,6 +410,7 @@ public class Scaffold extends Module {
                     }
                 }
             }
+
             return false;
         }
     }
@@ -504,12 +427,15 @@ public class Scaffold extends Module {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         if (face == Direction.WEST || face == Direction.EAST) {
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         if (face == Direction.SOUTH || face == Direction.NORTH) {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         return new Vec3(x, y, z);
     }
 
@@ -534,27 +460,36 @@ public class Scaffold extends Module {
                 }
             }
             String text = "Blocks: " + blockCount;
-            double scale = 0.4;
+            double backgroundScale = 0.4;
+            double textScale = 0.35;
 
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, scale);
-            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, scale);
+            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
+            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
 
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F; // 调整X坐标以适应背景宽度
-            float y = screenHeight / 2.0F + 15.0F;
+
+            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+            float backgroundY = screenHeight / 2.0F + 15.0F;
+
+            float textWidth = Fonts.opensans.getWidth(text, textScale);
+            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
+
+            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
+            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
 
             e.getStack().pushPose();
 
             StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
             StencilUtils.erase(true);
             int headerColor = new Color(150, 45, 45, 255).getRGB();
-            RenderUtils.fill(e.getStack(), x, y, x + this.blockCounterWidth + 6.0F, y + 3.0F, headerColor);
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
 
             int bodyColor = new Color(0, 0, 0, 120).getRGB();
-            RenderUtils.fill(e.getStack(), x, y + 3.0F, x + this.blockCounterWidth + 6.0F, y + this.blockCounterHeight + 8.0F, bodyColor);
-            Fonts.opensans.render(e.getStack(), text, x + 3.0, y + 4.0, Color.WHITE, true, scale);
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
+
+            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
             StencilUtils.dispose();
             e.getStack().popPose();
         }

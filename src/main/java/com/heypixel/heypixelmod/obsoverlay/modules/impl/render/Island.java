@@ -1,7 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render;
 
-import com.heypixel.heypixelmod.obsoverlay.NavenTitle;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
+import com.heypixel.heypixelmod.obsoverlay.NavenTitle;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
@@ -13,16 +13,17 @@ import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.IslandHUD.EaseCube;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.IslandHUD.EaseOutExpo;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
-import java.awt.Color;
+
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.IslandHUD.EaseCube;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.IslandHUD.EaseOutExpo;
 
 @ModuleInfo(
         name = "Island",

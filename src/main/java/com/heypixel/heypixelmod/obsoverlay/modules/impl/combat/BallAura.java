@@ -1,29 +1,29 @@
 //power by Mixin.xing
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
+import com.heypixel.heypixelmod.obsoverlay.Naven;
+import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
+import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
+import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.modules.Category;
+import com.heypixel.heypixelmod.obsoverlay.utils.PacketUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.TimeHelper;
+import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
+import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
-import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
-import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
-import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.KeyMapping;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
-import com.heypixel.heypixelmod.obsoverlay.utils.TimeHelper;
-import com.heypixel.heypixelmod.obsoverlay.utils.PacketUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
-import com.heypixel.heypixelmod.obsoverlay.Naven;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Random;
@@ -376,7 +376,7 @@ public class BallAura extends Module {
             return false;
         }
         double distance = entity.distanceTo(mc.player);
-        return distance <= 10.0 && RotationUtils.inFoV(entity, 90.0F);
+        return distance <= 10.0 && RotationUtils.inFov(entity, 90.0F);
     }
 
     private int findThrowableSlot() {

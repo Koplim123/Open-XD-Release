@@ -65,41 +65,33 @@ public class RenderUtils {
       Tesselator tessellator = Tesselator.getInstance();
       BufferBuilder buffer = tessellator.getBuilder();
 
-      // 设置渲染状态
       RenderSystem.enableBlend();
       RenderSystem.defaultBlendFunc();
       RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-      // 纯白色不透明
-      float r = 1.0f; // 红
-      float g = 1.0f; // 绿
-      float b = 1.0f; // 蓝
-      float a = 1.0f; // 透明度
+      float r = 1.0f;
+      float g = 1.0f;
+      float b = 1.0f;
+      float a = 1.0f;
 
-      // 计算圆弧长度
       float sweepAngle = progress * 360.0f;
 
-      // 计算顶点数量
       int segments = (int) (Math.min(360, Math.max(36, sweepAngle)));
       float angleStep = sweepAngle / segments;
 
-      // 起始角度（从顶部开始）
       float startAngle = -90.0f;
 
-      // 使用POSITION_COLOR格式
       buffer.begin(Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
 
       for (int i = 0; i <= segments; i++) {
          float angle = (float) Math.toRadians(startAngle + i * angleStep);
 
-         // 外圈点（带颜色）
          float outerX = centerX + (float)Math.cos(angle) * radius;
          float outerY = centerY + (float)Math.sin(angle) * radius;
          buffer.vertex(matrix, outerX, outerY, 0)
                  .color(r, g, b, a)
                  .endVertex();
 
-         // 内圈点（带颜色）
          float innerX = centerX + (float)Math.cos(angle) * (radius - thickness);
          float innerY = centerY + (float)Math.sin(angle) * (radius - thickness);
          buffer.vertex(matrix, innerX, innerY, 0)
@@ -464,12 +456,10 @@ public class RenderUtils {
       int textureId = -1;
 
       try {
-         // 1. 准备模板缓冲区
          StencilUtils.write(false);
          RenderUtils.drawRoundedRect(graphics.pose(), x, y, width, height, cornerRadius, 0xFFFFFFFF);
          StencilUtils.erase(true);
 
-         // 2. 捕获屏幕区域
          Minecraft mc = Minecraft.getInstance();
          int windowWidth = mc.getWindow().getWidth();
          int windowHeight = mc.getWindow().getHeight();
@@ -486,7 +476,6 @@ public class RenderUtils {
          pixelWidth = Math.min(windowWidth - pixelX, pixelWidth);
          pixelHeight = Math.min(windowHeight - pixelY, pixelHeight);
 
-         // 创建一个临时纹理
          textureId = TextureUtil.generateTextureId();
          RenderSystem.bindTexture(textureId);
 
@@ -499,7 +488,6 @@ public class RenderUtils {
          GL11.glReadPixels(pixelX, windowHeight - pixelY - pixelHeight, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
          GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, pixelWidth, pixelHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
-         // 3. 绘制模糊纹理
          RenderSystem.setShader(GameRenderer::getPositionTexShader);
          RenderSystem.setShaderTexture(0, textureId);
 
@@ -512,7 +500,6 @@ public class RenderUtils {
          builder.vertex(matrix, x, y, 0).uv(0, 0).endVertex();
          Tesselator.getInstance().end();
 
-         // 4. 在模糊纹理之上绘制半透明覆盖层
          RenderSystem.setShader(GameRenderer::getPositionColorShader);
          RenderUtils.fillBound(graphics.pose(), x, y, width, height, color);
 

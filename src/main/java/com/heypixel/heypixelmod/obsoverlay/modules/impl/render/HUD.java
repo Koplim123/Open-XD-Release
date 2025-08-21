@@ -10,6 +10,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -21,7 +22,6 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import org.apache.commons.lang3.StringUtils;
 import org.joml.Vector4f;
-import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager; // Import the IRCLoginManager
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
@@ -185,14 +185,12 @@ public class HUD extends Module {
                 watermarkText.append(" | ").append(Version.getVersion());
             }
             if (watermarkShowUserName.getCurrentValue()) {
-                // ----- 修改点：使用 IRCLoginManager 的用户名 -----
                 String username = IRCLoginManager.getUsername();
                 if (username != null && !username.isEmpty()) {
                     watermarkText.append(" | ").append(username);
                 } else {
                     watermarkText.append(" | ").append("Dev");
                 }
-                // ----- 修改结束 -----
             }
             if (watermarkShowFPS.getCurrentValue()) {
                 watermarkText.append(" | ").append(StringUtils.split(mc.fpsString, " ")[0]).append(" FPS");

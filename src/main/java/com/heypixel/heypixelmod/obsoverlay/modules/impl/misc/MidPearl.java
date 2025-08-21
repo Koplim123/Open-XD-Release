@@ -19,13 +19,13 @@ import net.minecraft.world.item.Items;
 )
 public class MidPearl extends Module {
     private final ModeValue mode = ValueBuilder.create(this, "Mode")
-            .setModes("FastSwitch", "FakeSpoof")
+            .setModes("Fast Switch", "Fake Spoof")
             .setDefaultModeIndex(0)
             .build()
             .getModeValue();
 
     private final ModeValue keyMode = ValueBuilder.create(this, "Trigger Key")
-            .setModes("Mid", "Mouse4", "Mouse5")
+            .setModes("Mid Button", "Mouse4", "Mouse5")
             .setDefaultModeIndex(0)
             .build()
             .getModeValue();
@@ -50,12 +50,12 @@ public class MidPearl extends Module {
             }
 
 
-            if (mode.isCurrentMode("FastSwitch")) {
+            if (mode.isCurrentMode("Fast Switch")) {
                 originalSlot = mc.player.getInventory().selected;
                 mc.player.getInventory().selected = pearlSlot;
                 mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                 mc.player.getInventory().selected = originalSlot;
-            } else if (mode.isCurrentMode("FakeSpoof")) {
+            } else if (mode.isCurrentMode("Fake Spoof")) {
                 originalSlot = mc.player.getInventory().selected;
 
                 ItemStack pearlStack = mc.player.getInventory().getItem(pearlSlot);

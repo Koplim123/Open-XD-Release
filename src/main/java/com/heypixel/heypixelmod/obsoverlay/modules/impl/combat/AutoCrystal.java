@@ -10,7 +10,6 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
@@ -34,29 +33,33 @@ import java.util.stream.StreamSupport;
 )
 public class AutoCrystal extends Module {
 
-    private FloatValue delay;
-    private BooleanValue silentSwap;
-    private BooleanValue headBob;
-    private BooleanValue inAir;
-    private BooleanValue switchSetting;
-    private BooleanValue damageTick;
-    private BooleanValue pauseOnKill;
-    private long lastActionTime;
-    private BlockPos posToPlace;
+    private final FloatValue placeDelay;
+    private final FloatValue breakDelay;
+    private final BooleanValue headBob;
+    private final BooleanValue inAir;
+    private final BooleanValue autoSwitch;
+    private final BooleanValue damageTick;
+    private final BooleanValue pauseOnKill;
+    private final BooleanValue rightClickHold;
+
+    private long lastPlaceTime;
+    private long lastBreakTime;
 
     public AutoCrystal() {
-        delay = ValueBuilder.create(this, "Delay")
-                .setDefaultFloatValue(25.0f)
+        placeDelay = ValueBuilder.create(this, "Place Delay (Ticks)")
+                .setDefaultFloatValue(1.0f)
                 .setFloatStep(1.0f)
                 .setMinFloatValue(0.0f)
-                .setMaxFloatValue(200.0f)
-                .setFloatStep(1.0f)
+                .setMaxFloatValue(20.0f)
                 .build()
                 .getFloatValue();
-        silentSwap = ValueBuilder.create(this, "Silent Swap")
-                .setDefaultBooleanValue(false)
+        breakDelay = ValueBuilder.create(this, "Break Delay (Ticks)")
+                .setDefaultFloatValue(1.0f)
+                .setFloatStep(1.0f)
+                .setMinFloatValue(0.0f)
+                .setMaxFloatValue(20.0f)
                 .build()
-                .getBooleanValue();
+                .getFloatValue();
         headBob = ValueBuilder.create(this, "Head Bob")
                 .setDefaultBooleanValue(false)
                 .build()
@@ -65,8 +68,8 @@ public class AutoCrystal extends Module {
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
-        switchSetting = ValueBuilder.create(this, "Switch")
-                .setDefaultBooleanValue(false)
+        autoSwitch = ValueBuilder.create(this, "Auto Switch")
+                .setDefaultBooleanValue(true)
                 .build()
                 .getBooleanValue();
         damageTick = ValueBuilder.create(this, "Damage Tick")
@@ -77,136 +80,117 @@ public class AutoCrystal extends Module {
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
+        rightClickHold = ValueBuilder.create(this, "Only When Right Hold")
+                .setDefaultBooleanValue(true)
+                .build()
+                .getBooleanValue();
     }
 
     @Override
     public void onEnable() {
-        if (switchSetting.getCurrentValue()) {
-            int slot = findItemInHotbar(Items.END_CRYSTAL);
-            if (slot != -1) {
-                mc.player.getInventory().selected = slot;
-            }
-        }
-        lastActionTime = System.currentTimeMillis();
-        posToPlace = null;
-    }
-
-    @Override
-    public void onDisable() {
-        posToPlace = null;
+        long currentTime = System.currentTimeMillis();
+        lastPlaceTime = currentTime;
+        lastBreakTime = currentTime;
     }
 
     @EventTarget
     public void onMotion(EventMotion e) {
-        if (e.getType() == EventType.PRE) {
-            if (mc.screen != null || !mc.isWindowActive() || (pauseOnKill.getCurrentValue() && isInvalidPlayer())) {
-                return;
-            }
+        if (e.getType() != EventType.PRE) return;
 
-            if (System.currentTimeMillis() - lastActionTime < delay.getCurrentValue()) {
-                return;
-            }
+        if (mc.screen != null || !mc.isWindowActive() || (pauseOnKill.getCurrentValue() && isInvalidPlayer())) {
+            return;
+        }
 
-            if (!mc.player.onGround() && !inAir.getCurrentValue()) {
-                return;
-            }
+        if (rightClickHold.getCurrentValue() && !mc.options.keyUse.isDown()) {
+            return;
+        }
 
-            HitResult hitResult = mc.hitResult;
-            if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
-                Entity entity = ((EntityHitResult) hitResult).getEntity();
-                if (entity instanceof EndCrystal || entity instanceof MagmaCube || entity instanceof Slime) {
-                    if (!damageTick.getCurrentValue() || (entity instanceof Player && ((Player) entity).hurtTime > 0)) {
-                        int originalSlot = mc.player.getInventory().selected;
-                        int crystalSlot = findItemInHotbar(Items.END_CRYSTAL);
+        if (!mc.player.onGround() && !inAir.getCurrentValue()) {
+            return;
+        }
 
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(crystalSlot));
-                        } else if (crystalSlot != mc.player.getInventory().selected) {
-                            return;
-                        }
+        if (System.currentTimeMillis() - lastBreakTime >= (breakDelay.getCurrentValue() * 50)) {
+            performBreakLogic();
+        }
 
-                        mc.gameMode.attack(mc.player, entity);
-                        mc.player.swing(InteractionHand.MAIN_HAND);
+        if (System.currentTimeMillis() - lastPlaceTime >= (placeDelay.getCurrentValue() * 50)) {
+            performPlaceLogic();
+        }
+    }
 
-                        lastActionTime = System.currentTimeMillis();
+    private void performBreakLogic() {
+        HitResult hitResult = mc.hitResult;
+        Entity entityToBreak = null;
 
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(originalSlot));
-                        }
-
-                        return;
-                    }
+        if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
+            Entity entity = ((EntityHitResult) hitResult).getEntity();
+            if (entity instanceof EndCrystal || entity instanceof MagmaCube || entity instanceof Slime) {
+                if (!damageTick.getCurrentValue() || (entity instanceof Player && ((Player) entity).hurtTime > 0)) {
+                    entityToBreak = entity;
                 }
             }
+        }
 
-            if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
-                BlockHitResult blockHitResult = (BlockHitResult) hitResult;
-                BlockPos blockPos = blockHitResult.getBlockPos();
-                if (mc.level.getBlockState(blockPos).getBlock() == Blocks.BEDROCK || mc.level.getBlockState(blockPos).getBlock() == Blocks.OBSIDIAN) {
-                    BlockPos placePos = blockPos.above();
-                    if (!isCollidesWithEntity(placePos)) {
-                        int originalSlot = mc.player.getInventory().selected;
-                        int crystalSlot = findItemInHotbar(Items.END_CRYSTAL);
+        if (entityToBreak == null && headBob.getCurrentValue() && (hitResult == null || hitResult.getType() == HitResult.Type.MISS)) {
+            Optional<EndCrystal> nearestCrystalOpt = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), false)
+                    .filter(entityx -> entityx instanceof EndCrystal && mc.player.distanceTo(entityx) <= 4.5f)
+                    .map(entityx -> (EndCrystal) entityx)
+                    .min((c1, c2) -> Float.compare(mc.player.distanceTo(c1), mc.player.distanceTo(c2)));
+            if (nearestCrystalOpt.isPresent()) {
+                entityToBreak = nearestCrystalOpt.get();
+            }
+        }
 
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(crystalSlot));
-                        } else if (crystalSlot != mc.player.getInventory().selected) {
-                            return;
-                        }
+        if (entityToBreak != null) {
+            int crystalSlot = findItemInHotbar(Items.END_CRYSTAL);
+            if (crystalSlot == -1) return;
 
-                        mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
-                        lastActionTime = System.currentTimeMillis();
-
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(originalSlot));
-                        }
-
-                        return;
-                    }
-                }
+            if (autoSwitch.getCurrentValue()) {
+                setSlot(crystalSlot);
+            } else if (mc.player.getInventory().selected != crystalSlot) {
+                return;
             }
 
-            if (headBob.getCurrentValue() && (hitResult == null || hitResult.getType() == HitResult.Type.MISS)) {
-                Optional<EndCrystal> nearestCrystal = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), false)
-                        .filter(entityx -> entityx instanceof EndCrystal)
-                        .map(entityx -> (EndCrystal)entityx)
-                        .min((c1, c2) -> Float.compare(mc.player.distanceTo(c1), mc.player.distanceTo(c2)));
+            mc.gameMode.attack(mc.player, entityToBreak);
+            mc.player.swing(InteractionHand.MAIN_HAND);
+            lastBreakTime = System.currentTimeMillis();
+        }
+    }
 
-                nearestCrystal.ifPresent(crystal -> {
-                    if (mc.player.distanceTo(crystal) <= 4.5f) {
-                        int originalSlot = mc.player.getInventory().selected;
-                        int crystalSlot = findItemInHotbar(Items.END_CRYSTAL);
+    private void performPlaceLogic() {
+        HitResult hitResult = mc.hitResult;
 
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(crystalSlot));
-                        } else if (crystalSlot != mc.player.getInventory().selected) {
-                            return;
-                        }
+        if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockHitResult blockHitResult = (BlockHitResult) hitResult;
+            BlockPos blockPos = blockHitResult.getBlockPos();
+            if (mc.level.getBlockState(blockPos).is(Blocks.BEDROCK) || mc.level.getBlockState(blockPos).is(Blocks.OBSIDIAN)) {
+                if (!isCollidesWithEntity(blockPos.above())) {
+                    int crystalSlot = findItemInHotbar(Items.END_CRYSTAL);
+                    if (crystalSlot == -1) return;
 
-                        mc.gameMode.attack(mc.player, crystal);
-                        mc.player.swing(InteractionHand.MAIN_HAND);
-
-                        lastActionTime = System.currentTimeMillis();
-
-                        if (silentSwap.getCurrentValue() && crystalSlot != -1) {
-                            mc.getConnection().send(new ServerboundSetCarriedItemPacket(originalSlot));
-                        }
+                    if (autoSwitch.getCurrentValue()) {
+                        setSlot(crystalSlot);
+                    } else if (mc.player.getInventory().selected != crystalSlot) {
+                        return;
                     }
-                });
+
+                    mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHitResult);
+                    mc.player.swing(InteractionHand.MAIN_HAND);
+                    lastPlaceTime = System.currentTimeMillis();
+                }
             }
         }
     }
 
-    private boolean isHoldingOrSilentSwapping(net.minecraft.world.item.Item item) {
-        return findItemInHotbar(item) != -1 && silentSwap.getCurrentValue();
-    }
-
-    private void silentSwap(int slot) {
+    private void setSlot(int slot) {
+        if (mc.player != null && slot >= 0 && slot < 9) {
+            mc.player.getInventory().selected = slot;
+        }
     }
 
     private int findItemInHotbar(net.minecraft.world.item.Item item) {
         for (int i = 0; i < 9; ++i) {
-            if (mc.player.getInventory().getItem(i).getItem() == item) {
+            if (mc.player.getInventory().getItem(i).is(item)) {
                 return i;
             }
         }
@@ -224,11 +208,7 @@ public class AutoCrystal extends Module {
     }
 
     private boolean isInvalidPlayer() {
-        for (Player player : mc.level.players()) {
-            if (player != mc.player && player.isAlive()) {
-                return false;
-            }
-        }
-        return true;
+        return mc.level.players().stream()
+                .noneMatch(player -> player != mc.player && player.isAlive());
     }
 }

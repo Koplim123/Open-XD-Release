@@ -189,84 +189,55 @@ public class RotationUtils {
         return new Vec3((double)(yawSin * pitchCos), (double)pitchSin, (double)(yawCos * pitchCos));
     }
 
-    /**
-     * @param target
-     * @param mode "Center" or "Closest"
-     * @return
-     */
-    public static RotationUtils.Data getRotationDataToEntity(Entity target, String mode) {
+    public static RotationUtils.Data getRotationDataToEntity(Entity target) {
         Vec3 playerPosition = new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ());
         Vec3 eyePos = playerPosition.add(0.0, (double)mc.player.getEyeHeight(), 0.0);
         AABB targetBox = getTargetBoundingBox(target);
+        double minX = targetBox.minX;
+        double minY = targetBox.minY;
+        double minZ = targetBox.minZ;
+        double maxX = targetBox.maxX;
+        double maxY = targetBox.maxY;
+        double maxZ = targetBox.maxZ;
+        double spacing = 0.1;
+        Set<Vec3> points = new OrderedHashSet();
+        points.add(new Vec3(minX + maxX / 2.0, minY + maxY / 2.0, minZ + maxZ / 2.0));
+        points.add(getClosestPoint(eyePos, targetBox));
 
-        Vec3 targetPoint;
-        if (mode.equalsIgnoreCase("Closest")) {
-            targetPoint = getClosestPoint(eyePos, targetBox);
-        } else { // "Center" mode or any other mode
-            targetPoint = targetBox.getCenter();
-        }
-
-        Rotation rotations = getRotations(eyePos, targetPoint);
-        HitResult hitResult = rayTrace(rotations);
-
-        if (checkHitResult(eyePos, hitResult, target)) {
-            Vec3 location = hitResult.getLocation();
-            return new RotationUtils.Data(
-                    eyePos,
-                    location,
-                    location.distanceTo(eyePos),
-                    getFixedRotation(rotations.getYaw(), rotations.getPitch(), RotationManager.lastRotations.x, RotationManager.lastRotations.y)
-            );
-        }
-
-        // Fallback for "Closest" mode if direct shot fails
-        if (mode.equalsIgnoreCase("Closest")) {
-            double minX = targetBox.minX;
-            double minY = targetBox.minY;
-            double minZ = targetBox.minZ;
-            double maxX = targetBox.maxX;
-            double maxY = targetBox.maxY;
-            double maxZ = targetBox.maxZ;
-            double spacing = 0.1;
-            Set<Vec3> points = new OrderedHashSet();
-            points.add(getClosestPoint(eyePos, targetBox));
-
-            for (double x = minX; x <= maxX; x += spacing) {
-                for (double y = minY; y <= maxY; y += spacing) {
-                    points.add(new Vec3(x, y, minZ));
-                    points.add(new Vec3(x, y, maxZ));
-                }
-            }
-
-            for (double x = minX; x <= maxX; x += spacing) {
-                for (double z = minZ; z <= maxZ; z += spacing) {
-                    points.add(new Vec3(x, minY, z));
-                    points.add(new Vec3(x, maxY, z));
-                }
-            }
-
+        for (double x = minX; x <= maxX; x += spacing) {
             for (double y = minY; y <= maxY; y += spacing) {
-                for (double z = minZ; z <= maxZ; z += spacing) {
-                    points.add(new Vec3(minX, y, z));
-                    points.add(new Vec3(maxX, y, z));
-                }
-            }
-
-            for (Vec3 point : points) {
-                Rotation bruteRotations = getRotations(eyePos, point);
-                HitResult bruteHitResult = rayTrace(bruteRotations);
-                if (checkHitResult(eyePos, bruteHitResult, target)) {
-                    Vec3 location = bruteHitResult.getLocation();
-                    return new RotationUtils.Data(
-                            eyePos,
-                            location,
-                            location.distanceTo(eyePos),
-                            getFixedRotation(bruteRotations.getYaw(), bruteRotations.getPitch(), RotationManager.lastRotations.x, RotationManager.lastRotations.y)
-                    );
-                }
+                points.add(new Vec3(x, y, minZ));
+                points.add(new Vec3(x, y, maxZ));
             }
         }
 
+        for (double x = minX; x <= maxX; x += spacing) {
+            for (double z = minZ; z <= maxZ; z += spacing) {
+                points.add(new Vec3(x, minY, z));
+                points.add(new Vec3(x, maxY, z));
+            }
+        }
+
+        for (double y = minY; y <= maxY; y += spacing) {
+            for (double z = minZ; z <= maxZ; z += spacing) {
+                points.add(new Vec3(minX, y, z));
+                points.add(new Vec3(maxX, y, z));
+            }
+        }
+
+        for (Vec3 point : points) {
+            Rotation bruteRotations = getRotations(eyePos, point);
+            HitResult bruteHitResult = rayTrace(bruteRotations);
+            if (checkHitResult(eyePos, bruteHitResult, target)) {
+                Vec3 location = bruteHitResult.getLocation();
+                return new RotationUtils.Data(
+                        eyePos,
+                        location,
+                        location.distanceTo(eyePos),
+                        getFixedRotation(bruteRotations.getYaw(), bruteRotations.getPitch(), RotationManager.lastRotations.x, RotationManager.lastRotations.y)
+                );
+            }
+        }
 
         return new RotationUtils.Data(eyePos, eyePos, 1000.0, null);
     }
@@ -314,7 +285,7 @@ public class RotationUtils {
         return current + f;
     }
 
-    public static boolean inFoV(Entity entity, float fov) {
+    public static boolean inFov(Entity entity, float fov) {
         Vector2f rotations = getRotations(entity);
         float diff = Math.abs(mc.player.getYRot() % 360.0F - rotations.x);
         float minDiff = Math.abs(Math.min(diff, 360.0F - diff));

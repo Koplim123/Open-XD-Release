@@ -99,17 +99,17 @@ public class FileManager {
       File file = configFile.getFile();
 
       if (!file.exists()) {
-         ChatUtils.addChatMessage("§c未找到配置 §6" + fileName + "§c!");
+         ChatUtils.addChatMessage("§cConfig not found §6" + fileName + "§c!");
          logger.warn("Config file does not exist: {}", fileName);
          return;
       }
 
       try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
          configFile.read(reader);
-         ChatUtils.addChatMessage("§a已加载配置 §6" + fileName + "§a!");
+         ChatUtils.addChatMessage("§aConfig §6" + fileName + "§a loaded successfully!");
          logger.info("Successfully loaded config file: {}", fileName);
       } catch (IOException e) {
-         ChatUtils.addChatMessage("§c加载配置 §6" + fileName + "§c 时发生错误!");
+         ChatUtils.addChatMessage("§cAn error occurred while loading config §6" + fileName + "§c!");
          logger.error("Failed to load config file: {}", fileName, e);
       }
    }
@@ -122,21 +122,19 @@ public class FileManager {
          if (!file.exists() && file.createNewFile()) {
             logger.info("Created new config file: {}", fileName);
          }
-         // 注意：Java的OutputStream默认会覆盖同名文件，所以无需额外检查。
          try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
             configFile.save(writer);
             writer.flush();
-            ChatUtils.addChatMessage("§a已写入配置 §6" + fileName + "§a!");
+            ChatUtils.addChatMessage("§aConfig §6" + fileName + "§a saved successfully!");
             logger.info("Successfully saved config file: {}", fileName);
          }
       } catch (IOException e) {
-         ChatUtils.addChatMessage("§c写入配置 §6" + fileName + "§c 时发生错误!");
+         ChatUtils.addChatMessage("§cAn error occurred while saving config §6" + fileName + "§c!");
          logger.error("Failed to save config file: {}", fileName, e);
       }
    }
 
    static {
-      // 使用 FMLPaths 获取游戏版本目录
       File gameDir = FMLPaths.GAMEDIR.get().toFile();
       clientFolder = new File(gameDir, "Naven-XD");
       configFolder = new File(clientFolder, "config");
