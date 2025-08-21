@@ -100,6 +100,7 @@ public class ModuleManager {
          new LegitKillAura(),
          new BetaBowAim(),
          new CrystalOptimizer(),
+         new Island(),
          new AutoCrystal(),
          new MidPearl()
 
