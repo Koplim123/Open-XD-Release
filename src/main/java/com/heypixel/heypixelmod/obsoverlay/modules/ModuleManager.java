@@ -96,7 +96,6 @@ public class ModuleManager {
          new LongJump(),
          new JumpReset(),
          new GhostHand(),
-         new BetaVelocity(),
          new PreferWeapon(),
          new Speed(),
          new TNTWarning(),
