@@ -4,38 +4,49 @@ import com.heypixel.heypixelmod.obsoverlay.annotations.FlowExclude;
 import com.heypixel.heypixelmod.obsoverlay.annotations.ParameterObfuscationExclude;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateFoV;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateHeldItem;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
-import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
+import com.heypixel.heypixelmod.obsoverlay.utils.FallingPlayer;
+import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.MoveUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.PlayerUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.Arrays;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.FlowerBlock;
+import net.minecraft.world.level.block.FungusBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
 import org.apache.commons.lang3.RandomUtils;
-
-import java.awt.*;
-import java.util.Arrays;
-import java.util.List;
 
 @ModuleInfo(
         name = "Scaffold",
@@ -116,114 +127,19 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
-
-    public BooleanValue keepFov = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
-    FloatValue fov = ValueBuilder.create(this, "Fov")
+    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
+    FloatValue fov = ValueBuilder.create(this, "FoV")
             .setDefaultFloatValue(1.15F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(1.0F)
             .setFloatStep(0.05F)
-            .setVisibility(() -> this.keepFov.getCurrentValue())
+            .setVisibility(() -> this.keepFoV.getCurrentValue())
             .build()
             .getFloatValue();
     int oldSlot;
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
     public int baseY = -1;
-
-    public ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Normal", "Sigmoid", "Acceleration").setDefaultModeIndex(0).build().getModeValue();
-    public FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
-            .setDefaultFloatValue(10.0F)
-            .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-    public FloatValue turnSpeedY = ValueBuilder.create(this, "Turn Speed Y")
-            .setDefaultFloatValue(10.0F)
-            .setFloatStep(1.0F)
-            .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-
-    public FloatValue yawAdjust = ValueBuilder.create(this, "Yaw Adjust")
-            .setDefaultFloatValue(0.0F)
-            .setFloatStep(0.1F)
-            .setMinFloatValue(-10.0F)
-            .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal") || this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-
-    public FloatValue pitchAdjust = ValueBuilder.create(this, "Pitch Adjust")
-            .setDefaultFloatValue(0.0F)
-            .setFloatStep(0.1F)
-            .setMinFloatValue(-10.0F)
-            .setMaxFloatValue(10.0F)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal") || this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-
-    private float currentSpeedX = 0.0f;
-    private float currentSpeedY = 0.0f;
-    public FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
-            .setDefaultFloatValue(2.0f)
-            .setFloatStep(0.1f)
-            .setMinFloatValue(0.1f)
-            .setMaxFloatValue(10.0f)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-    public FloatValue deceleration = ValueBuilder.create(this, "Deceleration")
-            .setDefaultFloatValue(5.0f)
-            .setFloatStep(0.1f)
-            .setMinFloatValue(0.1f)
-            .setMaxFloatValue(10.0f)
-            .setVisibility(() -> this.rotationType.isCurrentMode("Acceleration"))
-            .build()
-            .getFloatValue();
-
-    public BooleanValue safewalk = ValueBuilder.create(this, "Safewalk")
-            .setDefaultBooleanValue(false)
-            .build()
-            .getBooleanValue();
-    public FloatValue safewalkBoost = ValueBuilder.create(this, "Safewalk Boost")
-            .setDefaultFloatValue(2.0f)
-            .setFloatStep(0.1f)
-            .setMinFloatValue(1.0f)
-            .setMaxFloatValue(5.0f)
-            .setVisibility(() -> this.safewalk.getCurrentValue() && (this.rotationType.isCurrentMode("Acceleration") || this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid")))
-            .build()
-            .getFloatValue();
-
-    public FloatValue blockSearchDistance = ValueBuilder.create(this, "Block Search Distance")
-            .setDefaultFloatValue(6.0f)
-            .setFloatStep(1.0f)
-            .setMinFloatValue(1.0f)
-            .setMaxFloatValue(10.0f)
-            .build()
-            .getFloatValue();
-
-    public BooleanValue defaultPitch = ValueBuilder.create(this, "Default Pitch")
-            .setDefaultBooleanValue(false)
-            .build()
-            .getBooleanValue();
-
-    private float blockCounterWidth;
-    private float blockCounterHeight;
-    private boolean useOffhand = false;
-
-    // 新增: 用于控制 Acceleration 模式初始低头动作的变量
-    private boolean initialPitchSet = false;
-
-    // 新增: RayCast 功能开关
-    public BooleanValue rayCast = ValueBuilder.create(this, "RayCast").setDefaultBooleanValue(true).build().getBooleanValue();
-    // 新增: Sprint 功能开关
-    public BooleanValue sprint = ValueBuilder.create(this, "Sprint").setDefaultBooleanValue(true).build().getBooleanValue();
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -237,7 +153,7 @@ public class Scaffold extends Module {
             } else if (stack.getItem() instanceof ItemNameBlockItem) {
                 return false;
             } else {
-                Block block = ((BlockItem) stack.getItem()).getBlock();
+                Block block = ((BlockItem)stack.getItem()).getBlock();
                 if (block instanceof FlowerBlock) {
                     return false;
                 } else if (block instanceof BushBlock) {
@@ -255,15 +171,15 @@ public class Scaffold extends Module {
 
     public static boolean isOnBlockEdge(float sensitivity) {
         return !mc.level
-                .getCollisions(mc.player, mc.player.getBoundingBox().move(0.0, -0.5, 0.0).inflate((double) (-sensitivity), 0.0, (double) (-sensitivity)))
+                .getCollisions(mc.player, mc.player.getBoundingBox().move(0.0, -0.5, 0.0).inflate((double)(-sensitivity), 0.0, (double)(-sensitivity)))
                 .iterator()
                 .hasNext();
     }
 
     @EventTarget
-    public void onFov(EventUpdateFoV e) {
-        if (this.keepFov.getCurrentValue() && MoveUtils.isMoving()) {
-            e.setFov(this.fov.getCurrentValue() + (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
+    public void onFoV(EventUpdateFoV e) {
+        if (this.keepFoV.getCurrentValue() && MoveUtils.isMoving()) {
+            e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
         }
     }
 
@@ -271,13 +187,10 @@ public class Scaffold extends Module {
     public void onEnable() {
         if (mc.player != null) {
             this.oldSlot = mc.player.getInventory().selected;
-            this.rots.set(mc.player.getYRot(), mc.player.getXRot());
-            this.lastRots.set(mc.player.yRotO, mc.player.xRotO);
+            this.rots.set(mc.player.getYRot() - 180.0F, mc.player.getXRot());
+            this.lastRots.set(mc.player.yRotO - 180.0F, mc.player.xRotO);
             this.pos = null;
             this.baseY = 10000;
-            this.currentSpeedX = 0.0f;
-            this.currentSpeedY = 0.0f;
-            this.initialPitchSet = false; // 新增：重置初始低头状态
         }
     }
 
@@ -287,16 +200,13 @@ public class Scaffold extends Module {
         boolean isHoldingShift = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyShift.getKey().getValue());
         mc.options.keyJump.setDown(isHoldingJump);
         mc.options.keyShift.setDown(isHoldingShift);
-        // 新增: 禁用时恢复冲刺状态
-        mc.options.keySprint.setDown(false);
         mc.options.keyUse.setDown(false);
         mc.player.getInventory().selected = this.oldSlot;
-        RotationManager.rotations.set(mc.player.getYRot(), mc.player.getXRot());
     }
 
     @EventTarget
     public void onUpdateHeldItem(EventUpdateHeldItem e) {
-        if (this.renderItemSpoof.getCurrentValue() && e.getHand() == InteractionHand.MAIN_HAND && !this.useOffhand) {
+        if (this.renderItemSpoof.getCurrentValue() && e.getHand() == InteractionHand.MAIN_HAND) {
             e.setItem(mc.player.getInventory().getItem(this.oldSlot));
         }
     }
@@ -305,22 +215,12 @@ public class Scaffold extends Module {
     public void onEventEarlyTick(EventRunTicks e) {
         if (e.getType() == EventType.PRE && mc.screen == null && mc.player != null) {
             int slotID = -1;
-            this.useOffhand = false;
 
-            ItemStack offhandStack = mc.player.getOffhandItem();
-            if (offhandStack.getItem() instanceof BlockItem && isValidStack(offhandStack)) {
-                slotID = -2;
-                this.useOffhand = true;
-            }
-
-            if (slotID == -1) {
-                for (int i = 0; i < 9; i++) {
-                    ItemStack stack = mc.player.getInventory().getItem(i);
-                    if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
-                        slotID = i;
-                        this.useOffhand = false;
-                        break;
-                    }
+            for (int i = 0; i < 9; i++) {
+                ItemStack stack = mc.player.getInventory().getItem(i);
+                if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
+                    slotID = i;
+                    break;
                 }
             }
 
@@ -331,90 +231,40 @@ public class Scaffold extends Module {
             }
 
             if (slotID != -1 && mc.player.getInventory().selected != slotID) {
-                if (!this.useOffhand) {
-                    mc.player.getInventory().selected = slotID;
-                }
+                mc.player.getInventory().selected = slotID;
             }
 
             boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
             if (this.baseY == -1
-                    || this.baseY > (int) Math.floor(mc.player.getY()) - 1
+                    || this.baseY > (int)Math.floor(mc.player.getY()) - 1
                     || mc.player.onGround()
                     || !PlayerUtils.movementInput()
                     || isHoldingJump
                     || this.mode.isCurrentMode("Normal")) {
-                this.baseY = (int) Math.floor(mc.player.getY()) - 1;
+                this.baseY = (int)Math.floor(mc.player.getY()) - 1;
             }
 
             this.getBlockPos();
-
-            // 新增: Acceleration 模式的初始低头动作
-            if (this.rotationType.isCurrentMode("Acceleration") && !this.initialPitchSet) {
-                RotationManager.rotations.set(mc.player.getYRot() + 180.0F, 90.0F);
-                this.initialPitchSet = true; // 标记为已执行，确保只执行一次
-            }
-
             if (this.pos != null) {
                 this.correctRotation = this.getPlayerYawRotation();
-                this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
-                this.correctRotation.setY(this.correctRotation.getY() + this.pitchAdjust.getCurrentValue());
-
-                boolean isFalling = this.safewalk.getCurrentValue() && !mc.player.onGround() && mc.player.getDeltaMovement().y < -0.1;
-                float boostFactor = isFalling ? this.safewalkBoost.getCurrentValue() : 1.0f;
-
-                if (this.rotationType.isCurrentMode("Linear")) {
-                    this.updateLinearRotations(this.correctRotation, boostFactor);
-                } else if (this.rotationType.isCurrentMode("Sigmoid")) {
-                    this.updateSigmoidRotations(this.correctRotation, boostFactor);
-                } else if (this.rotationType.isCurrentMode("Normal")) {
-                    if (this.snap.getCurrentValue() && !isHoldingJump) {
-                        this.doSnap();
-                    } else {
-                        this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
-                        this.rots.setY(this.correctRotation.getY());
-                    }
-                } else if (this.rotationType.isCurrentMode("Acceleration")) {
-                    this.updateAccelerationRotations(this.correctRotation, boostFactor);
+                if (this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue()) {
+                    this.rots.setX(this.correctRotation.getX());
                 } else {
-                    this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
                 }
-            } else {
-                if (this.defaultPitch.getCurrentValue()) {
-                    this.rots.set(mc.player.yRotO + 180.0F, 90.0F);
-                }
-            }
 
-            RotationManager.rotations.set(this.rots);
-
-            // 修复: 只有当转头完成后才尝试放置方块
-            boolean rotationsMatch = RotationUtils.normalizeAngle(this.rots.x - this.correctRotation.x) < 1.0f && RotationUtils.normalizeAngle(this.rots.y - this.correctRotation.y) < 1.0f;
-            if (rotationsMatch) {
-                // 仅当转头到位后，才尝试放置方块
-                if (this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
-                    // 新增: RayCast 开关控制
-                    if (this.rayCast.getCurrentValue()) {
-                        if (this.checkPlace(this.pos)) {
-                            this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
-                        }
-                    } else {
-                        this.placeBlock(this.useOffhand ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
-                    }
-                }
-            }
-
-            // 新增: Sprint 开关控制
-            if (!this.sprint.getCurrentValue() && mc.player.isSprinting()) {
-                mc.options.keySprint.setDown(false);
-                mc.player.setSprinting(false);
+                this.rots.setY(this.correctRotation.getY());
             }
 
             if (this.sneak.getCurrentValue()) {
                 this.lastSneakTicks++;
+                System.out.println(this.lastSneakTicks);
                 if (this.lastSneakTicks == 18) {
                     if (mc.player.isSprinting()) {
                         mc.options.keySprint.setDown(false);
                         mc.player.setSprinting(false);
                     }
+
                     mc.options.keyShift.setDown(true);
                 } else if (this.lastSneakTicks >= 21) {
                     mc.options.keyShift.setDown(false);
@@ -435,91 +285,22 @@ public class Scaffold extends Module {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
                 }
+
+                if (this.snap.getCurrentValue() && !isHoldingJump) {
+                    this.doSnap();
+                }
             }
+
             this.lastRots.set(this.rots.getX(), this.rots.getY());
         }
-    }
-
-    private void updateLinearRotations(Vector2f targetRotations, float boostFactor) {
-        float targetYaw = targetRotations.x;
-        float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue() * boostFactor;
-        float maxSpeedY = this.turnSpeedY.getCurrentValue() * boostFactor;
-
-        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
-        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
-
-        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
-        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
-
-        this.rots.set(newYaw, newPitch);
-    }
-
-    private void updateSigmoidRotations(Vector2f targetRotations, float boostFactor) {
-        float targetYaw = targetRotations.x;
-        float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue() * boostFactor;
-        float maxSpeedY = this.turnSpeedY.getCurrentValue() * boostFactor;
-        float smoothingFactor = 0.5f;
-
-        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
-        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
-
-        float sigmoidX = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaYaw) * smoothingFactor)));
-        float sigmoidY = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaPitch) * smoothingFactor)));
-
-        float turnRateX = sigmoidX * maxSpeedX;
-        float turnRateY = sigmoidY * maxSpeedY;
-
-        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), turnRateX) * Math.signum(deltaYaw);
-        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), turnRateY) * Math.signum(deltaPitch);
-
-        this.rots.set(newYaw, newPitch);
-    }
-
-    private void updateAccelerationRotations(Vector2f targetRotations, float boostFactor) {
-        float targetYaw = targetRotations.x;
-        float targetPitch = targetRotations.y;
-        float maxSpeedX = this.turnSpeedX.getCurrentValue();
-        float maxSpeedY = this.turnSpeedY.getCurrentValue();
-        float accel = this.acceleration.getCurrentValue();
-        float decel = this.deceleration.getCurrentValue();
-
-        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
-        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
-
-        // 加速逻辑
-        if (Math.abs(deltaYaw) > 1.0f) {
-            this.currentSpeedX = Math.min(this.currentSpeedX + accel, maxSpeedX);
-        } else {
-            this.currentSpeedX = Math.max(0.0f, this.currentSpeedX - decel);
-        }
-        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), this.currentSpeedX * boostFactor) * Math.signum(deltaYaw);
-
-        if (Math.abs(deltaPitch) > 1.0f) {
-            this.currentSpeedY = Math.min(this.currentSpeedY + accel, maxSpeedY);
-        } else {
-            this.currentSpeedY = Math.max(0.0f, this.currentSpeedY - decel);
-        }
-        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), this.currentSpeedY * boostFactor) * Math.signum(deltaPitch);
-
-        // 新增: 当接近目标时平滑减速
-        if (Math.abs(deltaYaw) < 10.0f) {
-            newYaw = this.rots.x + deltaYaw * 0.2f;
-        }
-        if (Math.abs(deltaPitch) < 10.0f) {
-            newPitch = this.rots.y + deltaPitch * 0.2f;
-        }
-
-        this.rots.set(Mth.wrapDegrees(newYaw), newPitch);
     }
 
     private void doSnap() {
         boolean shouldPlaceBlock = false;
         HitResult objectPosition = RayTraceUtils.rayCast(1.0F, this.rots);
         if (objectPosition.getType() == Type.BLOCK) {
-            BlockHitResult position = (BlockHitResult) objectPosition;
-            if (position.getBlockPos().equals(this.pos.position) && position.getDirection() != Direction.UP) {
+            BlockHitResult position = (BlockHitResult)objectPosition;
+            if (position.getBlockPos().equals(this.pos) && position.getDirection() != Direction.UP) {
                 shouldPlaceBlock = true;
             }
         }
@@ -531,34 +312,37 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onClick(EventClick e) {
-        // 注释掉原有的 onClick 逻辑，将其集成到 onEventEarlyTick 中
-        // e.setCancelled(true);
+        e.setCancelled(true);
+        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
+            if (!this.checkPlace(this.pos)) {
+                return;
+            }
+
+            this.placeBlock();
+        }
     }
 
     private boolean checkPlace(Scaffold.BlockPosWithFacing data) {
-        Vec3 center = new Vec3((double) data.position.getX() + 0.5, (double) ((float) data.position.getY() + 0.5F), (double) data.position.getZ() + 0.5);
+        Vec3 center = new Vec3((double)data.position.getX() + 0.5, (double)((float)data.position.getY() + 0.5F), (double)data.position.getZ() + 0.5);
         Vec3 hit = center.add(
-                new Vec3((double) data.facing.getNormal().getX() * 0.5, (double) data.facing.getNormal().getY() * 0.5, (double) data.facing.getNormal().getZ() * 0.5)
+                new Vec3((double)data.facing.getNormal().getX() * 0.5, (double)data.facing.getNormal().getY() * 0.5, (double)data.facing.getNormal().getZ() * 0.5)
         );
         Vec3 relevant = hit.subtract(mc.player.getEyePosition());
         return relevant.lengthSqr() <= 20.25 && relevant.normalize().dot(Vec3.atLowerCornerOf(data.facing.getNormal().multiply(-1)).normalize()) >= 0.0;
     }
 
-    private void placeBlock(InteractionHand hand) {
-        if (this.pos != null) {
-            ItemStack itemStack = hand == InteractionHand.MAIN_HAND ? mc.player.getMainHandItem() : mc.player.getOffhandItem();
-            if (isValidStack(itemStack)) {
-                Direction sbFace = this.pos.facing();
-                boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
-                if (sbFace != null
-                        && (sbFace != Direction.UP || mc.player.onGround() || !PlayerUtils.movementInput() || isHoldingJump || this.mode.isCurrentMode("Normal"))
-                        && this.shouldBuild()) {
-                    InteractionResult result = mc.gameMode
-                            .useItemOn(mc.player, hand, new BlockHitResult(getVec3(this.pos.position(), sbFace), sbFace, this.pos.position(), false));
-                    if (result == InteractionResult.SUCCESS) {
-                        mc.player.swing(hand);
-                        this.pos = null;
-                    }
+    private void placeBlock() {
+        if (this.pos != null && isValidStack(mc.player.getMainHandItem())) {
+            Direction sbFace = this.pos.facing();
+            boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
+            if (sbFace != null
+                    && (sbFace != Direction.UP || mc.player.onGround() || !PlayerUtils.movementInput() || isHoldingJump || this.mode.isCurrentMode("Normal"))
+                    && this.shouldBuild()) {
+                InteractionResult result = mc.gameMode
+                        .useItemOn(mc.player, InteractionHand.MAIN_HAND, new BlockHitResult(getVec3(this.pos.position(), sbFace), sbFace, this.pos.position(), false));
+                if (result == InteractionResult.SUCCESS) {
+                    mc.player.swing(InteractionHand.MAIN_HAND);
+                    this.pos = null;
                 }
             }
         }
@@ -574,8 +358,7 @@ public class Scaffold extends Module {
 
     private boolean shouldBuild() {
         BlockPos playerPos = BlockPos.containing(mc.player.getX(), mc.player.getY() - 0.5, mc.player.getZ());
-        ItemStack itemStack = this.useOffhand ? mc.player.getOffhandItem() : mc.player.getMainHandItem();
-        return mc.level.isEmptyBlock(playerPos) && isValidStack(itemStack);
+        return mc.level.isEmptyBlock(playerPos) && isValidStack(mc.player.getMainHandItem());
     }
 
     @FlowExclude
@@ -585,17 +368,15 @@ public class Scaffold extends Module {
         if (mc.player.getDeltaMovement().y < 0.01) {
             FallingPlayer fallingPlayer = new FallingPlayer(mc.player);
             fallingPlayer.calculate(2);
-            baseVec = new Vec3(baseVec.x, Math.max(fallingPlayer.y + (double) mc.player.getEyeHeight(), baseVec.y), baseVec.z);
+            baseVec = new Vec3(baseVec.x, Math.max(fallingPlayer.y + (double)mc.player.getEyeHeight(), baseVec.y), baseVec.z);
         }
 
-        BlockPos base = BlockPos.containing(baseVec.x, (double) ((float) this.baseY + 0.1F), baseVec.z);
+        BlockPos base = BlockPos.containing(baseVec.x, (double)((float)this.baseY + 0.1F), baseVec.z);
         int baseX = base.getX();
         int baseZ = base.getZ();
-        int searchDistance = (int) this.blockSearchDistance.getCurrentValue();
-
         if (!mc.level.getBlockState(base).entityCanStandOn(mc.level, base, mc.player)) {
             if (!this.checkBlock(baseVec, base)) {
-                for (int d = 1; d <= searchDistance; d++) {
+                for (int d = 1; d <= 6; d++) {
                     if (this.checkBlock(baseVec, new BlockPos(baseX, this.baseY - d, baseZ))) {
                         return;
                     }
@@ -622,11 +403,11 @@ public class Scaffold extends Module {
         if (!(mc.level.getBlockState(bp).getBlock() instanceof AirBlock)) {
             return false;
         } else {
-            Vec3 center = new Vec3((double) bp.getX() + 0.5, (double) ((float) bp.getY() + 0.5F), (double) bp.getZ() + 0.5);
+            Vec3 center = new Vec3((double)bp.getX() + 0.5, (double)((float)bp.getY() + 0.5F), (double)bp.getZ() + 0.5);
 
             for (Direction sbface : Direction.values()) {
                 Vec3 hit = center.add(
-                        new Vec3((double) sbface.getNormal().getX() * 0.5, (double) sbface.getNormal().getY() * 0.5, (double) sbface.getNormal().getZ() * 0.5)
+                        new Vec3((double)sbface.getNormal().getX() * 0.5, (double)sbface.getNormal().getY() * 0.5, (double)sbface.getNormal().getZ() * 0.5)
                 );
                 Vec3i baseBlock = bp.offset(sbface.getNormal());
                 BlockPos po = new BlockPos(baseBlock.getX(), baseBlock.getY(), baseBlock.getZ());
@@ -638,6 +419,7 @@ public class Scaffold extends Module {
                     }
                 }
             }
+
             return false;
         }
     }
@@ -645,83 +427,25 @@ public class Scaffold extends Module {
     @FlowExclude
     @ParameterObfuscationExclude
     public static Vec3 getVec3(BlockPos pos, Direction face) {
-        double x = (double) pos.getX() + 0.5;
-        double y = (double) pos.getY() + 0.5;
-        double z = (double) pos.getZ() + 0.5;
+        double x = (double)pos.getX() + 0.5;
+        double y = (double)pos.getY() + 0.5;
+        double z = (double)pos.getZ() + 0.5;
         if (face != Direction.UP && face != Direction.DOWN) {
             y += 0.08;
         } else {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         if (face == Direction.WEST || face == Direction.EAST) {
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         if (face == Direction.SOUTH || face == Direction.NORTH) {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
+
         return new Vec3(x, y, z);
-    }
-
-    @EventTarget
-    public void onShader(EventShader e) {
-        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float y = screenHeight / 2.0F + 15.0F;
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-        }
-    }
-
-    @EventTarget
-    public void onRender(EventRender2D e) {
-        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
-            int blockCount = 0;
-            for (ItemStack itemStack : mc.player.getInventory().items) {
-                if (itemStack.getItem() instanceof BlockItem) {
-                    blockCount += itemStack.getCount();
-                }
-            }
-            ItemStack offhandStack = mc.player.getOffhandItem();
-            if (offhandStack.getItem() instanceof BlockItem) {
-                blockCount += offhandStack.getCount();
-            }
-
-            String text = "Blocks: " + blockCount;
-            double backgroundScale = 0.4;
-            double textScale = 0.35;
-
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
-            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
-
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-
-            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float backgroundY = screenHeight / 2.0F + 15.0F;
-
-            float textWidth = Fonts.opensans.getWidth(text, textScale);
-            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
-
-            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
-            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
-
-            e.getStack().pushPose();
-
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-            StencilUtils.erase(true);
-            int headerColor = new Color(150, 45, 45, 255).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
-
-            int bodyColor = new Color(0, 0, 0, 120).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
-
-            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
-            StencilUtils.dispose();
-            e.getStack().popPose();
-        }
     }
 
     public static record BlockPosWithFacing(BlockPos position, Direction facing) {

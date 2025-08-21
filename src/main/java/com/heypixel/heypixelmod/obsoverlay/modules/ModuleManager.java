@@ -102,8 +102,8 @@ public class ModuleManager {
          new CrystalOptimizer(),
          new Island(),
          new AutoCrystal(),
-         new MidPearl()
-
+         new MidPearl(),
+         new IRCModule()
       );
    }
 
