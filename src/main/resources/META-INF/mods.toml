@@ -30,11 +30,11 @@ displayName="Naven-XD" #mandatory
 # A text field displayed in the mod UI
 #credits="Thanks for this example mod goes to Java" #optional
 # A text field displayed in the mod UI
-authors="jiuxian_baka" #optional
+authors="Xiaodu#lh#LELEXIAOLL#Koplim" #optional
 # The description text for the mod (multi line!) (#mandatory)
-description='''共享Naven'''
+description='''NavenXD'''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
-[[dependencies."naven"]] #optional
+[[dependencies."navenXD"]] #optional
    # the modid of the dependency
    modId="forge" #mandatory
    # Does this dependency have to exist - if not, ordering below must be specified

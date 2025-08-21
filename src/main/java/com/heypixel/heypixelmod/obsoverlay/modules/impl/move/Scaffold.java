@@ -4,28 +4,19 @@ import com.heypixel.heypixelmod.obsoverlay.annotations.FlowExclude;
 import com.heypixel.heypixelmod.obsoverlay.annotations.ParameterObfuscationExclude;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateFoV;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateHeldItem;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.FallingPlayer;
-import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.MoveUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.PlayerUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
+import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.platform.InputConstants;
-import java.util.Arrays;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -34,19 +25,16 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.AirBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BushBlock;
-import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.FlowerBlock;
-import net.minecraft.world.level.block.FungusBlock;
-import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.RandomUtils;
+
+import java.awt.*;
+import java.util.Arrays;
+import java.util.List;
 
 @ModuleInfo(
         name = "Scaffold",
@@ -127,8 +115,8 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
-    FloatValue fov = ValueBuilder.create(this, "FoV")
+    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
+    FloatValue fov = ValueBuilder.create(this, "Fov")
             .setDefaultFloatValue(1.15F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(1.0F)
@@ -140,6 +128,47 @@ public class Scaffold extends Module {
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
     public int baseY = -1;
+
+    public ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Normal", "Sigmoid").setDefaultModeIndex(0).build().getModeValue();
+    public FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
+            .setDefaultFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(180.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
+            .build()
+            .getFloatValue();
+    public FloatValue turnSpeedY = ValueBuilder.create(this, "Turn Speed Y")
+            .setDefaultFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(180.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid"))
+            .build()
+            .getFloatValue();
+
+    public FloatValue yawAdjust = ValueBuilder.create(this, "Yaw Adjust")
+            .setDefaultFloatValue(0.0F)
+            .setFloatStep(0.1F)
+            .setMinFloatValue(-10.0F)
+            .setMaxFloatValue(10.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
+            .build()
+            .getFloatValue();
+
+    public FloatValue pitchAdjust = ValueBuilder.create(this, "Pitch Adjust")
+            .setDefaultFloatValue(0.0F)
+            .setFloatStep(0.1F)
+            .setMinFloatValue(-10.0F)
+            .setMaxFloatValue(10.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Linear") || this.rotationType.isCurrentMode("Sigmoid") || this.rotationType.isCurrentMode("Normal"))
+            .build()
+            .getFloatValue();
+
+    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
+
+    private float blockCounterWidth;
+    private float blockCounterHeight;
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -187,8 +216,8 @@ public class Scaffold extends Module {
     public void onEnable() {
         if (mc.player != null) {
             this.oldSlot = mc.player.getInventory().selected;
-            this.rots.set(mc.player.getYRot() - 180.0F, mc.player.getXRot());
-            this.lastRots.set(mc.player.yRotO - 180.0F, mc.player.xRotO);
+            this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+            this.lastRots.set(mc.player.yRotO, mc.player.xRotO);
             this.pos = null;
             this.baseY = 10000;
         }
@@ -202,6 +231,7 @@ public class Scaffold extends Module {
         mc.options.keyShift.setDown(isHoldingShift);
         mc.options.keyUse.setDown(false);
         mc.player.getInventory().selected = this.oldSlot;
+        RotationManager.rotations.set(mc.player.getYRot(), mc.player.getXRot());
     }
 
     @EventTarget
@@ -215,7 +245,6 @@ public class Scaffold extends Module {
     public void onEventEarlyTick(EventRunTicks e) {
         if (e.getType() == EventType.PRE && mc.screen == null && mc.player != null) {
             int slotID = -1;
-
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = mc.player.getInventory().getItem(i);
                 if (stack.getItem() instanceof BlockItem && isValidStack(stack)) {
@@ -247,24 +276,34 @@ public class Scaffold extends Module {
             this.getBlockPos();
             if (this.pos != null) {
                 this.correctRotation = this.getPlayerYawRotation();
-                if (this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue()) {
-                    this.rots.setX(this.correctRotation.getX());
-                } else {
-                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
-                }
+                this.correctRotation.setX(this.correctRotation.getX() + this.yawAdjust.getCurrentValue());
+                this.correctRotation.setY(this.correctRotation.getY() + this.pitchAdjust.getCurrentValue());
 
-                this.rots.setY(this.correctRotation.getY());
+                if (this.rotationType.isCurrentMode("Linear")) {
+                    this.updateLinearRotations(this.correctRotation);
+                } else if (this.rotationType.isCurrentMode("Sigmoid")) {
+                    this.updateSigmoidRotations(this.correctRotation);
+                } else if (this.rotationType.isCurrentMode("Normal")) {
+                    if (this.snap.getCurrentValue() && !isHoldingJump) {
+                        this.doSnap();
+                    } else {
+                        this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
+                        this.rots.setY(this.correctRotation.getY());
+                    }
+                } else {
+                    this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+                }
             }
+
+            RotationManager.rotations.set(this.rots);
 
             if (this.sneak.getCurrentValue()) {
                 this.lastSneakTicks++;
-                System.out.println(this.lastSneakTicks);
                 if (this.lastSneakTicks == 18) {
                     if (mc.player.isSprinting()) {
                         mc.options.keySprint.setDown(false);
                         mc.player.setSprinting(false);
                     }
-
                     mc.options.keyShift.setDown(true);
                 } else if (this.lastSneakTicks >= 21) {
                     mc.options.keyShift.setDown(false);
@@ -285,14 +324,46 @@ public class Scaffold extends Module {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
                 }
-
-                if (this.snap.getCurrentValue() && !isHoldingJump) {
-                    this.doSnap();
-                }
             }
-
             this.lastRots.set(this.rots.getX(), this.rots.getY());
         }
+    }
+
+    private void updateLinearRotations(Vector2f targetRotations) {
+        float targetYaw = targetRotations.x;
+        float targetPitch = targetRotations.y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
+
+        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
+        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
+
+        this.rots.set(newYaw, newPitch);
+    }
+
+    private void updateSigmoidRotations(Vector2f targetRotations) {
+        float targetYaw = targetRotations.x;
+        float targetPitch = targetRotations.y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float smoothingFactor = 0.5f;
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.rots.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.rots.y);
+
+        float sigmoidX = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaYaw) * smoothingFactor)));
+        float sigmoidY = (float) (1.0 / (1.0 + Math.exp(-Math.abs(deltaPitch) * smoothingFactor)));
+
+        float turnRateX = sigmoidX * maxSpeedX;
+        float turnRateY = sigmoidY * maxSpeedY;
+
+        float newYaw = this.rots.x + Math.min(Math.abs(deltaYaw), turnRateX) * Math.signum(deltaYaw);
+        float newPitch = this.rots.y + Math.min(Math.abs(deltaPitch), turnRateY) * Math.signum(deltaPitch);
+
+        this.rots.set(newYaw, newPitch);
     }
 
     private void doSnap() {
@@ -300,7 +371,7 @@ public class Scaffold extends Module {
         HitResult objectPosition = RayTraceUtils.rayCast(1.0F, this.rots);
         if (objectPosition.getType() == Type.BLOCK) {
             BlockHitResult position = (BlockHitResult)objectPosition;
-            if (position.getBlockPos().equals(this.pos) && position.getDirection() != Direction.UP) {
+            if (position.getBlockPos().equals(this.pos.position) && position.getDirection() != Direction.UP) {
                 shouldPlaceBlock = true;
             }
         }
@@ -314,11 +385,9 @@ public class Scaffold extends Module {
     public void onClick(EventClick e) {
         e.setCancelled(true);
         if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
-            if (!this.checkPlace(this.pos)) {
-                return;
+            if (this.checkPlace(this.pos)) {
+                this.placeBlock();
             }
-
-            this.placeBlock();
         }
     }
 
@@ -419,7 +488,6 @@ public class Scaffold extends Module {
                     }
                 }
             }
-
             return false;
         }
     }
@@ -436,16 +504,60 @@ public class Scaffold extends Module {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
-
         if (face == Direction.WEST || face == Direction.EAST) {
             z += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
-
         if (face == Direction.SOUTH || face == Direction.NORTH) {
             x += MathUtils.getRandomDoubleInRange(0.3, -0.3);
         }
-
         return new Vec3(x, y, z);
+    }
+
+    @EventTarget
+    public void onShader(EventShader e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
+            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+            float y = screenHeight / 2.0F + 15.0F;
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+        }
+    }
+
+    @EventTarget
+    public void onRender(EventRender2D e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
+            int blockCount = 0;
+            for (ItemStack itemStack : mc.player.getInventory().items) {
+                if (itemStack.getItem() instanceof BlockItem) {
+                    blockCount += itemStack.getCount();
+                }
+            }
+            String text = "Blocks: " + blockCount;
+            double scale = 0.4;
+
+            this.blockCounterWidth = Fonts.opensans.getWidth(text, scale);
+            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, scale);
+
+            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F; // 调整X坐标以适应背景宽度
+            float y = screenHeight / 2.0F + 15.0F;
+
+            e.getStack().pushPose();
+
+            StencilUtils.write(false);
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            StencilUtils.erase(true);
+            int headerColor = new Color(150, 45, 45, 255).getRGB();
+            RenderUtils.fill(e.getStack(), x, y, x + this.blockCounterWidth + 6.0F, y + 3.0F, headerColor);
+
+            int bodyColor = new Color(0, 0, 0, 120).getRGB();
+            RenderUtils.fill(e.getStack(), x, y + 3.0F, x + this.blockCounterWidth + 6.0F, y + this.blockCounterHeight + 8.0F, bodyColor);
+            Fonts.opensans.render(e.getStack(), text, x + 3.0, y + 4.0, Color.WHITE, true, scale);
+            StencilUtils.dispose();
+            e.getStack().popPose();
+        }
     }
 
     public static record BlockPosWithFacing(BlockPos position, Direction facing) {

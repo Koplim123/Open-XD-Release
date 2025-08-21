@@ -155,10 +155,10 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // Java-WebSocket library for IRC functionality
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-    
+    implementation 'org.java-websocket:Java-WebSocket:1.6.0'
+
     // Gson for JSON parsing
-    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.code.gson:gson:2.13.1'
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
