@@ -37,7 +37,7 @@ public class BallAura extends Module {
     private static final Random random = new Random();
     private final Minecraft mc = Minecraft.getInstance();
 
-    private final BooleanValue onlyWhenCombat = ValueBuilder.create(this, "仅战斗时")
+    private final BooleanValue onlyWhenCombat = ValueBuilder.create(this, "Only when fighting")
             .setDefaultBooleanValue(true)
             .build().getBooleanValue();
 
@@ -45,56 +45,56 @@ public class BallAura extends Module {
             .setDefaultBooleanValue(false)
             .build().getBooleanValue();
 
-    private final FloatValue prepareTimeMin = ValueBuilder.create(this, "准备时间Min(ms)")
+    private final FloatValue prepareTimeMin = ValueBuilder.create(this, "Preparation time Min(ms)")
             .setDefaultFloatValue(100.0F)
             .setFloatStep(50.0F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(1000.0F)
             .build().getFloatValue();
 
-    private final FloatValue prepareTimeMax = ValueBuilder.create(this, "准备时间Max(ms)")
+    private final FloatValue prepareTimeMax = ValueBuilder.create(this, "Preparation time Max(ms)")
             .setDefaultFloatValue(300.0F)
             .setFloatStep(50.0F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(1000.0F)
             .build().getFloatValue();
 
-    private final FloatValue throwWaitTimeMin = ValueBuilder.create(this, "扔出等待Min(ms)")
+    private final FloatValue throwWaitTimeMin = ValueBuilder.create(this, "Throw out the wait Min(ms)")
             .setDefaultFloatValue(50.0F)
             .setFloatStep(20.0F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(500.0F)
             .build().getFloatValue();
 
-    private final FloatValue throwWaitTimeMax = ValueBuilder.create(this, "扔出等待Max(ms)")
+    private final FloatValue throwWaitTimeMax = ValueBuilder.create(this, "Throw out the wait Max(ms)")
             .setDefaultFloatValue(200.0F)
             .setFloatStep(20.0F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(500.0F)
             .build().getFloatValue();
 
-    private final FloatValue switchBackTimeMin = ValueBuilder.create(this, "切回时间Min(ms)")
+    private final FloatValue switchBackTimeMin = ValueBuilder.create(this, "Switch back to time Min(ms)")
             .setDefaultFloatValue(300.0F)
             .setFloatStep(50.0F)
             .setMinFloatValue(100.0F)
             .setMaxFloatValue(2000.0F)
             .build().getFloatValue();
 
-    private final FloatValue switchBackTimeMax = ValueBuilder.create(this, "切回时间Max(ms)")
+    private final FloatValue switchBackTimeMax = ValueBuilder.create(this, "Switch back to time Max(ms)")
             .setDefaultFloatValue(700.0F)
             .setFloatStep(50.0F)
             .setMinFloatValue(100.0F)
             .setMaxFloatValue(2000.0F)
             .build().getFloatValue();
 
-    private final FloatValue cooldownTimeMin = ValueBuilder.create(this, "冷却时间Min(ms)")
+    private final FloatValue cooldownTimeMin = ValueBuilder.create(this, "Cooldown time Min(ms)")
             .setDefaultFloatValue(800.0F)
             .setFloatStep(100.0F)
             .setMinFloatValue(500.0F)
             .setMaxFloatValue(5000.0F)
             .build().getFloatValue();
 
-    private final FloatValue cooldownTimeMax = ValueBuilder.create(this, "冷却时间Max(ms)")
+    private final FloatValue cooldownTimeMax = ValueBuilder.create(this, "Cooldown time Max(ms)")
             .setDefaultFloatValue(1500.0F)
             .setFloatStep(100.0F)
             .setMinFloatValue(500.0F)
