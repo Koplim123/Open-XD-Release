@@ -30,9 +30,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @ModuleInfo(
-        name = "伪装延迟",
+        name = "LagBase",
         category = Category.COMBAT,
-        description = "lagrange和backtrack啊！"
+        description = "lagrange/backtrack"
 )
 public class LagBase extends Module {
     // Modes

@@ -29,8 +29,8 @@ import org.lwjgl.glfw.GLFW;
 import java.util.Random;
 
 @ModuleInfo(
-        name = "雪球光环",
-        description = "其实不止射雪球哦~",
+        name = "BallAura",
+        description = "good BallAura",
         category = Category.COMBAT
 )
 public class BallAura extends Module {

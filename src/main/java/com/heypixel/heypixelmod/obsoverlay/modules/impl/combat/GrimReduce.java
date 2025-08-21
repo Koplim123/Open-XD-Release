@@ -14,7 +14,7 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.world.phys.Vec3;
 
 @ModuleInfo(
-        name = "攻击重置",
+        name = "GrimReduce",
         description = "Hylex-specific velocity reduction with timed multipliers",
         category = Category.COMBAT
 )

@@ -16,8 +16,8 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 
 @ModuleInfo(
-        name = "摔落无伤",
-        description = "写法是对的为什么无法使用啊",
+        name = "NoFall",
+        description = "heypixel",
         category = Category.MOVEMENT
 )
 public class NoFall extends Module {
