@@ -2,12 +2,13 @@ package com.heypixel.heypixelmod.obsoverlay.utils.renderer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
-import java.nio.ByteBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryUtil;
+
+import java.awt.*;
+import java.nio.ByteBuffer;
 
 public class Mesh {
    private static final Minecraft mc = Minecraft.getInstance();

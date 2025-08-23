@@ -5,15 +5,16 @@ import com.heypixel.heypixelmod.mixin.O.accessors.BufferUploaderAccessor;
 import com.heypixel.heypixelmod.obsoverlay.utils.ICapabilityTracker;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32C;
+
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 
 public class GL {
    private static final FloatBuffer MAT = BufferUtils.createFloatBuffer(16);

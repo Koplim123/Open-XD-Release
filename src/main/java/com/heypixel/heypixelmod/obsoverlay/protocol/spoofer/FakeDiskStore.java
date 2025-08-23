@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.protocol.spoofer;
 
 import com.heypixel.heypixelmod.obsoverlay.protocol.HeypixelSession;
+
 import java.util.UUID;
 
 public class FakeDiskStore {

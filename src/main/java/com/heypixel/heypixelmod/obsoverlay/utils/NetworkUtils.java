@@ -8,19 +8,16 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventPacket;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundPingPacket;
-import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
-import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.game.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class NetworkUtils {
    public static Set<Packet<?>> passthroughsPackets = new HashSet<>();

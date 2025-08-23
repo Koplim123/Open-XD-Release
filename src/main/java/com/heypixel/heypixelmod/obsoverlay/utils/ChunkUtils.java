@@ -1,11 +1,12 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import java.util.Objects;
-import java.util.stream.Stream;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
+
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ChunkUtils {
    private static final Minecraft mc = Minecraft.getInstance();

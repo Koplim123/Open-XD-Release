@@ -4,6 +4,7 @@ import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.HasValue;
 import com.heypixel.heypixelmod.obsoverlay.values.Value;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueType;
+
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 

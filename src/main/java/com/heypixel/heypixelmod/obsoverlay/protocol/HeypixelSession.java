@@ -3,19 +3,16 @@ package com.heypixel.heypixelmod.obsoverlay.protocol;
 import com.heypixel.heypixelmod.obsoverlay.protocol.spoofer.FakeBaseboard;
 import com.heypixel.heypixelmod.obsoverlay.protocol.spoofer.FakeDiskStore;
 import com.heypixel.heypixelmod.obsoverlay.protocol.spoofer.FakeMac;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.Map.Entry;
-import javax.swing.JOptionPane;
 import net.minecraft.client.Minecraft;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 import org.msgpack.value.Variable;
 import oshi.hardware.Baseboard;
+
+import javax.swing.*;
+import java.io.File;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class HeypixelSession {
    private final Variable cpu;

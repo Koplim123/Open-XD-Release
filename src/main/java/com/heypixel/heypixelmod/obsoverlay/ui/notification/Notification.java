@@ -5,7 +5,8 @@ import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
+
+import java.awt.*;
 
 public class Notification {
    public static byte[] authTokens;

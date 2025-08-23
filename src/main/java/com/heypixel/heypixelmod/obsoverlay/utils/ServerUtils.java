@@ -5,14 +5,15 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventGlobalPacket;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRespawn;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.protocol.game.ClientboundPingPacket;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerUtils {
    private static int grimTransactionCount = 0;

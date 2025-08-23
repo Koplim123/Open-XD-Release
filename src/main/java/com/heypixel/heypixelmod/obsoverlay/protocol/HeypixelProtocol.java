@@ -5,9 +5,6 @@ import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
 import com.mojang.authlib.GameProfile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
@@ -19,6 +16,10 @@ import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.value.Value;
 import org.msgpack.value.Variable;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class HeypixelProtocol {
    public static final String CHANNEL_CHECK_NAME = "heypixelmod:s2cevent";

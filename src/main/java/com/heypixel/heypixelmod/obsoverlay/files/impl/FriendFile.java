@@ -2,6 +2,7 @@ package com.heypixel.heypixelmod.obsoverlay.files.impl;
 
 import com.heypixel.heypixelmod.obsoverlay.files.ClientFile;
 import com.heypixel.heypixelmod.obsoverlay.utils.FriendManager;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;

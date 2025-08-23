@@ -2,9 +2,9 @@ package com.heypixel.heypixelmod.obsoverlay.IRC;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
-import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;

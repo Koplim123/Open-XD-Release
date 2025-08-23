@@ -1,6 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import java.awt.Color;
+import java.awt.*;
 
 public enum Colors {
    BLACK(-16711423),

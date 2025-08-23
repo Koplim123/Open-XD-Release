@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.values;
 
 import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchValueException;
+
 import java.util.ArrayList;
 import java.util.List;
 

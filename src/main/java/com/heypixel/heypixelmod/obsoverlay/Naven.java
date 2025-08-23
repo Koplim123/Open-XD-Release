@@ -12,27 +12,23 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
 import com.heypixel.heypixelmod.obsoverlay.ui.IRCLoginScreen;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationManager;
-import com.heypixel.heypixelmod.obsoverlay.utils.EntityWatcher;
-import com.heypixel.heypixelmod.obsoverlay.utils.EventWrapper;
-import com.heypixel.heypixelmod.obsoverlay.utils.LogUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.NetworkUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.ServerUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.TickTimeHelper;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.PostProcessRenderer;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Shaders;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.values.HasValueManager;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueManager;
-import java.awt.FontFormatException;
-import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+import java.awt.*;
+import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 @Native
 public class Naven {
    public static final String CLIENT_NAME = "Naven-XD";

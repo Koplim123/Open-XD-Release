@@ -1,7 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
 import com.mojang.authlib.GameProfile;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.RemotePlayer;
@@ -9,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public class BlinkingPlayer extends RemotePlayer {
    private final AbstractClientPlayer player;

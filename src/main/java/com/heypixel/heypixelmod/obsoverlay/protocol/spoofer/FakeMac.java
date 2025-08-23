@@ -1,16 +1,12 @@
 package com.heypixel.heypixelmod.obsoverlay.protocol.spoofer;
 
 import com.heypixel.heypixelmod.obsoverlay.protocol.HeypixelSession;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class FakeMac {
    private static final Map<String, List<String>> EQUIPMENTS = new HashMap<>();

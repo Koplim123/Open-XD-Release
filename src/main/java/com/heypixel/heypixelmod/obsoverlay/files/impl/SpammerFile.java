@@ -5,6 +5,7 @@ import com.heypixel.heypixelmod.obsoverlay.files.ClientFile;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Spammer;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;

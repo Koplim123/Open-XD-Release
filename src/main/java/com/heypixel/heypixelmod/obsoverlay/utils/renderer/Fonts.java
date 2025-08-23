@@ -1,7 +1,8 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.renderer;
 
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
-import java.awt.FontFormatException;
+
+import java.awt.*;
 import java.io.IOException;
 
 public class Fonts {

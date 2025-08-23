@@ -1,14 +1,14 @@
 package com.heypixel.heypixelmod.obsoverlay.ui;
 
+import by.radioegor146.nativeobfuscator.Native;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
+@Native
 public class IRCLoginScreen extends Screen {
     private EditBox usernameField;
     private EditBox passwordField;

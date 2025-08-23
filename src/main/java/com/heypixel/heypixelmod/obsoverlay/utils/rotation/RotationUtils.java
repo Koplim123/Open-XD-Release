@@ -3,22 +3,19 @@ package com.heypixel.heypixelmod.obsoverlay.utils.rotation;
 import com.heypixel.heypixelmod.obsoverlay.utils.MathHelper;
 import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.HitResult.Type;
 import org.antlr.v4.runtime.misc.OrderedHashSet;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class RotationUtils {
     private static final Minecraft mc = Minecraft.getInstance();

@@ -11,12 +11,13 @@ import com.heypixel.heypixelmod.obsoverlay.values.Value;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueManager;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 
 public class ConfigFile extends ClientFile {
     private static final Logger logger = LogManager.getLogger(ConfigFile.class);

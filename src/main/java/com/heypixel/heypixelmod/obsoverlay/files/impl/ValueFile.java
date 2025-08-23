@@ -2,17 +2,14 @@ package com.heypixel.heypixelmod.obsoverlay.files.impl;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.files.ClientFile;
-import com.heypixel.heypixelmod.obsoverlay.values.HasValue;
-import com.heypixel.heypixelmod.obsoverlay.values.HasValueManager;
-import com.heypixel.heypixelmod.obsoverlay.values.Value;
-import com.heypixel.heypixelmod.obsoverlay.values.ValueManager;
-import com.heypixel.heypixelmod.obsoverlay.values.ValueType;
+import com.heypixel.heypixelmod.obsoverlay.values.*;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ValueFile extends ClientFile {
    private static final Logger logger = LogManager.getLogger(ValueFile.class);

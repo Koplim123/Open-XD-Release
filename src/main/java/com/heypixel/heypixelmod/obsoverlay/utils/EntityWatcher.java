@@ -9,13 +9,6 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRespawn;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ItemTracker;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -23,6 +16,10 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import org.antlr.v4.runtime.misc.OrderedHashSet;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class EntityWatcher {
    private static final Minecraft mc = Minecraft.getInstance();

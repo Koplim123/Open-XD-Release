@@ -6,6 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.StringValue;
+
 import java.util.function.Supplier;
 
 public abstract class Value {

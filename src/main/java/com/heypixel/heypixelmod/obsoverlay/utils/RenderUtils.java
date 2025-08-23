@@ -5,9 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.vertex.BufferBuilder.RenderedBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
-import java.awt.Color;
-import java.nio.ByteBuffer;
-
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,6 +15,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+
+import java.awt.*;
+import java.nio.ByteBuffer;
 
 public class RenderUtils {
    private static final Minecraft mc = Minecraft.getInstance();

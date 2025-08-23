@@ -4,9 +4,10 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.mojang.blaze3d.platform.Window;
+import net.minecraft.client.Minecraft;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import net.minecraft.client.Minecraft;
 
 public class NotificationManager {
    private final List<Notification> notifications = new CopyOnWriteArrayList<>();

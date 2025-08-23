@@ -2,11 +2,7 @@ package com.heypixel.heypixelmod.obsoverlay.utils;
 
 import by.radioegor146.nativeobfuscator.Native;
 import oshi.SystemInfo;
-import oshi.hardware.Baseboard;
-import oshi.hardware.ComputerSystem;
-import oshi.hardware.CentralProcessor;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.hardware.NetworkIF;
+import oshi.hardware.*;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

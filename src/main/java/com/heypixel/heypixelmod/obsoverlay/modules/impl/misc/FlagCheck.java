@@ -36,7 +36,6 @@ public class FlagCheck extends Module {
     @Override
     public void onEnable() {
         flagCount = 0;
-        // 记录玩家当前朝向
         lastYaw = mc.player.getYRot();
         lastPitch = mc.player.getXRot();
     }
@@ -47,21 +46,21 @@ public class FlagCheck extends Module {
     }
 
     @EventTarget
-    public void onPacketReceive(EventHandlePacket event) { // 使用正确的事件类
+    public void onPacketReceive(EventHandlePacket event) {
         if (mc.player == null || mc.player.tickCount <= 25) {
             return;
         }
 
-        if (event.getPacket() instanceof ClientboundPlayerPositionPacket packet) { // getPacket() 方法存在于 EventHandlePacket 中
+        if (event.getPacket() instanceof ClientboundPlayerPositionPacket packet) {
             flagCount++;
             float serverYaw = packet.getYRot();
             float serverPitch = packet.getXRot();
             float deltaYaw = calculateAngleDelta(serverYaw, lastYaw);
             float deltaPitch = calculateAngleDelta(serverPitch, lastPitch);
             if (deltaYaw >= 90 || deltaPitch >= 90) {
-                alert("强制旋转", String.format("(%.1f° | %.1f°)", deltaYaw, deltaPitch));
+                alert("Forced Rotation", String.format("(%.1f° | %.1f°)", deltaYaw, deltaPitch));
             } else {
-                alert("回弹", "");
+                alert("Rebound", "");
             }
             lastYaw = mc.player.getYRot();
             lastPitch = mc.player.getXRot();
@@ -79,14 +78,13 @@ public class FlagCheck extends Module {
         return Math.abs(delta);
     }
 
-
     private void alert(String reason, String extra) {
         if(chat.getCurrentValue()){
             String message;
             if (extra.isEmpty()) {
-                message = String.format("§f服务器检测到 §c%s§f，总计 §c%d§f 次。", reason, flagCount);
+                message = String.format("§fServer detected §c%s§f, total of §c%d§f times.", reason, flagCount);
             } else {
-                message = String.format("§f服务器检测到 §c%s§f %s，总计 §c%d§f 次。", reason, extra, flagCount);
+                message = String.format("§fServer detected §c%s§f %s, total of §c%d§f times.", reason, extra, flagCount);
             }
 
             log(message);
@@ -94,9 +92,9 @@ public class FlagCheck extends Module {
         if(notification.getCurrentValue()){
             String message;
             if (extra.isEmpty()) {
-                message = String.format("§f服务器检测到 §c%s§f，总计 §c%d§f 次。", reason, flagCount);
+                message = String.format("§fServer detected §c%s§f, total of §c%d§f times.", reason, flagCount);
             } else {
-                message = String.format("§f服务器检测到 §c%s§f %s，总计 §c%d§f 次。", reason, extra, flagCount);
+                message = String.format("§fServer detected §c%s§f %s, total of §c%d§f times.", reason, extra, flagCount);
             }
 
             Naven.getInstance().getNotificationManager().addNotification(

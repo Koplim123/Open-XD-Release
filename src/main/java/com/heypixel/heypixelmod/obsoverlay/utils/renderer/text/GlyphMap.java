@@ -4,10 +4,13 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.NativeImage.Format;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.chars.Char2ObjectArrayMap;
-import java.awt.Color;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.ResourceLocation;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryUtil;
+
+import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
@@ -18,11 +21,6 @@ import java.lang.reflect.Field;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.system.MemoryUtil;
 
 class GlyphMap {
    private static final Minecraft mc = Minecraft.getInstance();

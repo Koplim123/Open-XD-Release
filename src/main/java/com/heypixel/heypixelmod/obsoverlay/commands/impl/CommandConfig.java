@@ -5,6 +5,7 @@ import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

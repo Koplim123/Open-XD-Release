@@ -5,14 +5,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
-import com.heypixel.heypixelmod.obsoverlay.utils.Colors;
-import com.heypixel.heypixelmod.obsoverlay.utils.FontIcons;
-import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
-import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.StringUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.TimeHelper;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
 import com.heypixel.heypixelmod.obsoverlay.values.Value;
@@ -21,13 +14,14 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
-import java.util.HashMap;
-import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
+import java.awt.*;
+import java.util.HashMap;
+import java.util.List;
 
 public class ClickGUI extends Screen {
    private static final Minecraft mc = Minecraft.getInstance();

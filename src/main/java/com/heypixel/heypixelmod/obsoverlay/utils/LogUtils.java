@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;

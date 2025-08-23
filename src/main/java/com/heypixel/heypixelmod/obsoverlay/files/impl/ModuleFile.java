@@ -5,12 +5,13 @@ import com.heypixel.heypixelmod.obsoverlay.exceptions.NoSuchModuleException;
 import com.heypixel.heypixelmod.obsoverlay.files.ClientFile;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ModuleFile extends ClientFile {
    private static final Logger logger = LogManager.getLogger(ModuleFile.class);

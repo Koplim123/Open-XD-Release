@@ -1,13 +1,14 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.renderer.text;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import java.io.IOException;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL30C;
+
+import java.io.IOException;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 public class BufferedTexture extends AbstractTexture {
    public BufferedTexture(int width, int height, byte[] data, BufferedTexture.Format format, BufferedTexture.Filter filterMin, BufferedTexture.Filter filterMag) {

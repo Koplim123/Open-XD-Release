@@ -1,17 +1,14 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 import net.minecraft.world.effect.MobEffect;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.InputStream;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 public class PotionResolver {
    private static final Logger log = LogManager.getLogger(PotionResolver.class);

@@ -3,10 +3,11 @@ package com.heypixel.heypixelmod.obsoverlay.utils.renderer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.joml.Matrix4f;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class Shader {
    public static Shader BOUND;

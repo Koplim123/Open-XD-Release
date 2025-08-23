@@ -1,7 +1,5 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.rotation;
 
-import java.util.List;
-import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -9,12 +7,11 @@ import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.ClipContext.Block;
 import net.minecraft.world.level.ClipContext.Fluid;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.HitResult.Type;
+
+import java.util.List;
+import java.util.Optional;
 
 public final class RayTraceUtil {
    public static HitResult rayCast(float partialTicks, Rotation rotations) {

@@ -1,19 +1,20 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.renderer.text;
 
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Mesh;
-import java.awt.Color;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.util.HashMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTTPackContext;
 import org.lwjgl.stb.STBTTPackedchar;
-import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.stb.STBTTPackedchar.Buffer;
+import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
+
+import java.awt.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.HashMap;
 
 public class Font {
    public AbstractTexture texture;

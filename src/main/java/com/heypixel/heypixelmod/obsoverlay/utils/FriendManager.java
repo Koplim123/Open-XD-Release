@@ -1,9 +1,10 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class FriendManager {
    private static final List<String> friends = new CopyOnWriteArrayList<>();

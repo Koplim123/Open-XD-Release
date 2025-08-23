@@ -3,10 +3,10 @@ package com.heypixel.heypixelmod.obsoverlay.utils;
 import by.radioegor146.nativeobfuscator.Native;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.Util;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;

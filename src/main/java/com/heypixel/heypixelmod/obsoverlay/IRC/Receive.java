@@ -2,7 +2,6 @@ package com.heypixel.heypixelmod.obsoverlay.IRC;
 
 import com.google.gson.JsonObject;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
-import net.minecraft.client.Minecraft;
 
 public class Receive {
     

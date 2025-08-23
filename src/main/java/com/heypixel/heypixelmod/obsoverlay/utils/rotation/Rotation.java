@@ -1,12 +1,13 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.rotation;
 
 import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
-import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.RandomUtils;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Rotation {
    float yaw;

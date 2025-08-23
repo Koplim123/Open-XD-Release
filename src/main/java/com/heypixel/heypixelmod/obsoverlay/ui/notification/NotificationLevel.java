@@ -1,6 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.ui.notification;
 
-import java.awt.Color;
+import java.awt.*;
 
 public enum NotificationLevel {
    SUCCESS(new Color(23, 150, 38, 255).getRGB()),

@@ -1,20 +1,17 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.renderer.text;
 
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.DrawMode;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.GL;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Mesh;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.ShaderMesh;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Shaders;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.*;
 import com.mojang.blaze3d.vertex.PoseStack;
-import java.awt.Color;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
+
+import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 public class CustomTextRenderer {
    private static final Logger log = LogManager.getLogger(CustomTextRenderer.class);
