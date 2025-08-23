@@ -46,6 +46,7 @@ public class ModuleManager {
          new Scaffold(),
          new AntiBots(),
          new Sprint(),
+         new FlagCheck(),
          new ChestESP(),
          new ClickGUIModule(),
          new Teams(),
