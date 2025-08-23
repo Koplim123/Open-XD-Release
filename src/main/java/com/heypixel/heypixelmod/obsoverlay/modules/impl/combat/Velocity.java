@@ -26,20 +26,13 @@ import net.minecraft.world.phys.Vec3;
         category = Category.MOVEMENT
 )
 public class Velocity extends Module {
-   private final BooleanValue reduce = ValueBuilder.create(this, "Reduce")
+   private final BooleanValue Reduce = ValueBuilder.create(this, "Reduce")
            .setDefaultBooleanValue(true)
            .build()
            .getBooleanValue();
-   private final FloatValue knockbackReductionValue = ValueBuilder.create(this, "Knockback Reduction")
-           .setDefaultFloatValue(0.07776F)
-           .setMinFloatValue(0.0F)
-           .setMaxFloatValue(1.0F)
-           .setFloatStep(0.0001F)
-           .build()
-           .getFloatValue();
-   private final FloatValue attacks = ValueBuilder.create(this, "Attack Count")
+   private final FloatValue attacks = ValueBuilder.create(this, "Attack Counts")
            .setDefaultFloatValue(4.0F)
-           .setMinFloatValue(4.0F)
+           .setMinFloatValue(1.0F)
            .setMaxFloatValue(11.0F)
            .setFloatStep(1.0F)
            .build()
@@ -48,10 +41,23 @@ public class Velocity extends Module {
            .setDefaultBooleanValue(false)
            .build()
            .getBooleanValue();
-   private final FloatValue jumpTick = ValueBuilder.create(this, "JumpResetTick")
+   private final FloatValue jumpTick = ValueBuilder.create(this, "Jump Reset Tick")
            .setDefaultFloatValue(0.0F)
            .setMinFloatValue(0.0F)
            .setMaxFloatValue(9.0F)
+           .setFloatStep(1.0F)
+           .build()
+           .getFloatValue();
+
+   private final BooleanValue flagCheck = ValueBuilder.create(this, "Flag Check")
+           .setDefaultBooleanValue(true)
+           .build()
+           .getBooleanValue();
+
+   private final FloatValue flagTicks = ValueBuilder.create(this, "Flag Ticks")
+           .setDefaultFloatValue(5.0F)
+           .setMinFloatValue(1.0F)
+           .setMaxFloatValue(50.0F)
            .setFloatStep(1.0F)
            .build()
            .getFloatValue();
@@ -83,6 +89,8 @@ public class Velocity extends Module {
    private int jumpResetTicks = 0;
    private double currentKnockbackSpeed = 0.0;
 
+   private int flagPauseTicks = 0;
+
    @Override
    public void onDisable() {
       this.velocityInput = false;
@@ -90,6 +98,7 @@ public class Velocity extends Module {
       this.jumpResetTicks = 0;
       this.targetEntity = null;
       this.currentKnockbackSpeed = 0.0;
+      this.flagPauseTicks = 0;
    }
 
    @EventTarget
@@ -97,6 +106,20 @@ public class Velocity extends Module {
       if (mc.level == null || mc.player == null) return;
 
       Packet<?> packet = event.getPacket();
+
+      if (this.flagCheck.getCurrentValue()) {
+         if (packet instanceof ClientboundPlayerPositionPacket) {
+            if (this.debugMessageValue.getCurrentValue()) {
+               ChatUtils.addChatMessage("Flag detected! Cancelling work for " + (int)this.flagTicks.getCurrentValue() + " ticks.");
+            }
+            this.attacked = false;
+            this.velocityInput = false;
+            this.currentKnockbackSpeed = 0.0;
+            this.flagPauseTicks = (int)this.flagTicks.getCurrentValue();
+            return;
+         }
+      }
+
       if (packet instanceof ClientboundSetEntityMotionPacket) {
          ClientboundSetEntityMotionPacket velocityPacket = (ClientboundSetEntityMotionPacket)packet;
          if (velocityPacket.getId() != mc.player.getId()) {
@@ -143,7 +166,7 @@ public class Velocity extends Module {
             }
          }
 
-         if (this.reduce.getCurrentValue() && this.targetEntity != null && inFOV) {
+         if (this.Reduce.getCurrentValue() && this.targetEntity != null && inFOV) {
             boolean wasSprintingBefore = mc.player.isSprinting();
 
             if (!wasSprintingBefore) {
@@ -152,7 +175,7 @@ public class Velocity extends Module {
             }
 
             int attackCount = (int)this.attacks.getCurrentValue();
-            for (int i = -1; i < attackCount; i++) {
+            for (int i = 0; i < attackCount; i++) {
                if (mc.hitResult != null && mc.hitResult.getType() == Type.ENTITY) {
                   mc.getConnection().send(ServerboundInteractPacket.createAttackPacket(this.targetEntity, false));
                   mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
@@ -180,6 +203,11 @@ public class Velocity extends Module {
    public void onUpdate(EventUpdate event) {
       if (mc.player == null) return;
 
+      if (this.flagPauseTicks > 0) {
+         this.flagPauseTicks--;
+         return;
+      }
+
       if (mc.player.hurtTime == 0) {
          this.velocityInput = false;
          this.currentKnockbackSpeed = 0.0;
@@ -191,11 +219,10 @@ public class Velocity extends Module {
 
       if (this.velocityInput && this.attacked) {
          if (this.targetEntity != null && mc.hitResult != null && mc.hitResult.getType() == Type.ENTITY) {
-            float reductionFactor = this.knockbackReductionValue.getCurrentValue();
             mc.player.setDeltaMovement(
-                    mc.player.getDeltaMovement().x * reductionFactor,
+                    mc.player.getDeltaMovement().x * 0.07776,
                     mc.player.getDeltaMovement().y,
-                    mc.player.getDeltaMovement().z * reductionFactor
+                    mc.player.getDeltaMovement().z * 0.07776
             );
 
             if (this.debugMessageValue.getCurrentValue()) {

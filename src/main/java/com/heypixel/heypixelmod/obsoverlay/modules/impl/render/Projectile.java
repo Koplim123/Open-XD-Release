@@ -9,6 +9,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.Proje
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas.BasicProjectileData;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas.EntityArrowData;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.projectiles.datas.EntityPotionData;
+import com.heypixel.heypixelmod.obsoverlay.utils.PearlPhysicsUtil;
 import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
@@ -42,9 +43,9 @@ import java.util.Collections;
 import java.util.List;
 
 @ModuleInfo(
-   name = "Projectiles",
-   description = "Renders projectiles",
-   category = Category.RENDER
+        name = "Projectiles",
+        description = "Renders projectiles",
+        category = Category.RENDER
 )
 public class Projectile extends Module {
    private final EntityArrowData arrowsColor = new EntityArrowData();
@@ -163,10 +164,10 @@ public class Projectile extends Module {
             double motionZ = entity.getZ() - entity.zo;
             Vec3 cameraPos = RenderUtils.getCameraPos();
             AABB move = entity.getBoundingBox()
-               .move(-cameraPos.x, -cameraPos.y, -cameraPos.z)
-               .move(-motionX, -motionY, -motionZ)
-               .move((double)partialTicks * motionX, (double)partialTicks * motionY, (double)partialTicks * motionZ)
-               .inflate(0.1);
+                    .move(-cameraPos.x, -cameraPos.y, -cameraPos.z)
+                    .move(-motionX, -motionY, -motionZ)
+                    .move((double)partialTicks * motionX, (double)partialTicks * motionY, (double)partialTicks * motionZ)
+                    .inflate(0.1);
             RenderUtils.drawSolidBox(move, matrixStack);
          }
       }
@@ -226,12 +227,14 @@ public class Projectile extends Module {
             arrowMotionY *= (double)bowPower;
             arrowMotionZ *= (double)bowPower;
          } else {
-            arrowMotionX *= 1.5;
-            arrowMotionY *= 1.5;
-            arrowMotionZ *= 1.5;
+            double initialVelocity = (item instanceof EnderpearlItem) ? PearlPhysicsUtil.PEARL_INITIAL_VELOCITY : 1.5;
+            arrowMotionX *= initialVelocity;
+            arrowMotionY *= initialVelocity;
+            arrowMotionZ *= initialVelocity;
          }
 
          double gravity = this.getProjectileGravity(item);
+         double drag = (item instanceof EnderpearlItem) ? PearlPhysicsUtil.PEARL_DRAG : 0.99;
 
          for (int i = 0; i < 1000; i++) {
             Vec3 arrowPos = new Vec3(arrowPosX, arrowPosY, arrowPosZ);
@@ -245,12 +248,12 @@ public class Projectile extends Module {
 
             Arrow fakeArrow = new Arrow(mc.level, arrowPosX, arrowPosY, arrowPosZ);
             EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(
-               mc.level,
-               fakeArrow,
-               arrowPos,
-               postArrowPos,
-               fakeArrow.getBoundingBox().expandTowards(new Vec3(arrowMotionX, arrowMotionY, arrowMotionZ)).inflate(1.0),
-               entity -> entity != player && entity instanceof LivingEntity
+                    mc.level,
+                    fakeArrow,
+                    arrowPos,
+                    postArrowPos,
+                    fakeArrow.getBoundingBox().expandTowards(new Vec3(arrowMotionX, arrowMotionY, arrowMotionZ)).inflate(1.0),
+                    entity -> entity != player && entity instanceof LivingEntity
             );
             if (entityHitResult != null && entityHitResult.getType() == Type.ENTITY) {
                return new Projectile.Path(path, entityHitResult);
@@ -259,9 +262,9 @@ public class Projectile extends Module {
             arrowPosX += arrowMotionX;
             arrowPosY += arrowMotionY;
             arrowPosZ += arrowMotionZ;
-            arrowMotionX *= 0.99;
-            arrowMotionY *= 0.99;
-            arrowMotionZ *= 0.99;
+            arrowMotionX *= drag;
+            arrowMotionY *= drag;
+            arrowMotionZ *= drag;
             arrowMotionY -= gravity;
          }
 
@@ -278,21 +281,25 @@ public class Projectile extends Module {
          return 0.4;
       } else if (item instanceof FishingRodItem) {
          return 0.15;
+      } else if (item instanceof TridentItem) {
+         return 0.015;
+      } else if (item instanceof EnderpearlItem) {
+         return PearlPhysicsUtil.PEARL_GRAVITY;
       } else {
-         return item instanceof TridentItem ? 0.015 : 0.03;
+         return 0.03;
       }
    }
 
    private boolean isThrowable(Item item) {
       return item instanceof BowItem
-         || item instanceof CrossbowItem
-         || item instanceof SnowballItem
-         || item instanceof EggItem
-         || item instanceof EnderpearlItem
-         || item instanceof SplashPotionItem
-         || item instanceof LingeringPotionItem
-         || item instanceof FishingRodItem
-         || item instanceof TridentItem;
+              || item instanceof CrossbowItem
+              || item instanceof SnowballItem
+              || item instanceof EggItem
+              || item instanceof EnderpearlItem
+              || item instanceof SplashPotionItem
+              || item instanceof LingeringPotionItem
+              || item instanceof FishingRodItem
+              || item instanceof TridentItem;
    }
 
    private void render(PoseStack matrix, Entity entity, ProjectileData projectileInfo) {
@@ -314,6 +321,16 @@ public class Projectile extends Module {
          double motionY = entity.getDeltaMovement().y;
          double motionZ = entity.getDeltaMovement().z;
          this.drawVertex(color, builder, matrix, posX, posY, posZ);
+
+         double gravity;
+         double drag;
+         if (entity instanceof ThrownEnderpearl) {
+            gravity = PearlPhysicsUtil.PEARL_GRAVITY;
+            drag = PearlPhysicsUtil.PEARL_DRAG;
+         } else {
+            gravity = projectileInfo.getGravity();
+            drag = entity.isInWater() ? 0.8 : 0.99;
+         }
 
          while (true) {
             float data1 = projectileInfo.getData1();
@@ -357,10 +374,10 @@ public class Projectile extends Module {
                break;
             }
 
-            motionX *= entity.isInWater() ? 0.8 : 0.99;
-            double var39 = motionY * (entity.isInWater() ? 0.8 : 0.99);
-            motionZ *= entity.isInWater() ? 0.8 : 0.99;
-            motionY = var39 - (double)projectileInfo.getGravity();
+            motionX *= drag;
+            motionY *= drag;
+            motionZ *= drag;
+            motionY -= gravity;
             this.drawVertex(color, builder, matrix, posX + motionX, posY + motionY, posZ + motionZ);
          }
 

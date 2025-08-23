@@ -82,7 +82,7 @@ public class Naven {
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       MinecraftForge.EVENT_BUS.register(this.eventWrapper);
-      MinecraftForge.EVENT_BUS.register(this); // 注册到 Forge 事件总线
+      MinecraftForge.EVENT_BUS.register(this);
    }
 
    public static void modRegister() {
@@ -94,15 +94,12 @@ public class Naven {
       }
    }
 
-   // 使用 @SubscribeEvent 来监听客户端的Tick事件
    @SubscribeEvent
    public void onClientTick(ClientTickEvent event) {
-      // 只有当游戏在主菜单，并且我们还没有显示过IRC登录屏幕时才执行
       if (!ircScreenDisplayed && Minecraft.getInstance().screen instanceof TitleScreen) {
-         // 假设 IRCLoginManager.userId == -1 表示未登录
          if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
             Minecraft.getInstance().setScreen(new IRCLoginScreen());
-            ircScreenDisplayed = true; // 设置标志，防止再次显示
+            ircScreenDisplayed = true;
          }
       }
    }

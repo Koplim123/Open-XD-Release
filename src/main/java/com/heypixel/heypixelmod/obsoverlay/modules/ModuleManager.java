@@ -94,7 +94,6 @@ public class ModuleManager {
          new MotionBlur(),
          new Helper(),
          new BallAura(),
-         new GrimReduce(),
          new LagBase(),
          new NoSlow(),
          new NoFall(),

@@ -20,12 +20,9 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.projectile.ThrownEnderpearl;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
@@ -69,18 +66,17 @@ public class PearlPrediction extends Module {
     private final FloatValue fov = ValueBuilder.create(this, "Fov").setVisibility(pearlCounter::getCurrentValue).setDefaultFloatValue(180.0F).setFloatStep(1.0f).setMinFloatValue(10.0f).setMaxFloatValue(360.0F).build().getFloatValue();
     private final FloatValue minRange = ValueBuilder.create(this, "Min Range").setVisibility(pearlCounter::getCurrentValue).setFloatStep(1.0F).setDefaultFloatValue(5.0f).setMinFloatValue(0.0f).setMaxFloatValue(50.0f).build().getFloatValue();
     private final FloatValue maxRange = ValueBuilder.create(this, "Max Range").setVisibility(pearlCounter::getCurrentValue).setFloatStep(1.0F).setDefaultFloatValue(100.0f).setMinFloatValue(10.0f).setMaxFloatValue(200.0f).build().getFloatValue();
-    private final BooleanValue debug = ValueBuilder.create(this, "Debug Messages").setVisibility(pearlCounter::getCurrentValue).setDefaultBooleanValue(false).build().getBooleanValue();
+    private final BooleanValue debug = ValueBuilder.create(this, "Debug Messages").setVisibility(pearlCounter::getCurrentValue).setDefaultBooleanValue(true).build().getBooleanValue();
 
     private final Map<UUID, PredictedPearlInfo> predictedPearls = new HashMap<>();
     private final Set<UUID> processedPearls = new HashSet<>();
     private Vec3 lastSafePosition = null;
-    private long lockedPositionExpireTime = 0; // [新逻辑] 存储锁定位置的未来过期时间戳
+    private long lockedPositionExpireTime = 0;
     private Vector2f targetRotations = null;
     private boolean isAiming = false;
     private int aimingTicks = 0;
     private boolean triggerAction = false;
     private static final List<Vec3> SAMPLE_POINTS = Arrays.asList(new Vec3(0.5, 0.5, 0.5), new Vec3(0.2, 0.5, 0.5), new Vec3(0.8, 0.5, 0.5), new Vec3(0.5, 0.5, 0.2), new Vec3(0.5, 0.5, 0.8));
-    private static final double PEARL_INITIAL_VELOCITY = 1.5, PEARL_GRAVITY = 0.03, PEARL_DRAG = 0.99;
 
     @Override public void onEnable() { super.onEnable(); reset(); }
     @Override public void onDisable() {
@@ -164,12 +160,11 @@ public class PearlPrediction extends Module {
         PearlPrediction.isThrowing = false;
         updateLastKnownSafePosition();
 
-        // [新逻辑] 检查当前时间是否已经超过了预设的过期时间
         if (lastSafePosition != null && System.currentTimeMillis() > lockedPositionExpireTime) {
             if (debug.getCurrentValue()) {
                 ChatUtils.addChatMessage("§e[INFO]§7 Locked position expired.");
             }
-            lastSafePosition = null; // 如果已过期，则清空该位置
+            lastSafePosition = null;
         }
 
         boolean shouldTrigger = triggerMode.isCurrentMode("None") || this.triggerAction;
@@ -183,9 +178,9 @@ public class PearlPrediction extends Module {
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (entity instanceof ThrownEnderpearl pearl && !processedPearls.contains(pearl.getUUID())) {
                 if (Objects.equals(pearl.getOwner(), mc.player)) continue;
-                Object[] data = predictPearlLandingWithTicks(pearl, mc.level);
+                Object[] data = PearlPhysicsUtil.predictPearlLandingWithTicks(pearl, mc.level);
                 Vec3 originalPos = (Vec3) data[0];
-                int ticksToLand = (int) data[1]; // 获取珍珠落地所需ticks
+                int ticksToLand = (int) data[1];
                 if (originalPos == null) continue;
                 processedPearls.add(pearl.getUUID());
                 if (!isEnemyPearlThreatening(originalPos) || !isInFov(originalPos) || !(mc.player.position().distanceTo(originalPos) >= minRange.getCurrentValue() && mc.player.position().distanceTo(originalPos) <= maxRange.getCurrentValue())) {
@@ -196,9 +191,7 @@ public class PearlPrediction extends Module {
                 if (safePos != null) {
                     if (debug.getCurrentValue()) ChatUtils.addChatMessage(String.format("§a[LOCKED]§7 New safe spot: %.1f, %.1f, %.1f", safePos.x, safePos.y, safePos.z));
                     this.lastSafePosition = safePos;
-
-                    // [新逻辑] 计算超时时间：从现在起，直到珍珠落地，再加上用户设置的TimeOut时长
-                    long landingDurationMs = (long) ticksToLand * 50; // 1 tick = 50ms
+                    long landingDurationMs = (long) ticksToLand * 50;
                     long timeoutMs = (long) (timeOut.getCurrentValue() * 1000);
                     this.lockedPositionExpireTime = System.currentTimeMillis() + landingDurationMs + timeoutMs;
                 }
@@ -207,7 +200,7 @@ public class PearlPrediction extends Module {
     }
 
     private void startAiming() {
-        this.targetRotations = calculateOptimalRotations(lastSafePosition);
+        this.targetRotations = PearlPhysicsUtil.calculateOptimalRotations(mc.player.getEyePosition(), lastSafePosition);
         if (this.targetRotations != null) {
             this.isAiming = true;
             this.aimingTicks = 0;
@@ -234,7 +227,7 @@ public class PearlPrediction extends Module {
     private void reset() {
         this.lastSafePosition = null; this.triggerAction = false; this.isAiming = false;
         this.aimingTicks = 0; this.targetRotations = null;
-        this.lockedPositionExpireTime = 0; // [新逻辑] 重置过期时间戳
+        this.lockedPositionExpireTime = 0;
         PearlPrediction.rotations = null; PearlPrediction.isThrowing = false;
         if (processedPearls.size() > 50) processedPearls.clear();
     }
@@ -261,32 +254,11 @@ public class PearlPrediction extends Module {
         if (!isSafeFloor(pos.below()) || !hasHeadroom(pos)) return null;
         for (Vec3 sampleOffset : SAMPLE_POINTS) {
             Vec3 targetPoint = new Vec3(pos.getX() + sampleOffset.x, pos.getY() + sampleOffset.y, pos.getZ() + sampleOffset.z);
-            if (hasLineOfSight(targetPoint) && (!entityCheck.getCurrentValue() || isTrajectoryClear(targetPoint))) {
+            if (hasLineOfSight(targetPoint) && (!entityCheck.getCurrentValue() || PearlPhysicsUtil.isTrajectoryClear(mc.level, mc.player, targetPoint))) {
                 return targetPoint;
             }
         }
         return null;
-    }
-
-    private boolean isTrajectoryClear(Vec3 target) {
-        Vector2f rots = calculateOptimalRotations(target);
-        if (rots == null) return false;
-        Vec3 eyePos = mc.player.getEyePosition();
-        double pX=eyePos.x, pY=eyePos.y, pZ=eyePos.z;
-        float yawRad=(float)Math.toRadians(rots.x+90.0f), pitchRad=(float)Math.toRadians(-rots.y);
-        double mX=Math.cos(yawRad)*Math.cos(pitchRad)*PEARL_INITIAL_VELOCITY, mY=Math.sin(pitchRad)*PEARL_INITIAL_VELOCITY, mZ=Math.sin(yawRad)*Math.cos(pitchRad)*PEARL_INITIAL_VELOCITY;
-        for (int i=0; i<300; i++) {
-            Vec3 currentPos = new Vec3(pX, pY, pZ), nextPos = new Vec3(pX+mX, pY+mY, pZ+mZ);
-            if (currentPos.distanceToSqr(eyePos) > target.distanceToSqr(eyePos)) break;
-            if (RayTraceUtils.rayTraceBlocks(currentPos, nextPos, false, false, false, mc.player).getType() != HitResult.Type.MISS) break;
-            for (Entity entity : mc.level.entitiesForRendering()) {
-                if (entity.equals(mc.player) || !entity.isPickable() || !(entity instanceof LivingEntity)) continue;
-                if (entity.getBoundingBox().inflate(0.3).clip(currentPos, nextPos).isPresent()) return false;
-            }
-            pX+=mX; pY+=mY; pZ+=mZ;
-            mX*=PEARL_DRAG; mY*=PEARL_DRAG; mZ*=PEARL_DRAG; mY-=PEARL_GRAVITY;
-        }
-        return true;
     }
 
     private boolean isEnemyPearlThreatening(Vec3 pos) {
@@ -314,37 +286,6 @@ public class PearlPrediction extends Module {
 
     private int findPearlSlot() {
         for (int i=0;i<9;i++) if(mc.player.getInventory().getItem(i).getItem()==Items.ENDER_PEARL) return i; return -1;
-    }
-
-    private Vector2f calculateOptimalRotations(Vec3 targetPos) {
-        Vec3 eyePos = mc.player.getEyePosition();
-        double dX=targetPos.x-eyePos.x, dY=targetPos.y-eyePos.y, dZ=targetPos.z-eyePos.z;
-        float yaw=(float)(Math.toDegrees(Math.atan2(dZ,dX))-90.0F);
-        double hD=Math.sqrt(dX*dX+dZ*dZ); if(hD==0)return new Vector2f(yaw, dY > 0 ? -90f:90f);
-        double v=PEARL_INITIAL_VELOCITY, g=PEARL_GRAVITY, disc=v*v*v*v-g*(g*hD*hD+2*dY*v*v);
-        if(disc<0)return null;
-        float pitch=(float)-Math.toDegrees(Math.atan((v*v-Math.sqrt(disc))/(g*hD)));
-        return new Vector2f(yaw,pitch);
-    }
-
-    private Object[] predictPearlLandingWithTicks(Entity pearl, ClientLevel level) {
-        double pX=pearl.getX(), pY=pearl.getY(), pZ=pearl.getZ();
-        double mX=pearl.getDeltaMovement().x, mY=pearl.getDeltaMovement().y, mZ=pearl.getDeltaMovement().z;
-        int ticks=0;
-        for(int i=0;i<1000;i++){
-            Vec3 curr=new Vec3(pX,pY,pZ), next=new Vec3(pX+mX,pY+mY,pZ+mZ);
-            ticks++;
-            HitResult hit=RayTraceUtils.rayTraceBlocks(curr,next,false,false,false,pearl);
-            if(hit.getType()!=HitResult.Type.MISS)return new Object[]{hit.getLocation(),ticks};
-            List<Entity> entities=level.getEntities(pearl, pearl.getBoundingBox().expandTowards(mX,mY,mZ).inflate(1.0), e->e instanceof LivingEntity&&!(e instanceof EnderMan)&&e.canBeCollidedWith()&&e!=((ThrownEnderpearl)pearl).getOwner());
-            for(Entity e:entities){
-                HitResult entityHit=RayTraceUtils.calculateIntercept(e.getBoundingBox(),curr,next);
-                if(entityHit!=null)return new Object[]{entityHit.getLocation(),ticks};
-            }
-            pX+=mX;pY+=mY;pZ+=mZ;
-            mX*=PEARL_DRAG;mY*=PEARL_DRAG;mZ*=PEARL_DRAG;mY-=PEARL_GRAVITY;
-        }
-        return new Object[]{null,ticks};
     }
 
     private void renderLandingMark(PoseStack matrix, PredictedPearlInfo info) {
@@ -381,7 +322,7 @@ public class PearlPrediction extends Module {
         public PredictedPearlInfo() { this.lastUpdateTime = System.currentTimeMillis(); }
 
         public void update(ThrownEnderpearl pearl) {
-            Object[] data = predictPearlLandingWithTicks(pearl, mc.level);
+            Object[] data = PearlPhysicsUtil.predictPearlLandingWithTicks(pearl, mc.level);
             this.pos = (Vec3) data[0];
             this.ticksToLand = (int) data[1];
             if (this.pos != null) {
@@ -401,7 +342,6 @@ public class PearlPrediction extends Module {
             this.projectedPos = ProjectionUtils.project(pos.x, pos.y, pos.z, mc.getFrameTime());
             if (projectedPos == null) { this.finalWidth = 0; this.finalHeight = 0; } else {
                 lines.clear();
-                lines.add("Ender Pearl");
                 lines.add("Thrown by: "+this.ownerName);
                 lines.add(String.format("Lands in: %.1f s",this.ticksToLand/20.0));
                 lines.add(String.format("Distance: %.1f m", mc.player.position().distanceTo(pos)));

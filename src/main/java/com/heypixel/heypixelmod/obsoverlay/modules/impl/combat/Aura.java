@@ -75,6 +75,7 @@ public class Aura extends Module {
     BooleanValue infSwitch = ValueBuilder.create(this, "Infinity Switch").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
+    BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -90,7 +91,6 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
 
-    // --- 新增的代码 ---
     BooleanValue checkCooldown = ValueBuilder.create(this, "Cooldown")
             .setDefaultBooleanValue(true)
             .build()
@@ -104,7 +104,6 @@ public class Aura extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
-    // --- 新增的代码结束 ---
 
     FloatValue switchSize = ValueBuilder.create(this, "Switch Size")
             .setDefaultFloatValue(1.0F)
@@ -246,7 +245,9 @@ public class Aura extends Module {
 
     @EventTarget
     public void onAttackSlowdown(EventAttackSlowdown e) {
-        e.setCancelled(true);
+        if (this.keepSprint.getCurrentValue()) {
+            e.setCancelled(true);
+        }
     }
 
     @EventTarget
@@ -322,7 +323,6 @@ public class Aura extends Module {
                 && Naven.skipTasks.isEmpty()
                 && !NetworkUtils.isServerLag()
                 && !Naven.getInstance().getModuleManager().getModule(Blink.class).isEnabled()) {
-            // --- 修改的代码 ---
             while (this.attacks >= 1.0F) {
                 if (isCooldownReady()) {
                     this.doAttack();
@@ -331,18 +331,15 @@ public class Aura extends Module {
                     break;
                 }
             }
-            // --- 修改的代码结束 ---
         }
     }
 
-    // --- 新增的代码 ---
     private boolean isCooldownReady() {
         if (!this.checkCooldown.getCurrentValue()) {
             return true;
         }
         return mc.player.getAttackStrengthScale(0.0F) >= this.cooldownThreshold.getCurrentValue();
     }
-    // --- 新增的代码结束 ---
 
     public Entity shouldPreAim() {
         Entity target = Aura.target;

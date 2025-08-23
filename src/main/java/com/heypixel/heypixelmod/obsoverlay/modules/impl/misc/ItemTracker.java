@@ -22,14 +22,20 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @ModuleInfo(
-   name = "EffectTags",
-   description = "Show the player's effect tags.",
-   category = Category.MISC
+        name = "EffectTags",
+        description = "Show the player's effect tags.",
+        category = Category.MISC
 )
 public class ItemTracker extends Module {
+   public static ItemTracker instance;
    private final BooleanValue debug = ValueBuilder.create(this, "Debug").setDefaultBooleanValue(false).build().getBooleanValue();
    private final BooleanValue shared = ValueBuilder.create(this, "Shared").setDefaultBooleanValue(true).build().getBooleanValue();
+   public final BooleanValue itemtracker = ValueBuilder.create(this, "Item Tracker").setDefaultBooleanValue(false).build().getBooleanValue();
    private final List<ItemTracker.TargetInfo> entityPositions = new CopyOnWriteArrayList<>();
+
+   public ItemTracker() {
+      instance = this;
+   }
 
    @EventTarget
    public void update(EventRender e) {
@@ -49,7 +55,7 @@ public class ItemTracker extends Module {
             double z = MathUtils.interpolate(renderPartialTicks, entity.zo, entity.getZ());
             Vector2f vector = ProjectionUtils.project(x, y, z, renderPartialTicks);
             this.entityPositions
-               .add(new ItemTracker.TargetInfo((AbstractClientPlayer)entity, vector, EntityWatcher.getEntityTags((AbstractClientPlayer)entity)));
+                    .add(new ItemTracker.TargetInfo((AbstractClientPlayer)entity, vector, EntityWatcher.getEntityTags((AbstractClientPlayer)entity)));
          }
       }
 
@@ -74,15 +80,15 @@ public class ItemTracker extends Module {
 
          for (String entityTag : info.getDescription()) {
             Fonts.harmony
-               .render(
-                  e.getStack(),
-                  I18n.get(entityTag, new Object[0]),
-                  (double)(info.getPosition().x + 10.0F),
-                  (double)info.getPosition().y + y,
-                  Color.RED,
-                  true,
-                  0.3F
-               );
+                    .render(
+                            e.getStack(),
+                            I18n.get(entityTag, new Object[0]),
+                            (double)(info.getPosition().x + 10.0F),
+                            (double)info.getPosition().y + y,
+                            Color.RED,
+                            true,
+                            0.3F
+                    );
             y += Fonts.harmony.getHeight(true, 0.3F);
          }
 

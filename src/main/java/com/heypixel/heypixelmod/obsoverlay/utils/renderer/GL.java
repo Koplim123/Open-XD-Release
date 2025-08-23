@@ -313,12 +313,14 @@ public class GL {
                break;
             }
          }
-
-         capStateField.setAccessible(true);
-         return (ICapabilityTracker)capStateField.get(state);
+         if (capStateField != null) {
+            capStateField.setAccessible(true);
+            return (ICapabilityTracker) capStateField.get(state);
+         }
       } catch (IllegalAccessException | NoSuchFieldException var10) {
          var10.printStackTrace();
          return null;
       }
+      return null;
    }
 }

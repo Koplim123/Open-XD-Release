@@ -6,6 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRespawn;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ItemTracker;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
 import java.util.ArrayList;
@@ -37,8 +38,8 @@ public class EntityWatcher {
       }
 
       Set<String> collect = effects.stream()
-         .map(effect -> "effect.minecraft." + BuiltInRegistries.MOB_EFFECT.getKey(effect).getPath())
-         .collect(Collectors.toSet());
+              .map(effect -> "effect.minecraft." + BuiltInRegistries.MOB_EFFECT.getKey(effect).getPath())
+              .collect(Collectors.toSet());
       currentPlayerTags.addAll(collect);
       return currentPlayerTags;
    }
@@ -58,60 +59,62 @@ public class EntityWatcher {
             }
          });
 
-         for (AbstractClientPlayer player : new ArrayList<>(mc.level.players())) {
-            if (player != mc.player) {
-               if (!tags.containsKey(player)) {
-                  tags.put(player, new HashSet<>());
-               }
+         if (ItemTracker.instance != null && ItemTracker.instance.itemtracker.getCurrentValue()) {
+            for (AbstractClientPlayer player : new ArrayList<>(mc.level.players())) {
+               if (player != mc.player) {
+                  if (!tags.containsKey(player)) {
+                     tags.put(player, new HashSet<>());
+                  }
 
-               Set<String> playerTags = tags.get(player);
-               if ((InventoryUtils.isGodAxe(player.getMainHandItem()) || InventoryUtils.isGodAxe(player.getOffhandItem())) && !playerTags.contains("God Axe")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding god axe!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("God Axe");
-               }
+                  Set<String> playerTags = tags.get(player);
+                  if ((InventoryUtils.isGodAxe(player.getMainHandItem()) || InventoryUtils.isGodAxe(player.getOffhandItem())) && !playerTags.contains("God Axe")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding god axe!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("God Axe");
+                  }
 
-               if ((InventoryUtils.isEnchantedGApple(player.getMainHandItem()) || InventoryUtils.isEnchantedGApple(player.getOffhandItem()))
-                  && !playerTags.contains("Enchanted Golden Apple")) {
-                  Notification notification = new Notification(
-                     NotificationLevel.WARNING, player.getName().getString() + " is holding enchanted golden apple!", 3000L
-                  );
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("Enchanted Golden Apple");
-               }
+                  if ((InventoryUtils.isEnchantedGApple(player.getMainHandItem()) || InventoryUtils.isEnchantedGApple(player.getOffhandItem()))
+                          && !playerTags.contains("Enchanted Golden Apple")) {
+                     Notification notification = new Notification(
+                             NotificationLevel.WARNING, player.getName().getString() + " is holding enchanted golden apple!", 3000L
+                     );
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("Enchanted Golden Apple");
+                  }
 
-               if ((InventoryUtils.isEndCrystal(player.getMainHandItem()) || InventoryUtils.isEndCrystal(player.getOffhandItem()))
-                  && !playerTags.contains("End Crystal")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding end crystal!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("End Crystal");
-               }
+                  if ((InventoryUtils.isEndCrystal(player.getMainHandItem()) || InventoryUtils.isEndCrystal(player.getOffhandItem()))
+                          && !playerTags.contains("End Crystal")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding end crystal!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("End Crystal");
+                  }
 
-               if ((InventoryUtils.isKBBall(player.getMainHandItem()) || InventoryUtils.isKBBall(player.getOffhandItem())) && !playerTags.contains("KB Ball")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding KB Ball!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("KB Ball");
-               }
+                  if ((InventoryUtils.isKBBall(player.getMainHandItem()) || InventoryUtils.isKBBall(player.getOffhandItem())) && !playerTags.contains("KB Ball")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding KB Ball!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("KB Ball");
+                  }
 
-               if ((InventoryUtils.isKBStick(player.getMainHandItem()) || InventoryUtils.isKBStick(player.getOffhandItem()))
-                  && !playerTags.contains("KB Stick")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding KB Stick!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("KB Stick");
-               }
+                  if ((InventoryUtils.isKBStick(player.getMainHandItem()) || InventoryUtils.isKBStick(player.getOffhandItem()))
+                          && !playerTags.contains("KB Stick")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding KB Stick!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("KB Stick");
+                  }
 
-               if ((InventoryUtils.getPunchLevel(player.getMainHandItem()) > 2 || InventoryUtils.getPunchLevel(player.getOffhandItem()) > 2)
-                  && !playerTags.contains("Punch Bow")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding Punch Bow!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("Punch Bow");
-               }
+                  if ((InventoryUtils.getPunchLevel(player.getMainHandItem()) > 2 || InventoryUtils.getPunchLevel(player.getOffhandItem()) > 2)
+                          && !playerTags.contains("Punch Bow")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding Punch Bow!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("Punch Bow");
+                  }
 
-               if ((InventoryUtils.getPowerLevel(player.getMainHandItem()) > 3 || InventoryUtils.getPowerLevel(player.getOffhandItem()) > 3)
-                  && !playerTags.contains("Power Bow")) {
-                  Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding Power Bow!", 3000L);
-                  Naven.getInstance().getNotificationManager().addNotification(notification);
-                  playerTags.add("Power Bow");
+                  if ((InventoryUtils.getPowerLevel(player.getMainHandItem()) > 3 || InventoryUtils.getPowerLevel(player.getOffhandItem()) > 3)
+                          && !playerTags.contains("Power Bow")) {
+                     Notification notification = new Notification(NotificationLevel.WARNING, player.getName().getString() + " is holding Power Bow!", 3000L);
+                     Naven.getInstance().getNotificationManager().addNotification(notification);
+                     playerTags.add("Power Bow");
+                  }
                }
             }
          }

@@ -23,15 +23,10 @@ import net.minecraft.world.phys.HitResult;
 )
 public class AnchorExploder extends Module {
 
-    private final FloatValue delayTicks;
-    private final FloatValue switchToSlot;
-    private final BooleanValue switchBack;
-
     private int ticksWaited;
     private int originalSlot = -1;
 
-    public AnchorExploder() {
-        delayTicks = ValueBuilder.create(this, "Delay (Ticks)")
+    FloatValue delayTicks = ValueBuilder.create(this, "Delay (Ticks)")
                 .setDefaultFloatValue(4.0f)
                 .setMinFloatValue(0.0f)
                 .setMaxFloatValue(40.0f)
@@ -39,7 +34,7 @@ public class AnchorExploder extends Module {
                 .build()
                 .getFloatValue();
 
-        switchToSlot = ValueBuilder.create(this, "Switch To Slot")
+    FloatValue switchToSlot = ValueBuilder.create(this, "Switch To Slot")
                 .setDefaultFloatValue(1.0f)
                 .setMinFloatValue(1.0f)
                 .setMaxFloatValue(9.0f)
@@ -47,11 +42,11 @@ public class AnchorExploder extends Module {
                 .build()
                 .getFloatValue();
 
-        switchBack = ValueBuilder.create(this, "Switch Back")
+    BooleanValue switchBack = ValueBuilder.create(this, "Switch Back")
                 .setDefaultBooleanValue(true)
                 .build()
                 .getBooleanValue();
-    }
+
 
     @Override
     public void onEnable() {

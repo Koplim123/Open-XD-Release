@@ -33,58 +33,48 @@ import java.util.stream.StreamSupport;
 )
 public class AutoCrystal extends Module {
 
-    private final FloatValue placeDelay;
-    private final FloatValue breakDelay;
-    private final BooleanValue headBob;
-    private final BooleanValue inAir;
-    private final BooleanValue autoSwitch;
-    private final BooleanValue damageTick;
-    private final BooleanValue pauseOnKill;
-    private final BooleanValue rightClickHold;
-
     private long lastPlaceTime;
     private long lastBreakTime;
 
-    public AutoCrystal() {
-        placeDelay = ValueBuilder.create(this, "Place Delay (Ticks)")
+    FloatValue placeDelay = ValueBuilder.create(this, "Place Delay (Ticks)")
                 .setDefaultFloatValue(1.0f)
                 .setFloatStep(1.0f)
                 .setMinFloatValue(0.0f)
                 .setMaxFloatValue(20.0f)
                 .build()
                 .getFloatValue();
-        breakDelay = ValueBuilder.create(this, "Break Delay (Ticks)")
+    FloatValue breakDelay = ValueBuilder.create(this, "Break Delay (Ticks)")
                 .setDefaultFloatValue(1.0f)
                 .setFloatStep(1.0f)
                 .setMinFloatValue(0.0f)
                 .setMaxFloatValue(20.0f)
                 .build()
                 .getFloatValue();
-        headBob = ValueBuilder.create(this, "Head Bob")
+    BooleanValue headBob = ValueBuilder.create(this, "Head Bob")
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
-        inAir = ValueBuilder.create(this, "In Air")
+    BooleanValue inAir = ValueBuilder.create(this, "In Air")
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
-        autoSwitch = ValueBuilder.create(this, "Auto Switch")
+    BooleanValue autoSwitch = ValueBuilder.create(this, "Auto Switch")
                 .setDefaultBooleanValue(true)
                 .build()
                 .getBooleanValue();
-        damageTick = ValueBuilder.create(this, "Damage Tick")
+    BooleanValue damageTick = ValueBuilder.create(this, "Damage Tick")
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
-        pauseOnKill = ValueBuilder.create(this, "Pause On Kill")
+    BooleanValue pauseOnKill = ValueBuilder.create(this, "Pause On Kill")
                 .setDefaultBooleanValue(false)
                 .build()
                 .getBooleanValue();
-        rightClickHold = ValueBuilder.create(this, "Only When Right Hold")
+    BooleanValue rightClickHold = ValueBuilder.create(this, "Only When Right Hold")
                 .setDefaultBooleanValue(true)
                 .build()
                 .getBooleanValue();
-    }
+
 
     @Override
     public void onEnable() {

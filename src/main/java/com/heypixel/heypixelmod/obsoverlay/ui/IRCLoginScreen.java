@@ -8,7 +8,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-//谁在给我动就死妈了 这些代码能正常跑就行了 狗屎代码
+
 public class IRCLoginScreen extends Screen {
     private EditBox usernameField;
     private EditBox passwordField;
@@ -28,12 +28,12 @@ public class IRCLoginScreen extends Screen {
             int centerY = this.height / 2;
 
             // 用户名输入框
-            this.usernameField = new EditBox(this.font, centerX - 100, centerY - 30, 200, 20, Component.literal("Username"));
+            this.usernameField = new EditBox(this.font, centerX - 100, centerY - 30, 200, 20, Component.literal(""));
             this.usernameField.setMaxLength(32);
             this.addRenderableWidget(this.usernameField);
 
             // 密码输入框
-            this.passwordField = new EditBox(this.font, centerX - 100, centerY, 200, 20, Component.literal("Password"));
+            this.passwordField = new EditBox(this.font, centerX - 100, centerY, 200, 20, Component.literal(""));
             this.passwordField.setMaxLength(32);
             this.passwordField.setHint(Component.literal("Password"));
             this.passwordField.setBordered(true);
@@ -50,8 +50,6 @@ public class IRCLoginScreen extends Screen {
                 IRCLoginManager.openRegisterPage();
             }).bounds(centerX - 100, centerY + 60, 200, 20).build();
             this.addRenderableWidget(this.registerButton);
-
-            this.usernameField.setFocused(true);
         } catch (Exception e) {
             System.err.println("Error initializing IRC login screen: " + e.getMessage());
             e.printStackTrace();
@@ -142,7 +140,31 @@ public class IRCLoginScreen extends Screen {
                 guiGraphics.drawCenteredString(this.font, "Logging in...", this.width / 2, this.height / 2 + 90, 0x55FF55);
             }
 
+            String originalPassword = this.passwordField.getValue();
+            if (!originalPassword.isEmpty()) {
+                StringBuilder maskedPassword = new StringBuilder();
+                for (int i = 0; i < originalPassword.length(); i++) {
+                    maskedPassword.append("*");
+                }
+                this.passwordField.setValue(maskedPassword.toString());
+            }
+
             super.render(guiGraphics, mouseX, mouseY, partialTicks);
+
+            this.passwordField.setValue(originalPassword);
+
+            final int HINT_COLOR = 0xFFFFFFFF;
+
+            // 用户名输入框
+            if (this.usernameField.getValue().isEmpty() && !this.usernameField.isFocused()) {
+                guiGraphics.drawString(this.font, Component.literal("Username"), this.usernameField.getX() + 4, this.usernameField.getY() + 6, HINT_COLOR, false);
+            }
+
+            // 密码输入框
+            if (this.passwordField.getValue().isEmpty() && !this.passwordField.isFocused()) {
+                guiGraphics.drawString(this.font, Component.literal("Password"), this.passwordField.getX() + 4, this.passwordField.getY() + 6, HINT_COLOR, false);
+            }
+
         } catch (Exception e) {
             System.err.println("Error rendering IRC login screen: " + e.getMessage());
             e.printStackTrace();
@@ -150,14 +172,52 @@ public class IRCLoginScreen extends Screen {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        try {
+            boolean usernameClicked = this.usernameField.mouseClicked(mouseX, mouseY, button);
+            boolean passwordClicked = this.passwordField.mouseClicked(mouseX, mouseY, button);
+
+            if (usernameClicked) {
+                this.passwordField.setFocused(false);
+            } else if (passwordClicked) {
+                this.usernameField.setFocused(false);
+            }
+
+            return super.mouseClicked(mouseX, mouseY, button);
+        } catch (Exception e) {
+            System.err.println("Error handling mouse click in IRC login screen: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         try {
+            if (keyCode == 258) { // Tab key
+                if (this.usernameField.isFocused()) {
+                    this.usernameField.setFocused(false);
+                    this.passwordField.setFocused(true);
+                } else if (this.passwordField.isFocused()) {
+                    this.passwordField.setFocused(false);
+                    this.usernameField.setFocused(true);
+                }
+                return true;
+            }
+
             if (keyCode == 257 || keyCode == 335) { // Enter key
                 if (this.loginButton.active) {
                     attemptLogin();
                     return true;
                 }
             }
+
+            if (this.usernameField.isFocused()) {
+                this.usernameField.keyPressed(keyCode, scanCode, modifiers);
+            } else if (this.passwordField.isFocused()) {
+                this.passwordField.keyPressed(keyCode, scanCode, modifiers);
+            }
+
             return super.keyPressed(keyCode, scanCode, modifiers);
         } catch (Exception e) {
             System.err.println("Error handling key press in IRC login screen: " + e.getMessage());
