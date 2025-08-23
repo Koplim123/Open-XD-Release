@@ -186,7 +186,7 @@ public class RotationUtils {
         return new Vec3((double)(yawSin * pitchCos), (double)pitchSin, (double)(yawCos * pitchCos));
     }
 
-    public static RotationUtils.Data getRotationDataToEntity(Entity target, String currentMode) {
+    public static RotationUtils.Data getRotationDataToEntity(Entity target) {
         Vec3 playerPosition = new Vec3(mc.player.getX(), mc.player.getY(), mc.player.getZ());
         Vec3 eyePos = playerPosition.add(0.0, (double)mc.player.getEyeHeight(), 0.0);
         AABB targetBox = getTargetBoundingBox(target);
