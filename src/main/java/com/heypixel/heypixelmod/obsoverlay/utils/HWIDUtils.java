@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import by.radioegor146.nativeobfuscator.Native;
 import oshi.SystemInfo;
 import oshi.hardware.Baseboard;
 import oshi.hardware.ComputerSystem;
@@ -12,7 +13,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@Native
 public class HWIDUtils {
 
     private static String cachedHWID = null;

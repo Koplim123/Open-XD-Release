@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
+import by.radioegor146.nativeobfuscator.Native;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -7,7 +8,7 @@ import java.util.Date;
 
 import static com.heypixel.heypixelmod.obsoverlay.Naven.CLIENT_NAME;
 import static com.heypixel.heypixelmod.obsoverlay.modules.Module.mc;
-
+@Native
 public class NavenTitle {
     public String getTitle() {
         final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");

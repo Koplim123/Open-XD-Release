@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import by.radioegor146.nativeobfuscator.Native;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
@@ -13,7 +14,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-
+@Native
 public class IRCLoginManager {
     public static String username = "";
     public static String rank = "";

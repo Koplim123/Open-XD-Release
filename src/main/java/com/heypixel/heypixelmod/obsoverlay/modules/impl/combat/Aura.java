@@ -11,9 +11,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
@@ -45,7 +43,6 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -55,7 +52,7 @@ import java.util.stream.StreamSupport;
 
 @ModuleInfo(
         name = "KillAura",
-        description = "Automatically attacks entities",
+        description = "AutoAttack Entities",
         category = Category.COMBAT
 )
 public class Aura extends Module {
@@ -75,6 +72,33 @@ public class Aura extends Module {
     BooleanValue infSwitch = ValueBuilder.create(this, "Infinity Switch").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
+    BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
+    BooleanValue Cooldown = ValueBuilder.create(this, "Cooldown").setDefaultBooleanValue(false).build().getBooleanValue();
+    ModeValue rotationType = ValueBuilder.create(this, "Rotations Type").setModes("None", "Linear", "Sigmoid", "Accelerated").build().getModeValue();
+    ModeValue aimPointMode = ValueBuilder.create(this, "Aim Point").setModes("Center", "Closest").build().getModeValue();
+    public ModeValue TargetHUDStyle = ValueBuilder.create(this, "TargetHUD Style")
+            .setVisibility(this.targetHud::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "New", "MoonLightV2", "Rise")
+            .build()
+            .getModeValue();
+    FloatValue turnSpeedX = ValueBuilder.create(this, "Turn Speed X")
+            .setDefaultFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(0.0F)
+            .setMaxFloatValue(180.0F)
+            .setVisibility(() -> !this.rotationType.isCurrentMode("None"))
+            .build()
+            .getFloatValue();
+    FloatValue turnSpeedY = ValueBuilder.create(this, "Turn Speed Y")
+            .setDefaultFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(0.0F)
+            .setMaxFloatValue(180.0F)
+            .setVisibility(() -> !this.rotationType.isCurrentMode("None"))
+            .build()
+            .getFloatValue();
+    BooleanValue aimOnlyAttack = ValueBuilder.create(this, "Aim Only Attack").setDefaultBooleanValue(false).build().getBooleanValue();
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -87,25 +111,9 @@ public class Aura extends Module {
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(20.0F)
+            .setVisibility(() -> !this.Cooldown.getCurrentValue())
             .build()
             .getFloatValue();
-
-    // --- 新增的代码 ---
-    BooleanValue checkCooldown = ValueBuilder.create(this, "Cooldown")
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-
-    FloatValue cooldownThreshold = ValueBuilder.create(this, "Cooldown Threshold")
-            .setVisibility(checkCooldown::getCurrentValue)
-            .setDefaultFloatValue(0.95F)
-            .setFloatStep(0.01F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(1.0F)
-            .build()
-            .getFloatValue();
-    // --- 新增的代码结束 ---
-
     FloatValue switchSize = ValueBuilder.create(this, "Switch Size")
             .setDefaultFloatValue(1.0F)
             .setFloatStep(1.0F)
@@ -136,12 +144,32 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
+    FloatValue acceleration = ValueBuilder.create(this, "Acceleration")
+            .setDefaultFloatValue(20.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(100.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Accelerated"))
+            .build()
+            .getFloatValue();
+
+    FloatValue sigmoidSmoothness = ValueBuilder.create(this, "Sigmoid Smoothness")
+            .setDefaultFloatValue(5.0F)
+            .setFloatStep(0.1F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(20.0F)
+            .setVisibility(() -> this.rotationType.isCurrentMode("Sigmoid"))
+            .build()
+            .getFloatValue();
+
     RotationUtils.Data lastRotationData;
     RotationUtils.Data rotationData;
     int attackTimes = 0;
     float attacks = 0.0F;
     private int index;
     private Vector4f blurMatrix;
+    private Vector2f currentRotation = new Vector2f(0.0F, 0.0F);
+    private Vector2f currentSpeed = new Vector2f(0.0F, 0.0F);
 
     @EventTarget
     public void onShader(EventShader e) {
@@ -158,26 +186,15 @@ public class Aura extends Module {
             e.getStack().pushPose();
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
-            String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
-            float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
-            this.blurMatrix = new Vector4f(x, y, width, 30.0F);
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
-            StencilUtils.erase(true);
-            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
-            RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
-            StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
-            Fonts.harmony
-                    .render(
-                            e.getStack(),
-                            "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double)(x + 5.0F),
-                            (double)(y + 17.0F),
-                            Color.WHITE,
-                            true,
-                            0.35F
-                    );
+
+            this.blurMatrix = com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD.render(
+                    e.getGuiGraphics(),
+                    living,
+                    this.TargetHUDStyle.getCurrentMode(),
+                    x,
+                    y
+            );
+
             e.getStack().popPose();
         }
     }
@@ -206,7 +223,7 @@ public class Aura extends Module {
                     double motionZ = entity.getZ() - entity.zo;
                     AABB boundingBox = entity.getBoundingBox()
                             .move(-motionX, -motionY, -motionZ)
-                            .move((double)partialTicks * motionX, (double)partialTicks * motionY, (double)partialTicks * motionZ);
+                            .move((double) partialTicks * motionX, (double) partialTicks * motionY, (double) partialTicks * motionZ);
                     RenderUtils.drawSolidBox(boundingBox, stack);
                     stack.popPose();
                 }
@@ -228,12 +245,20 @@ public class Aura extends Module {
         target = null;
         aimingTarget = null;
         targets.clear();
+        this.currentRotation.x = mc.player.getYRot();
+        this.currentRotation.y = mc.player.getXRot();
+        this.currentSpeed.x = 0.0F;
+        this.currentSpeed.y = 0.0F;
     }
 
     @Override
     public void onDisable() {
         target = null;
         aimingTarget = null;
+        this.currentRotation.x = 0.0F;
+        this.currentRotation.y = 0.0F;
+        this.currentSpeed.x = 0.0F;
+        this.currentSpeed.y = 0.0F;
         super.onDisable();
     }
 
@@ -246,7 +271,9 @@ public class Aura extends Module {
 
     @EventTarget
     public void onAttackSlowdown(EventAttackSlowdown e) {
-        e.setCancelled(true);
+        if (this.keepSprint.getCurrentValue()) {
+            e.setCancelled(true);
+        }
     }
 
     @EventTarget
@@ -261,22 +288,49 @@ public class Aura extends Module {
                 rotation = null;
                 this.lastRotationData = null;
                 targets.clear();
+                this.currentRotation.x = mc.player.getYRot();
+                this.currentRotation.y = mc.player.getXRot();
+                this.currentSpeed.x = 0.0F;
+                this.currentSpeed.y = 0.0F;
                 return;
             }
 
             boolean isSwitch = this.switchSize.getCurrentValue() > 1.0F;
             this.setSuffix(this.multi.getCurrentValue() ? "Multi" : (isSwitch ? "Switch" : "Single"));
             this.updateAttackTargets();
-            aimingTarget = this.shouldPreAim();
+
+            if (target != null && isValidTarget(target)) {
+                aimingTarget = target;
+            } else {
+                aimingTarget = this.shouldPreAim();
+            }
+
             this.lastRotationData = this.rotationData;
             this.rotationData = null;
+
             if (aimingTarget != null) {
-                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget);
+                this.rotationData = RotationUtils.getRotationDataToEntity(aimingTarget, this.aimPointMode.getCurrentMode());
                 if (this.rotationData.getRotation() != null) {
-                    rotation = this.rotationData.getRotation();
+                    if (this.rotationType.isCurrentMode("Linear")) {
+                        this.updateLinearRotations(this.rotationData);
+                    } else if (this.rotationType.isCurrentMode("Sigmoid")) {
+                        this.updateSigmoidRotations(this.rotationData);
+                    } else if (this.rotationType.isCurrentMode("Accelerated")) {
+                        this.updateAcceleratedRotations(this.rotationData);
+                    } else {
+                        rotation = null;
+                        RotationManager.rotations.x = mc.player.getYRot();
+                        RotationManager.rotations.y = mc.player.getXRot();
+                        this.currentSpeed.x = 0.0F;
+                        this.currentSpeed.y = 0.0F;
+                    }
                 } else {
                     rotation = null;
                 }
+            } else {
+                rotation = null;
+                this.currentSpeed.x = 0.0F;
+                this.currentSpeed.y = 0.0F;
             }
 
             if (targets.isEmpty()) {
@@ -289,7 +343,7 @@ public class Aura extends Module {
             }
 
             if (targets.size() > 1
-                    && ((float)this.attackTimes >= this.switchAttackTimes.getCurrentValue() || this.rotationData != null && this.rotationData.getDistance() > 3.0)) {
+                    && ((float) this.attackTimes >= this.switchAttackTimes.getCurrentValue() || this.rotationData != null && this.rotationData.getDistance() > 3.0)) {
                 this.attackTimes = 0;
 
                 for (int i = 0; i < targets.size(); i++) {
@@ -299,7 +353,7 @@ public class Aura extends Module {
                     }
 
                     Entity nextTarget = targets.get(this.index);
-                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget);
+                    RotationUtils.Data data = RotationUtils.getRotationDataToEntity(nextTarget, this.aimPointMode.getCurrentMode());
                     if (data.getDistance() < 3.0) {
                         break;
                     }
@@ -311,7 +365,9 @@ public class Aura extends Module {
             }
 
             target = targets.get(this.index);
-            this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            if (!this.Cooldown.getCurrentValue()) {
+                this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+            }
         }
     }
 
@@ -322,27 +378,21 @@ public class Aura extends Module {
                 && Naven.skipTasks.isEmpty()
                 && !NetworkUtils.isServerLag()
                 && !Naven.getInstance().getModuleManager().getModule(Blink.class).isEnabled()) {
-            // --- 修改的代码 ---
-            while (this.attacks >= 1.0F) {
-                if (isCooldownReady()) {
+            if (this.Cooldown.getCurrentValue()) {
+                if (targets != null && !targets.isEmpty() && aimingTarget != null) {
+                    if (mc.player.getAttackStrengthScale(0.5F) >= 1.0F) {
+                        this.doAttack();
+                        mc.player.resetAttackStrengthTicker();
+                    }
+                }
+            } else {
+                while (this.attacks >= 1.0F) {
                     this.doAttack();
                     this.attacks--;
-                } else {
-                    break;
                 }
             }
-            // --- 修改的代码结束 ---
         }
     }
-
-    // --- 新增的代码 ---
-    private boolean isCooldownReady() {
-        if (!this.checkCooldown.getCurrentValue()) {
-            return true;
-        }
-        return mc.player.getAttackStrengthScale(0.0F) >= this.cooldownThreshold.getCurrentValue();
-    }
-    // --- 新增的代码结束 ---
 
     public Entity shouldPreAim() {
         Entity target = Aura.target;
@@ -357,14 +407,25 @@ public class Aura extends Module {
     }
 
     public void doAttack() {
-        if (!targets.isEmpty()) {
+        if (!targets.isEmpty() && aimingTarget != null) {
             HitResult hitResult = mc.hitResult;
+
+            if (this.aimOnlyAttack.getCurrentValue()) {
+                if (hitResult.getType() != Type.ENTITY || ((EntityHitResult) hitResult).getEntity() != aimingTarget) {
+                    return;
+                }
+            }
+
             if (hitResult.getType() == Type.ENTITY) {
-                EntityHitResult result = (EntityHitResult)hitResult;
+                EntityHitResult result = (EntityHitResult) hitResult;
                 if (AntiBots.isBot(result.getEntity())) {
                     ChatUtils.addChatMessage("Attacking Bot!");
                     return;
                 }
+            }
+
+            if (hitResult.getType() != Type.ENTITY) {
+                return;
             }
 
             if (this.multi.getCurrentValue()) {
@@ -379,10 +440,116 @@ public class Aura extends Module {
                     }
                 }
             } else if (hitResult.getType() == Type.ENTITY) {
-                EntityHitResult result = (EntityHitResult)hitResult;
+                EntityHitResult result = (EntityHitResult) hitResult;
                 this.attackEntity(result.getEntity());
             }
         }
+    }
+
+    private void updateLinearRotations(RotationUtils.Data data) {
+        float targetYaw = data.getRotation().x;
+        float targetPitch = data.getRotation().y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
+
+        float yawSpeed = Math.min(Math.abs(deltaYaw), maxSpeedX) * Math.signum(deltaYaw);
+        float pitchSpeed = Math.min(Math.abs(deltaPitch), maxSpeedY) * Math.signum(deltaPitch);
+
+        if (Math.abs(deltaYaw) < maxSpeedX) {
+            yawSpeed = deltaYaw;
+        }
+        if (Math.abs(deltaPitch) < maxSpeedY) {
+            pitchSpeed = deltaPitch;
+        }
+
+        this.currentRotation.x += yawSpeed;
+        this.currentRotation.y += pitchSpeed;
+
+        this.currentRotation.x = RotationUtils.normalizeAngle(this.currentRotation.x);
+        this.currentRotation.y = Math.min(90.0F, Math.max(-90.0F, this.currentRotation.y));
+
+        RotationManager.rotations.x = this.currentRotation.x;
+        RotationManager.rotations.y = this.currentRotation.y;
+        rotation = this.currentRotation;
+    }
+
+    private void updateSigmoidRotations(RotationUtils.Data data) {
+        float targetYaw = data.getRotation().x;
+        float targetPitch = data.getRotation().y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float smoothness = this.sigmoidSmoothness.getCurrentValue();
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
+
+        float sigmoidYawFactor = (float) (2.0F / (1.0F + Math.exp(-deltaYaw / smoothness)) - 1.0F);
+        float sigmoidPitchFactor = (float) (2.0F / (1.0F + Math.exp(-deltaPitch / smoothness)) - 1.0F);
+
+        float newYawSpeed = sigmoidYawFactor * maxSpeedX;
+        float newPitchSpeed = sigmoidPitchFactor * maxSpeedY;
+
+        if (Math.abs(deltaYaw) < Math.abs(newYawSpeed)) {
+            newYawSpeed = deltaYaw;
+        }
+        if (Math.abs(deltaPitch) < Math.abs(newPitchSpeed)) {
+            newPitchSpeed = deltaPitch;
+        }
+
+        this.currentRotation.x += newYawSpeed;
+        this.currentRotation.y += newPitchSpeed;
+
+        this.currentRotation.x = RotationUtils.normalizeAngle(this.currentRotation.x);
+        this.currentRotation.y = Math.min(90.0F, Math.max(-90.0F, this.currentRotation.y));
+
+        RotationManager.rotations.x = this.currentRotation.x;
+        RotationManager.rotations.y = this.currentRotation.y;
+        rotation = this.currentRotation;
+    }
+
+    private void updateAcceleratedRotations(RotationUtils.Data data) {
+        float targetYaw = data.getRotation().x;
+        float targetPitch = data.getRotation().y;
+        float maxSpeedX = this.turnSpeedX.getCurrentValue();
+        float maxSpeedY = this.turnSpeedY.getCurrentValue();
+        float accel = this.acceleration.getCurrentValue();
+
+        float deltaYaw = RotationUtils.normalizeAngle(targetYaw - this.currentRotation.x);
+        float deltaPitch = RotationUtils.normalizeAngle(targetPitch - this.currentRotation.y);
+
+        float newSpeedX = this.currentSpeed.x;
+        float newSpeedY = this.currentSpeed.y;
+
+        newSpeedX += accel * Math.signum(deltaYaw);
+        newSpeedY += accel * Math.signum(deltaPitch);
+
+        if (Math.abs(deltaYaw) < Math.abs(newSpeedX) || Math.signum(deltaYaw) != Math.signum(newSpeedX)) {
+            newSpeedX = deltaYaw / 2.0f;
+            if (Math.abs(newSpeedX) < 1.0f) newSpeedX = deltaYaw;
+        }
+        if (Math.abs(deltaPitch) < Math.abs(newSpeedY) || Math.signum(deltaPitch) != Math.signum(newSpeedY)) {
+            newSpeedY = deltaPitch / 2.0f;
+            if (Math.abs(newSpeedY) < 1.0f) newSpeedY = deltaPitch;
+        }
+
+        newSpeedX = Math.min(Math.abs(newSpeedX), maxSpeedX) * Math.signum(newSpeedX);
+        newSpeedY = Math.min(Math.abs(newSpeedY), maxSpeedY) * Math.signum(newSpeedY);
+
+        this.currentRotation.x += newSpeedX;
+        this.currentRotation.y += newSpeedY;
+
+        this.currentSpeed.x = newSpeedX;
+        this.currentSpeed.y = newSpeedY;
+
+        this.currentRotation.x = RotationUtils.normalizeAngle(this.currentRotation.x);
+        this.currentRotation.y = Math.min(90.0F, Math.max(-90.0F, this.currentRotation.y));
+
+        RotationManager.rotations.x = this.currentRotation.x;
+        RotationManager.rotations.y = this.currentRotation.y;
+        rotation = this.currentRotation;
     }
 
     public void updateAttackTargets() {
@@ -396,7 +563,7 @@ public class Aura extends Module {
             if (living instanceof BlinkingPlayer) {
                 return false;
             } else {
-                AntiBots module = (AntiBots)Naven.getInstance().getModuleManager().getModule(AntiBots.class);
+                AntiBots module = (AntiBots) Naven.getInstance().getModuleManager().getModule(AntiBots.class);
                 if (module == null || !module.isEnabled() || !AntiBots.isBot(entity) && !AntiBots.isBedWarsBot(entity)) {
                     if (Teams.isSameTeam(living)) {
                         return false;
@@ -410,7 +577,7 @@ public class Aura extends Module {
                         return false;
                     } else if (entity instanceof Player && !this.attackPlayer.getCurrentValue()) {
                         return false;
-                    } else if (!(entity instanceof Player) || !((double)entity.getBbWidth() < 0.5) && !living.isSleeping()) {
+                    } else if (!(entity instanceof Player) || !((double) entity.getBbWidth() < 0.5) && !living.isSleeping()) {
                         if ((entity instanceof Mob || entity instanceof Slime || entity instanceof Bat || entity instanceof AbstractGolem)
                                 && !this.attackMobs.getCurrentValue()) {
                             return false;
@@ -434,13 +601,14 @@ public class Aura extends Module {
     public boolean isValidAttack(Entity entity) {
         if (!this.isValidTarget(entity)) {
             return false;
-        } else if (entity instanceof LivingEntity && (float)((LivingEntity)entity).hurtTime > this.hurtTime.getCurrentValue()) {
+        } else if (entity instanceof LivingEntity && (float) ((LivingEntity) entity).hurtTime > this.hurtTime.getCurrentValue()) {
             return false;
         } else {
             Vec3 closestPoint = RotationUtils.getClosestPoint(mc.player.getEyePosition(), entity.getBoundingBox());
-            return closestPoint.distanceTo(mc.player.getEyePosition()) > (double)this.aimRange.getCurrentValue()
+            return closestPoint.distanceTo(mc.player.getEyePosition()) > (double) this.aimRange.getCurrentValue()
                     ? false
                     : RotationUtils.inFov(entity, this.fov.getCurrentValue() / 2.0F);
+
         }
     }
 
@@ -471,22 +639,22 @@ public class Aura extends Module {
                 .filter(this::isValidAttack);
         List<Entity> possibleTargets = stream.collect(Collectors.toList());
         if (this.priority.isCurrentMode("Range")) {
-            possibleTargets.sort(Comparator.comparingDouble(o -> (double)o.distanceTo(mc.player)));
+            possibleTargets.sort(Comparator.comparingDouble(o -> (double) o.distanceTo(mc.player)));
         } else if (this.priority.isCurrentMode("Fov")) {
             possibleTargets.sort(
-                    Comparator.comparingDouble(o -> (double)RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
+                    Comparator.comparingDouble(o -> (double) RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
             );
         } else if (this.priority.isCurrentMode("Health")) {
-            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double)living.getHealth() : 0.0));
+            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double) living.getHealth() : 0.0));
         }
 
-        if (this.preferBaby.getCurrentValue() && possibleTargets.stream().anyMatch(entity -> entity instanceof LivingEntity && ((LivingEntity)entity).isBaby())) {
-            possibleTargets.removeIf(entity -> !(entity instanceof LivingEntity) || !((LivingEntity)entity).isBaby());
+        if (this.preferBaby.getCurrentValue() && possibleTargets.stream().anyMatch(entity -> entity instanceof LivingEntity && ((LivingEntity) entity).isBaby())) {
+            possibleTargets.removeIf(entity -> !(entity instanceof LivingEntity) || !((LivingEntity) entity).isBaby());
         }
 
         possibleTargets.sort(Comparator.comparing(o -> o instanceof EndCrystal ? 0 : 1));
         return this.infSwitch.getCurrentValue()
                 ? possibleTargets
-                : possibleTargets.subList(0, (int)Math.min((float)possibleTargets.size(), this.switchSize.getCurrentValue()));
+                : possibleTargets.subList(0, (int) Math.min((float) possibleTargets.size(), this.switchSize.getCurrentValue()));
     }
 }

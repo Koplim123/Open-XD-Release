@@ -89,6 +89,10 @@ public class ModuleManager {
          new ItemsCounter(),
          new EffectDisplay(),
          new NoRender(),
+         new BetaBackTrack(),
+         new BetaAutoThrowable(),
+         new BetaSuperKB(),
+         new BetaNoXZ(),
          new ItemTags(),
          new SafeWalk(),
          new AimAssist(),
@@ -112,6 +116,7 @@ public class ModuleManager {
          new AutoCrystal(),
          new MidPearl(),
          new IRCModule()
+
       );
    }
 

@@ -1,7 +1,9 @@
 package com.heypixel.heypixelmod.obsoverlay.IRC;
 
-import java.net.URISyntaxException;
+import by.radioegor146.nativeobfuscator.Native;
 
+import java.net.URISyntaxException;
+@Native
 public class IRC {
     private static IRC instance;
     private IRCWebSocketConnectAPI webSocketAPI;
