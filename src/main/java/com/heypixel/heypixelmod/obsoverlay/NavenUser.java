@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
+import by.radioegor146.nativeobfuscator.Native;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -13,7 +14,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Objects;
-
+@Native
 /**
  * 直接使用NavenUser.getUsername()调用即可
  **/

@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
+import by.radioegor146.nativeobfuscator.Native;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
@@ -32,7 +33,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
+@Native
 public class Naven {
    public static final String CLIENT_NAME = "Naven-XD";
    public static final String CLIENT_DISPLAY_NAME = "Naven";

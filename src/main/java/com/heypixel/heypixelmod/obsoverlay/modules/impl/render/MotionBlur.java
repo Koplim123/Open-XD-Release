@@ -24,13 +24,13 @@ import java.io.IOException;
 public class MotionBlur extends Module {
    public static MotionBlur instance;
    private final FloatValue strength = ValueBuilder.create(this, "Strength")
-      .setFloatStep(0.1F)
-      .setDefaultFloatValue(7.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(10.0F)
-      .build()
-      .getFloatValue();
-   private final ResourceLocation shaderLocation = ResourceLocation.fromNamespaceAndPath("shaders", "post/motion_blur.json");
+            .setFloatStep(0.1F)
+            .setDefaultFloatValue(7.0F)
+            .setMinFloatValue(0.0F)
+            .setMaxFloatValue(10.0F)
+            .build()
+            .getFloatValue();
+   private final ResourceLocation shaderLocation = new ResourceLocation("shaders/post/motion_blur.json");
    public PostChain shader;
    private int lastWidth;
    private float currentBlur;

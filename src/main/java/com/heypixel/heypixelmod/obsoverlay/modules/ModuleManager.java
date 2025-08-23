@@ -46,6 +46,7 @@ public class ModuleManager {
          new Scaffold(),
          new AntiBots(),
          new Sprint(),
+         new FlagCheck(),
          new ChestESP(),
          new ClickGUIModule(),
          new Teams(),
@@ -88,6 +89,10 @@ public class ModuleManager {
          new ItemsCounter(),
          new EffectDisplay(),
          new NoRender(),
+         new BetaBackTrack(),
+         new BetaAutoThrowable(),
+         new BetaSuperKB(),
+         new BetaNoXZ(),
          new ItemTags(),
          new SafeWalk(),
          new AimAssist(),
@@ -110,6 +115,7 @@ public class ModuleManager {
          new AutoCrystal(),
          new MidPearl(),
          new IRCModule()
+
       );
    }
 
