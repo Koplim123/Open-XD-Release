@@ -10,7 +10,7 @@ public class Fonts {
     public static CustomTextRenderer opensans;
     public static CustomTextRenderer harmony;
     public static CustomTextRenderer icons;
-    // 新增中文字体渲染器
+
     public static CustomTextRenderer chinese;
 
     public static void loadFonts() throws IOException, FontFormatException {
@@ -42,13 +42,13 @@ public class Fonts {
             icons = null;
         }
 
-        // 新增中文专用字体加载
+
         try {
-            chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384); // 加载CJK统一汉字区
+            chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
         } catch (Exception e) {
             System.err.println("Failed to load HYWenHei font, using harmony as fallback");
             e.printStackTrace();
-            chinese = harmony; // 回退到和谐字体
+            chinese = harmony;
         }
 
 
@@ -64,28 +64,26 @@ public class Fonts {
             System.err.println("icons font is null, this should not happen");
         }
         
-        // ... 原有空值检查 ...
+
         if (chinese == null) {
             System.err.println("chinese font is null, falling back to harmony");
             chinese = harmony;
         }
         
-        // 尝试应用用户设置的字体
+
         applyUserSelectedFont();
     }
     
-    /**
-     * 应用用户选择的字体设置
-     */
+    
     private static void applyUserSelectedFont() {
         try {
-            // 这里我们尝试获取FontSelect模块实例并应用字体
-            // 由于模块系统可能尚未完全初始化，我们将其包装在try-catch中
+
+
             FontSelect fontSelectModule = getFontSelectModule();
             if (fontSelectModule != null && fontSelectModule.isEnabled()) {
                 String selectedFont = fontSelectModule.getSelectedFont();
                 if (selectedFont != null && !selectedFont.isEmpty() && !"opensans".equals(selectedFont)) {
-                    // 应用用户选择的字体
+
                     reloadFonts(selectedFont);
                 }
             }
@@ -95,14 +93,11 @@ public class Fonts {
         }
     }
     
-    /**
-     * 获取FontSelect模块实例
-     * @return FontSelect模块实例或null
-     */
+    
     private static FontSelect getFontSelectModule() {
         try {
-            // 这里需要根据模块系统具体实现来获取模块实例
-            // 此处为示意代码，实际实现可能需要根据项目模块系统调整
+
+
             return null;
         } catch (Exception e) {
             return null;
@@ -130,7 +125,7 @@ public class Fonts {
             }
 
             try {
-                // 对于和谐字体(支持中文)，使用更大的字符范围
+
                 newHarmony = new CustomTextRenderer(fontName, 32, 0, 65535, 16384);
             } catch (Exception e) {
                 System.err.println("Failed to create harmony renderer with font: " + fontName);
@@ -195,7 +190,7 @@ public class Fonts {
         }
     }
     
-    // 新增混合字体渲染方法
+
     public static void renderMixedFont(com.mojang.blaze3d.vertex.PoseStack stack, String text, double x, double y, Color color, boolean shadow, double scale) {
         double currentX = x;
         
@@ -211,7 +206,7 @@ public class Fonts {
         }
     }
 
-    // 新增CJK字符判断方法
+
     private static boolean isCJKCharacter(char c) {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
         return block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS

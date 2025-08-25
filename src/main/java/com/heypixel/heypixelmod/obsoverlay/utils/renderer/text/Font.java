@@ -131,40 +131,38 @@ public class Font {
 
       for (int i = 0; i < string.length(); i++) {
          int cp = string.charAt(i) - this.from;
-         if (cp == 167 && i + 1 < string.length()) {
+         if (string.charAt(i) == '\u00A7' && i + 1 < string.length()) { // '\u00A7' == '§'
             char ctrl = string.charAt(i + 1);
             ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
-            if (byCode != null && byCode.isColor() && !shadow) {
+            if (byCode != null && byCode.isColor()) {
                currentColor = new Color(byCode.getColor());
             }
-
-            i++;
-         } else {
-            // 检查字符是否超出范围
-            boolean renderedWithFallback = false;
-            if (cp >= this.charData.length || cp < 0) {
-               // 使用后备字体渲染未知字符
-               if (this.fallbackFont != null) {
-                  // 使用后备字体渲染字符并更新x坐标
-                  x = this.fallbackFont.render(mesh, String.valueOf(string.charAt(i)), x, y - (double)(this.ascent * this.scale) * scale, color, scale, shadow);
-                  renderedWithFallback = true;
-               } else {
-                  // 如果没有后备字体，使用默认字符
-                  cp = 0;
-               }
+            i++; // 跳过颜色代码字符
+            continue; // 跳过渲染§和颜色代码
+         }
+         // 检查字符是否超出范围
+         boolean renderedWithFallback = false;
+         if (cp >= this.charData.length || cp < 0) {
+            // 使用后备字体渲染未知字符
+            if (this.fallbackFont != null) {
+               // 使用后备字体渲染字符并更新x坐标
+               x = this.fallbackFont.render(mesh, String.valueOf(string.charAt(i)), x, y - (double)(this.ascent * this.scale) * scale, color, scale, shadow);
+               renderedWithFallback = true;
+            } else {
+               // 如果没有后备字体，使用默认字符
+               cp = 0;
             }
-            
-            // 只有当没有使用后备字体渲染且cp在有效范围内时才渲染
-            if (!renderedWithFallback && cp >= 0 && cp < this.charData.length) {
-               CharData c = this.charData[cp];
-               mesh.quad(
-                  mesh.vec2(x + (double)c.x0 * scale, y + (double)c.y0 * scale).vec2((double)c.u0, (double)c.v0).color(currentColor).next(),
-                  mesh.vec2(x + (double)c.x0 * scale, y + (double)c.y1 * scale).vec2((double)c.u0, (double)c.v1).color(currentColor).next(),
-                  mesh.vec2(x + (double)c.x1 * scale, y + (double)c.y1 * scale).vec2((double)c.u1, (double)c.v1).color(currentColor).next(),
-                  mesh.vec2(x + (double)c.x1 * scale, y + (double)c.y0 * scale).vec2((double)c.u1, (double)c.v0).color(currentColor).next()
-               );
-               x += (double)c.xAdvance * scale;
-            }
+         }
+         // 只有当没有使用后备字体渲染且cp在有效范围内时才渲染
+         if (!renderedWithFallback && cp >= 0 && cp < this.charData.length) {
+            CharData c = this.charData[cp];
+            mesh.quad(
+               mesh.vec2(x + (double)c.x0 * scale, y + (double)c.y0 * scale).vec2((double)c.u0, (double)c.v0).color(currentColor).next(),
+               mesh.vec2(x + (double)c.x0 * scale, y + (double)c.y1 * scale).vec2((double)c.u0, (double)c.v1).color(currentColor).next(),
+               mesh.vec2(x + (double)c.x1 * scale, y + (double)c.y1 * scale).vec2((double)c.u1, (double)c.v1).color(currentColor).next(),
+               mesh.vec2(x + (double)c.x1 * scale, y + (double)c.y0 * scale).vec2((double)c.u1, (double)c.v0).color(currentColor).next()
+            );
+            x += (double)c.xAdvance * scale;
          }
       }
 

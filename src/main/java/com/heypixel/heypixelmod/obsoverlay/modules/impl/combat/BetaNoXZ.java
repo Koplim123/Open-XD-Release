@@ -24,6 +24,7 @@ public class BetaNoXZ extends Module {
     
     private final FloatValue attackTimes = ValueBuilder.create(this, "AttackTimes")
             .setDefaultFloatValue(4.0F)
+            .setFloatStep(0.5F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(20.0F)
             .build()
@@ -31,6 +32,7 @@ public class BetaNoXZ extends Module {
             
     private final FloatValue chance = ValueBuilder.create(this, "Chance")
             .setDefaultFloatValue(50.0F)
+            .setFloatStep(0.5F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(100.0F)
             .build()
