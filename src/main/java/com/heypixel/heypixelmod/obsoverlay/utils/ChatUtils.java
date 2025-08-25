@@ -1,10 +1,9 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import by.radioegor146.nativeobfuscator.Native;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
-@Native
+
 public class ChatUtils {
    private static final String PREFIX = "§7[§b" + "Naven".charAt(0) + "§7] ";
 

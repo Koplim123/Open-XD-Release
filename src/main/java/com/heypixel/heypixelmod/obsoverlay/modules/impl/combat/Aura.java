@@ -49,6 +49,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -83,7 +84,15 @@ public class Aura extends Module {
             .setMaxFloatValue(6.0F)
             .build()
             .getFloatValue();
-    FloatValue aps = ValueBuilder.create(this, "Attack Per Second")
+
+    FloatValue attackCpsMax = ValueBuilder.create(this, "Attack CPS Max")
+            .setDefaultFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(20.0F)
+            .build()
+            .getFloatValue();
+    FloatValue attackCpsMin = ValueBuilder.create(this, "Attack CPS Min")
             .setDefaultFloatValue(10.0F)
             .setFloatStep(1.0F)
             .setMinFloatValue(1.0F)
@@ -134,6 +143,34 @@ public class Aura extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
+
+    FloatValue rotationSpeedMax = ValueBuilder.create(this, "RotationSpeedMax")
+            .setDefaultFloatValue(180.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(180.0F)
+            .build()
+            .getFloatValue();
+    FloatValue rotationSpeedMin = ValueBuilder.create(this, "RotationSpeedMin")
+            .setDefaultFloatValue(180.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(180.0F)
+            .build()
+            .getFloatValue();
+
+    BooleanValue getCPSDelay = ValueBuilder.create(this, "Get CPS Delay")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+    FloatValue getCPSDelayValue = ValueBuilder.create(this, "Get CPS Delay Value (ms)")
+            .setDefaultFloatValue(1000.0F)
+            .setFloatStep(5.0F)
+            .setMinFloatValue(0.0F)
+            .setMaxFloatValue(125.0F)
+            .setVisibility(() -> this.getCPSDelay.getCurrentValue())
+            .build()
+            .getFloatValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
     RotationUtils.Data lastRotationData;
     RotationUtils.Data rotationData;
@@ -141,6 +178,11 @@ public class Aura extends Module {
     float attacks = 0.0F;
     private int index;
     private Vector4f blurMatrix;
+    private final Random random = new Random();
+
+    private long lastCpsUpdate = 0;
+    private float currentCps = 0.0F;
+    private boolean cpsInitialized = false;
 
     @EventTarget
     public void onShader(EventShader e) {
@@ -227,6 +269,10 @@ public class Aura extends Module {
         target = null;
         aimingTarget = null;
         targets.clear();
+
+        this.lastCpsUpdate = 0;
+        this.currentCps = 0.0F;
+        this.cpsInitialized = false;
     }
 
     @Override
@@ -312,7 +358,8 @@ public class Aura extends Module {
             }
 
             target = targets.get(this.index);
-            this.attacks = this.attacks + this.aps.getCurrentValue() / 20.0F;
+
+            this.attacks = this.attacks + this.getRandomCps() / 20.0F;
         }
     }
 
@@ -485,5 +532,47 @@ public class Aura extends Module {
         return this.infSwitch.getCurrentValue()
                 ? possibleTargets
                 : possibleTargets.subList(0, (int)Math.min((float)possibleTargets.size(), this.switchSize.getCurrentValue()));
+    }
+    
+    
+    public float getRandomRotationSpeed() {
+        float min = Math.min(rotationSpeedMin.getCurrentValue(), rotationSpeedMax.getCurrentValue());
+        float max = Math.max(rotationSpeedMin.getCurrentValue(), rotationSpeedMax.getCurrentValue());
+        
+        if (min == max) {
+            return min;
+        }
+        
+        return min + random.nextFloat() * (max - min);
+    }
+    
+    
+    public float getRandomCps() {
+
+        if (this.getCPSDelay.getCurrentValue()) {
+            long currentTime = System.currentTimeMillis();
+
+            if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= this.getCPSDelayValue.getCurrentValue()) {
+                this.currentCps = this.generateRandomCps();
+                this.lastCpsUpdate = currentTime;
+                this.cpsInitialized = true;
+            }
+            return this.currentCps;
+        } else {
+
+            return this.generateRandomCps();
+        }
+    }
+    
+    
+    private float generateRandomCps() {
+        float min = Math.min(attackCpsMin.getCurrentValue(), attackCpsMax.getCurrentValue());
+        float max = Math.max(attackCpsMin.getCurrentValue(), attackCpsMax.getCurrentValue());
+        
+        if (min == max) {
+            return min;
+        }
+        
+        return min + random.nextFloat() * (max - min);
     }
 }

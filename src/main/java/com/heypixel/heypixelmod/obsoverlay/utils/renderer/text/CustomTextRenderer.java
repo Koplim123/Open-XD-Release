@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils.renderer.text;
 
+import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.*;
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -8,6 +9,8 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
@@ -20,7 +23,12 @@ public class CustomTextRenderer {
    private final Font font;
 
    public CustomTextRenderer(String name, int size, int from, int to, int textureSize) {
-      InputStream in = this.getClass().getResourceAsStream("/assets/heypixel/VcX6svVqmeT8/fonts/" + name + ".ttf");
+
+      InputStream in = loadExternalFont(name);
+      if (in == null) {
+         in = this.getClass().getResourceAsStream("/assets/heypixel/VcX6svVqmeT8/fonts/" + name + ".ttf");
+      }
+      
       if (in == null) {
          throw new RuntimeException("Font not found: " + name);
       } else {
@@ -38,13 +46,78 @@ public class CustomTextRenderer {
          } catch (IOException var11) {
             throw new RuntimeException("Failed to read font: " + name, var11);
          }
-
          ByteBuffer buffer = BufferUtils.createByteBuffer(bytes.length).put(bytes);
          ((Buffer)buffer).flip();
          long startTime = System.currentTimeMillis();
          this.font = new Font(buffer, size, from, to, textureSize);
+
+         try {
+            setupFallbackFont(size, textureSize);
+         } catch (Exception e) {
+            log.warn("Failed to load fallback font HYWenHei 85W for font: " + name, e);
+         }
+         
          log.info("Loaded font {} in {}ms", name, System.currentTimeMillis() - startTime);
       }
+   }
+
+   
+   private void setupFallbackFont(int size, int textureSize) {
+      try {
+
+         InputStream fallbackIn = loadExternalFont("HYWenHei 85W");
+         
+
+         if (fallbackIn == null) {
+            fallbackIn = this.getClass().getResourceAsStream("/assets/heypixel/VcX6svVqmeT8/fonts/HYWenHei 85W.ttf");
+         }
+         
+         if (fallbackIn != null) {
+            byte[] fallbackBytes;
+            try {
+               ByteArrayOutputStream fallbackOut = new ByteArrayOutputStream();
+               byte[] fallbackBuffer = new byte[1024];
+               
+               int fallbackLen;
+               while ((fallbackLen = fallbackIn.read(fallbackBuffer)) != -1) {
+                  fallbackOut.write(fallbackBuffer, 0, fallbackLen);
+               }
+               
+               fallbackBytes = fallbackOut.toByteArray();
+            } catch (IOException e) {
+               throw new RuntimeException("Failed to read fallback font: HYWenHei 85W", e);
+            }
+            
+            ByteBuffer fallbackBuffer = BufferUtils.createByteBuffer(fallbackBytes.length).put(fallbackBytes);
+            ((Buffer)fallbackBuffer).flip();
+
+            Font fallbackFont = new Font(fallbackBuffer, size, 0, 65535, Math.max(textureSize, 4096));
+            this.font.setFallbackFont(fallbackFont);
+         }
+      } catch (Exception e) {
+         log.warn("Failed to setup fallback font HYWenHei 85W", e);
+      }
+   }
+
+   
+   private InputStream loadExternalFont(String fontName) {
+      try {
+         File fontsDir = new File(FileManager.clientFolder, "fonts");
+         if (fontsDir.exists() && fontsDir.isDirectory()) {
+
+            String[] extensions = {".ttf", ".otf", ".ttc"};
+            for (String extension : extensions) {
+               File fontFile = new File(fontsDir, fontName + extension);
+               if (fontFile.exists() && fontFile.isFile()) {
+                 log.info("Loading external font: {}", fontFile.getAbsolutePath());
+                 return new FileInputStream(fontFile);
+               }
+            }
+         }
+      } catch (Exception e) {
+         log.warn("Failed to load external font: " + fontName, e);
+      }
+      return null;
    }
 
    public void setAlpha(float alpha) {
@@ -64,18 +137,41 @@ public class CustomTextRenderer {
    }
 
    public double render(PoseStack stack, String text, double x, double y, Color color, boolean shadow, double scale) {
-      this.mesh.begin();
-      double width;
-      if (shadow) {
-         width = this.font.render(this.mesh, text, x + 0.5, y + 0.5, SHADOW_COLOR, scale, true);
-         this.font.render(this.mesh, text, x, y, color, scale, false);
-      } else {
-         width = this.font.render(this.mesh, text, x, y, color, scale, false);
-      }
 
-      this.mesh.end();
-      GL.bindTexture(this.font.texture.getId());
-      this.mesh.render(stack);
-      return width;
+      double currentX = x;
+      double totalWidth = 0;
+      for (int i = 0; i < text.length(); i++) {
+         char c = text.charAt(i);
+         if (isCJKCharacter(c) && com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese != null && com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese != this) {
+
+            String charStr = String.valueOf(c);
+            totalWidth += com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese.render(stack, charStr, currentX, y, color, shadow, scale);
+            currentX += com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese.getWidth(charStr, scale);
+         } else {
+
+            String charStr = String.valueOf(c);
+            this.mesh.begin();
+            double width;
+            if (shadow) {
+               width = this.font.render(this.mesh, charStr, currentX + 0.5, y + 0.5, SHADOW_COLOR, scale, true);
+               this.font.render(this.mesh, charStr, currentX, y, color, scale, false);
+            } else {
+               width = this.font.render(this.mesh, charStr, currentX, y, color, scale, false);
+            }
+            this.mesh.end();
+            GL.bindTexture(this.font.texture.getId());
+            this.mesh.render(stack);
+            totalWidth += width;
+            currentX += this.font.getWidth(charStr) * scale;
+         }
+      }
+      return totalWidth;
+   }
+   private static boolean isCJKCharacter(char c) {
+      Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+      return block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+              || block == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+              || block == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS
+              || block == Character.UnicodeBlock.CJK_COMPATIBILITY_FORMS;
    }
 }

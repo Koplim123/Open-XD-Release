@@ -99,6 +99,7 @@ public class ModuleManager {
          new MotionBlur(),
          new Helper(),
          new BallAura(),
+         new FontSelect(),
          new LagBase(),
          new NoSlow(),
          new NoFall(),

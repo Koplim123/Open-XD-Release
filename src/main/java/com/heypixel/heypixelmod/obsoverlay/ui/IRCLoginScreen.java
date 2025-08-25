@@ -1,14 +1,16 @@
 package com.heypixel.heypixelmod.obsoverlay.ui;
 
-import by.radioegor146.nativeobfuscator.Native;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCCredentialManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-@Native
+
+import java.util.Properties;
+
 public class IRCLoginScreen extends Screen {
     private EditBox usernameField;
     private EditBox passwordField;
@@ -50,6 +52,9 @@ public class IRCLoginScreen extends Screen {
                 IRCLoginManager.openRegisterPage();
             }).bounds(centerX - 100, centerY + 60, 200, 20).build();
             this.addRenderableWidget(this.registerButton);
+            
+            // 异步加载已保存的凭据
+            loadSavedCredentialsAsync();
         } catch (Exception e) {
             System.err.println("Error initializing IRC login screen: " + e.getMessage());
             e.printStackTrace();
@@ -83,6 +88,8 @@ public class IRCLoginScreen extends Screen {
                     this.minecraft.execute(() -> {
                         try {
                             if (success) {
+                                // 登录成功，保存凭据
+                                new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
                                 // 登录成功，关闭当前屏幕
                                 this.onClose();
                             } else {
@@ -234,5 +241,39 @@ public class IRCLoginScreen extends Screen {
             System.err.println("Error closing IRC login screen: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * 异步加载已保存的凭据到输入框，避免阻塞UI线程
+     */
+    private void loadSavedCredentialsAsync() {
+        new Thread(() -> {
+            try {
+                Properties credentials = IRCCredentialManager.loadCredentials();
+                if (credentials != null) {
+                    String username = credentials.getProperty("username", "");
+                    String password = credentials.getProperty("password", "");
+                    
+                    // 在主线程中更新UI
+                    this.minecraft.execute(() -> {
+                        try {
+                            if (!username.isEmpty()) {
+                                this.usernameField.setValue(username);
+                            }
+                            
+                            if (!password.isEmpty()) {
+                                this.passwordField.setValue(password);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error setting credentials in UI: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading saved credentials: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

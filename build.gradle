@@ -159,6 +159,9 @@ dependencies {
 
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.13.1'
+    // Ensure WebSocket support for mod functionality
+    // Note: Java-WebSocket library is already included above for IRC functionality
+    // If you need a different version or additional WebSocket libraries, add them here
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
