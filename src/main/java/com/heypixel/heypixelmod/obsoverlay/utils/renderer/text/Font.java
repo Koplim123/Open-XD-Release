@@ -26,7 +26,7 @@ public class Font {
    private final CharData[] charData;
    private final int from;
    private final HashMap<String, Double> widthCache = new HashMap<>();
-   // 添加后备字体
+
    private Font fallbackFont;
 
    public Font(ByteBuffer buffer, int height, int charRangeFrom, int charRangeTo, int textureSize) {
@@ -98,16 +98,16 @@ public class Font {
                i++;
             } else {
                if (cp >= this.charData.length || cp < 0) {
-                  // 使用后备字体处理未知字符
+
                   if (this.fallbackFont != null) {
                      width += this.fallbackFont.getWidth(String.valueOf(string.charAt(i)));
                   } else {
-                     // 如果没有后备字体，尝试使用默认字符
+
                      cp = 0;
                   }
                }
                
-               // 只有当cp在有效范围内时才计算宽度
+
                if (cp >= 0 && cp < this.charData.length) {
                   CharData c = this.charData[cp];
                   width += (double)c.xAdvance;
@@ -126,34 +126,34 @@ public class Font {
 
    public double render(Mesh mesh, String string, double x, double y, Color color, double scale, boolean shadow) {
       Color currentColor = color;
-      // 调整y坐标以适应字体基线
+
       y += (double)(this.ascent * this.scale) * scale;
 
       for (int i = 0; i < string.length(); i++) {
          int cp = string.charAt(i) - this.from;
-         if (string.charAt(i) == '\u00A7' && i + 1 < string.length()) { // '\u00A7' == '§'
+         if (string.charAt(i) == '\u00A7' && i + 1 < string.length()) {
             char ctrl = string.charAt(i + 1);
             ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
             if (byCode != null && byCode.isColor()) {
                currentColor = new Color(byCode.getColor());
             }
-            i++; // 跳过颜色代码字符
-            continue; // 跳过渲染§和颜色代码
+            i++;
+            continue;
          }
-         // 检查字符是否超出范围
+
          boolean renderedWithFallback = false;
          if (cp >= this.charData.length || cp < 0) {
-            // 使用后备字体渲染未知字符
+
             if (this.fallbackFont != null) {
-               // 使用后备字体渲染字符并更新x坐标
+
                x = this.fallbackFont.render(mesh, String.valueOf(string.charAt(i)), x, y - (double)(this.ascent * this.scale) * scale, color, scale, shadow);
                renderedWithFallback = true;
             } else {
-               // 如果没有后备字体，使用默认字符
+
                cp = 0;
             }
          }
-         // 只有当没有使用后备字体渲染且cp在有效范围内时才渲染
+
          if (!renderedWithFallback && cp >= 0 && cp < this.charData.length) {
             CharData c = this.charData[cp];
             mesh.quad(
@@ -169,7 +169,7 @@ public class Font {
       return x;
    }
    
-   // 设置后备字体的方法
+
    public void setFallbackFont(Font fallbackFont) {
       this.fallbackFont = fallbackFont;
    }
