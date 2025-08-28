@@ -16,9 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Objects;
 @Native
-/**
- * 直接使用NavenUser.getUsername()调用即可
- **/
 public class NavenUser {
     private static final String APPDATA = System.getenv("AppData");
     private static final String RELATIVE_PATH = "naven" + File.separator + "username" + File.separator + "name.txt";

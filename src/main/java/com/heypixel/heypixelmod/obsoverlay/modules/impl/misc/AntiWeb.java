@@ -137,9 +137,6 @@ public class AntiWeb extends Module {
     private void handleVerifyCollection() { if (isHolding(Items.WATER_BUCKET)) { targetRots.set(originalYaw, originalPitch); transitionTo(State.ROTATE_BACK); return; } if (collectionRetries < MAX_COLLECTION_RETRIES) { collectionRetries++; transitionTo(State.ROTATE_TO_COLLECT); } else { targetRots.set(originalYaw, originalPitch); transitionTo(State.ROTATE_BACK); } }
     private void handleSwitchBack() { if (originalItem != null && originalSlot != -1 && mc.player != null) { if (mc.player.getInventory().getItem(originalSlot).is(originalItem)) { setSlot(originalSlot); } else { int newSlot = findItemInHotbar(originalItem); if (newSlot != -1) { setSlot(newSlot); } } } resetState(); }
 
-    // --- Helper & Utility Methods ---
-
-    /** [FIXED] Restored the missing helper method. */
     private boolean isHolding(Item item) {
         return mc.player != null && mc.player.getMainHandItem().is(item);
     }

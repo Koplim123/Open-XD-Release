@@ -51,6 +51,7 @@ public class ModuleManager {
          new ClickGUIModule(),
          new Teams(),
          new Glow(),
+         new AutoPlay(),
          new ItemTracker(),
          new AutoMLG(),
          new ClientFriend(),

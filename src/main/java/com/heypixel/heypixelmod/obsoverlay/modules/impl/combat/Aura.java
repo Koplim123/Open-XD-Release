@@ -75,7 +75,7 @@ public class Aura extends Module {
     BooleanValue infSwitch = ValueBuilder.create(this, "Infinity Switch").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
-    BooleanValue keepSprint = ValueBuilder.create(this, "KeepSprint").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue fakeAutoblock = ValueBuilder.create(this, "Fake Autoblock").setDefaultBooleanValue(false).build().getBooleanValue();
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -245,9 +245,10 @@ public class Aura extends Module {
 
     @EventTarget
     public void onAttackSlowdown(EventAttackSlowdown e) {
-        if (this.keepSprint.getCurrentValue()) {
+        if (Velocity.instance.isEnabled() && Velocity.ticksSinceVelocity > 14) {
             e.setCancelled(true);
         }
+
     }
 
     @EventTarget
@@ -339,6 +340,10 @@ public class Aura extends Module {
             return true;
         }
         return mc.player.getAttackStrengthScale(0.0F) >= this.cooldownThreshold.getCurrentValue();
+    }
+
+    public boolean shouldAutoBlock() {
+        return this.isEnabled() && this.fakeAutoblock.getCurrentValue() && aimingTarget != null;
     }
 
     public Entity shouldPreAim() {

@@ -5,7 +5,6 @@ public class IRCUsernameManager {
     private String ircUsername;
     
     private IRCUsernameManager() {
-        // 私有构造函数，防止外部实例化
     }
     
     public static IRCUsernameManager getInstance() {

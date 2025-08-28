@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventKey;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
@@ -29,8 +30,8 @@ public class PreferWeapon extends Module {
         this.setToggleableWithKey(false);
     }
 
-    @Override
-    public void onEnable() {
+    @EventTarget
+    public void onMotion(EventRunTicks event) {
         this.setSuffix(weaponPriority.getCurrentMode());
     }
 
@@ -42,7 +43,6 @@ public class PreferWeapon extends Module {
                     int currentIndex = weaponPriority.getCurrentValue();
                     int nextIndex = (currentIndex + 1) % weaponPriority.getValues().length;
                     weaponPriority.setCurrentValue(nextIndex);
-                    this.setSuffix(weaponPriority.getCurrentMode());
                 }
             } else {
                 pressedKeys.remove(event.getKey());

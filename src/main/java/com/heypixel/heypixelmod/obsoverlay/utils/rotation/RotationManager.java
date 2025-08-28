@@ -47,6 +47,7 @@ public class RotationManager {
          AutoMLG autoMLG = (AutoMLG)Naven.getInstance().getModuleManager().getModule(AutoMLG.class);
          AimAssist aimAssist = (AimAssist)Naven.getInstance().getModuleManager().getModule(AimAssist.class);
          LongJump longJump = (LongJump)Naven.getInstance().getModuleManager().getModule(LongJump.class);
+         PearlPrediction pearlPredicition = (PearlPrediction) Naven.getInstance().getModuleManager().getModule(PearlPrediction.class);
          AntiWeb antiWeb = (AntiWeb)Naven.getInstance().getModuleManager().getModule(AntiWeb.class);
          active = true;
          if (autoMLG.isEnabled() && autoMLG.rotation) {
@@ -59,7 +60,7 @@ public class RotationManager {
             setRotations(new Vector2f(scaffold.rots.x, scaffold.rots.y));
          } else if (aura.isEnabled() && Aura.target != null && Aura.rotation != null) {
             setRotations(new Vector2f(Aura.rotation.x, Aura.rotation.y));
-         } else if (Naven.getInstance().getModuleManager().getModule(PearlPrediction.class).isEnabled() && PearlPrediction.isThrowing && PearlPrediction.rotations != null) {
+         } else if (pearlPredicition.isEnabled() && PearlPrediction.isThrowing && PearlPrediction.rotations != null) {
             setRotations(new Vector2f(PearlPrediction.rotations.x, PearlPrediction.rotations.y));
          } else if (antiWeb.isEnabled() && antiWeb.rots != null) {
             setRotations(new Vector2f(antiWeb.rots.x, antiWeb.rots.y));
