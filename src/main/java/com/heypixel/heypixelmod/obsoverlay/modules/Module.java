@@ -94,7 +94,7 @@ public class Module extends HasValue {
                     if (module.moduleToggleSound.getCurrentValue()) {
                         mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
                     }
-                    Notification notification = new Notification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
+                    Notification notification = new Notification(this.name + " Enabled!", true);
                     naven.getNotificationManager().addNotification(notification);
                 }
             } else {
@@ -106,7 +106,7 @@ public class Module extends HasValue {
                     if (module.moduleToggleSound.getCurrentValue()) {
                         mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.8F);
                     }
-                    Notification notification = new Notification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
+                    Notification notification = new Notification(this.name + " Disabled!", false);
                     naven.getNotificationManager().addNotification(notification);
                 }
             }

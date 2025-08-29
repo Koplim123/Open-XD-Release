@@ -1,171 +1,105 @@
 package com.heypixel.heypixelmod.obsoverlay.ui.notification;
 
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
-import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-
-import java.awt.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 public class Notification {
-   public static byte[] authTokens;
-   private NotificationLevel level;
-   private String message;
-   private long maxAge;
-   private long createTime = System.currentTimeMillis();
-   private SmoothAnimationTimer widthTimer = new SmoothAnimationTimer(0.0F);
-   private SmoothAnimationTimer heightTimer = new SmoothAnimationTimer(0.0F);
+    private static final ResourceLocation TRUE_ICON = ResourceLocation.parse("heypixel:textures/icons/true.png");
+    private static final ResourceLocation CANCEL_ICON = ResourceLocation.parse("heypixel:textures/icons/cancel.png");
 
-   public Notification(NotificationLevel level, String message, long age) {
-      this.level = level;
-      this.message = message;
-      this.maxAge = age;
-   }
+    private final String text;
+    private final boolean enabled;
+    private final long createTime;
+    private final int maxAge;
+    
+    private final SmoothAnimationTimer widthTimer;
+    private final SmoothAnimationTimer heightTimer;
+    
+    private float width;
+    private float height;
 
-   public void renderShader(PoseStack stack, float x, float y) {
-      RenderUtils.drawRoundedRect(stack, x + 2.0F, y + 4.0F, this.getWidth(), 20.0F, 5.0F, this.level.getColor());
-   }
+    public Notification(String text, boolean enabled) {
+        this.text = text;
+        this.enabled = enabled;
+        this.createTime = System.currentTimeMillis();
+        this.maxAge = 1500;
+        
+        this.widthTimer = new SmoothAnimationTimer(0f, 0f, 0.8f);
+        this.heightTimer = new SmoothAnimationTimer(0f, 0f, 0.8f);
+        
 
-   public void render(PoseStack stack, float x, float y) {
-      StencilUtils.write(false);
-      RenderUtils.drawRoundedRect(stack, x + 2.0F, y + 4.0F, this.getWidth(), 20.0F, 5.0F, this.level.getColor());
-      StencilUtils.erase(true);
-      RenderUtils.fillBound(stack, x + 2.0F, y + 4.0F, this.getWidth(), 20.0F, this.level.getColor());
-      Fonts.harmony.render(stack, this.message, (double)(x + 6.0F), (double)(y + 9.0F), Color.WHITE, true, 0.35);
-      StencilUtils.dispose();
-   }
+        this.width = 30f + Minecraft.getInstance().font.width(text) + 30f;
+        this.height = 30f;
+    }
 
-   public float getWidth() {
-      float stringWidth = Fonts.harmony.getWidth(this.message, 0.35);
-      return stringWidth + 12.0F;
-   }
+    public void renderShader(PoseStack poseStack, float x, float y) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
-   public float getHeight() {
-      return 24.0F;
-   }
+        GuiGraphics guiGraphics = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+        guiGraphics.pose().last().pose().set(poseStack.last().pose());
+        
 
-   public NotificationLevel getLevel() {
-      return this.level;
-   }
 
-   public String getMessage() {
-      return this.message;
-   }
+        guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)(y + height), 0xAA000000);
+        
 
-   public long getMaxAge() {
-      return this.maxAge;
-   }
+        if (enabled) {
+            guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)y + 2, 0xFF00FF00);
+            guiGraphics.fill((int)x, (int)y, (int)x + 2, (int)(y + height), 0xFF00FF00);
+            guiGraphics.fill((int)(x + width - 2), (int)y, (int)(x + width), (int)(y + height), 0xFF00FF00);
+            guiGraphics.fill((int)x, (int)(y + height - 2), (int)(x + width), (int)(y + height), 0xFF00FF00);
+        } else {
+            guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)y + 2, 0xFFFF0000);
+            guiGraphics.fill((int)x, (int)y, (int)x + 2, (int)(y + height), 0xFFFF0000);
+            guiGraphics.fill((int)(x + width - 2), (int)y, (int)(x + width), (int)(y + height), 0xFFFF0000);
+            guiGraphics.fill((int)x, (int)(y + height - 2), (int)(x + width), (int)(y + height), 0xFFFF0000);
+        }
 
-   public long getCreateTime() {
-      return this.createTime;
-   }
 
-   public SmoothAnimationTimer getWidthTimer() {
-      return this.widthTimer;
-   }
+        guiGraphics.drawString(
+            Minecraft.getInstance().font,
+            text,
+            (int)(x + 20),
+            (int)(y + (height - 8) / 2),
+            enabled ? 0x00FF00 : 0xFF0000,
+            false
+        );
 
-   public SmoothAnimationTimer getHeightTimer() {
-      return this.heightTimer;
-   }
+        ResourceLocation icon = enabled ? TRUE_ICON : CANCEL_ICON;
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        guiGraphics.blit(icon, (int)(x + width - 25), (int)(y + (height - 16) / 2), 0, 0, 16, 16, 16, 16);
+        
+        RenderSystem.disableBlend();
+    }
 
-   public void setLevel(NotificationLevel level) {
-      this.level = level;
-   }
+    public SmoothAnimationTimer getWidthTimer() {
+        return widthTimer;
+    }
 
-   public void setMessage(String message) {
-      this.message = message;
-   }
+    public SmoothAnimationTimer getHeightTimer() {
+        return heightTimer;
+    }
 
-   public void setMaxAge(long maxAge) {
-      this.maxAge = maxAge;
-   }
+    public float getWidth() {
+        return width;
+    }
 
-   public void setCreateTime(long createTime) {
-      this.createTime = createTime;
-   }
+    public float getHeight() {
+        return height;
+    }
 
-   public void setWidthTimer(SmoothAnimationTimer widthTimer) {
-      this.widthTimer = widthTimer;
-   }
+    public long getCreateTime() {
+        return createTime;
+    }
 
-   public void setHeightTimer(SmoothAnimationTimer heightTimer) {
-      this.heightTimer = heightTimer;
-   }
-
-   @Override
-   public boolean equals(Object o) {
-      if (o == this) {
-         return true;
-      } else if (!(o instanceof Notification other)) {
-         return false;
-      } else if (!other.canEqual(this)) {
-         return false;
-      } else if (this.getMaxAge() != other.getMaxAge()) {
-         return false;
-      } else if (this.getCreateTime() != other.getCreateTime()) {
-         return false;
-      } else {
-         Object this$level = this.getLevel();
-         Object other$level = other.getLevel();
-         if (this$level == null ? other$level == null : this$level.equals(other$level)) {
-            Object this$message = this.getMessage();
-            Object other$message = other.getMessage();
-            if (this$message == null ? other$message == null : this$message.equals(other$message)) {
-               Object this$widthTimer = this.getWidthTimer();
-               Object other$widthTimer = other.getWidthTimer();
-               if (this$widthTimer == null ? other$widthTimer == null : this$widthTimer.equals(other$widthTimer)) {
-                  Object this$heightTimer = this.getHeightTimer();
-                  Object other$heightTimer = other.getHeightTimer();
-                  return this$heightTimer == null ? other$heightTimer == null : this$heightTimer.equals(other$heightTimer);
-               } else {
-                  return false;
-               }
-            } else {
-               return false;
-            }
-         } else {
-            return false;
-         }
-      }
-   }
-
-   protected boolean canEqual(Object other) {
-      return other instanceof Notification;
-   }
-
-   @Override
-   public int hashCode() {
-      int PRIME = 59;
-      int result = 1;
-      long $maxAge = this.getMaxAge();
-      result = result * 59 + (int)($maxAge >>> 32 ^ $maxAge);
-      long $createTime = this.getCreateTime();
-      result = result * 59 + (int)($createTime >>> 32 ^ $createTime);
-      Object $level = this.getLevel();
-      result = result * 59 + ($level == null ? 43 : $level.hashCode());
-      Object $message = this.getMessage();
-      result = result * 59 + ($message == null ? 43 : $message.hashCode());
-      Object $widthTimer = this.getWidthTimer();
-      result = result * 59 + ($widthTimer == null ? 43 : $widthTimer.hashCode());
-      Object $heightTimer = this.getHeightTimer();
-      return result * 59 + ($heightTimer == null ? 43 : $heightTimer.hashCode());
-   }
-
-   @Override
-   public String toString() {
-      return "Notification(level="
-         + this.getLevel()
-         + ", message="
-         + this.getMessage()
-         + ", maxAge="
-         + this.getMaxAge()
-         + ", createTime="
-         + this.getCreateTime()
-         + ", widthTimer="
-         + this.getWidthTimer()
-         + ", heightTimer="
-         + this.getHeightTimer()
-         + ")";
-   }
+    public int getMaxAge() {
+        return maxAge;
+    }
 }

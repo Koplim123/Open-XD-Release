@@ -12,6 +12,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
+import com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
@@ -22,6 +23,7 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
@@ -67,6 +69,12 @@ public class Aura extends Module {
     public static List<Entity> targets = new ArrayList<>();
     public static Vector2f rotation;
     BooleanValue targetHud = ValueBuilder.create(this, "Target HUD").setDefaultBooleanValue(true).build().getBooleanValue();
+    ModeValue targetHudStyle = ValueBuilder.create(this, "Target HUD Style")
+            .setModes("Naven", "New", "MoonLight", "Rise")
+            .setDefaultModeIndex(0)
+            .setVisibility(() -> Aura.this.targetHud.getCurrentValue())
+            .build()
+            .getModeValue();
     BooleanValue targetEsp = ValueBuilder.create(this, "Target ESP").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackPlayer = ValueBuilder.create(this, "Attack Player").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackInvisible = ValueBuilder.create(this, "Attack Invisible").setDefaultBooleanValue(false).build().getBooleanValue();
@@ -199,26 +207,10 @@ public class Aura extends Module {
             e.getStack().pushPose();
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
-            String targetName = target.getName().getString() + (living.isBaby() ? " (Baby)" : "");
-            float width = Math.max(Fonts.harmony.getWidth(targetName, 0.4F) + 10.0F, 60.0F);
-            this.blurMatrix = new Vector4f(x, y, width, 30.0F);
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, 30.0F, 5.0F, HUD.headerColor);
-            StencilUtils.erase(true);
-            RenderUtils.fillBound(e.getStack(), x, y, width, 30.0F, HUD.bodyColor);
-            RenderUtils.fillBound(e.getStack(), x, y, width * (living.getHealth() / living.getMaxHealth()), 3.0F, HUD.headerColor);
-            StencilUtils.dispose();
-            Fonts.harmony.render(e.getStack(), targetName, (double)(x + 5.0F), (double)(y + 6.0F), Color.WHITE, true, 0.35F);
-            Fonts.harmony
-                    .render(
-                            e.getStack(),
-                            "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : ""),
-                            (double)(x + 5.0F),
-                            (double)(y + 17.0F),
-                            Color.WHITE,
-                            true,
-                            0.35F
-                    );
+            
+            // 使用TargetHUD类来渲染，而不是硬编码的Naven样式
+            this.blurMatrix = TargetHUD.render(e.getGuiGraphics(), living, this.targetHudStyle.getCurrentMode(), x, y);
+            
             e.getStack().popPose();
         }
     }

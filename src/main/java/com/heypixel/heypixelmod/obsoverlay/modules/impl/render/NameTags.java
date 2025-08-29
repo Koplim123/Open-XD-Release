@@ -169,13 +169,11 @@ public class NameTags extends Module {
    public void onMouseKey(EventMouseClick e) {
       if (e.getKey() == 2 && !e.isState() && this.mcf.getCurrentValue() && this.aimingPlayer != null) {
          if (FriendManager.isFriend(this.aimingPlayer)) {
-            Notification notification = new Notification(
-               NotificationLevel.ERROR, "Removed " + this.aimingPlayer.getName().getString() + " from friends!", 3000L
-            );
+            Notification notification = new Notification("Removed " + this.aimingPlayer.getName().getString() + " from friends!", false);
             Naven.getInstance().getNotificationManager().addNotification(notification);
             FriendManager.removeFriend(this.aimingPlayer);
          } else {
-            Notification notification = new Notification(NotificationLevel.SUCCESS, "Added " + this.aimingPlayer.getName().getString() + " as friends!", 3000L);
+            Notification notification = new Notification("Added " + this.aimingPlayer.getName().getString() + " as friends!", true);
             Naven.getInstance().getNotificationManager().addNotification(notification);
             FriendManager.addFriend(this.aimingPlayer);
          }

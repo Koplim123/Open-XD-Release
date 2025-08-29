@@ -105,6 +105,7 @@ public class Naven {
       this.eventManager.register(new NetworkUtils());
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
+      this.eventManager.register(this.notificationManager);
       MinecraftForge.EVENT_BUS.register(this.eventWrapper);
       MinecraftForge.EVENT_BUS.register(this);
    }

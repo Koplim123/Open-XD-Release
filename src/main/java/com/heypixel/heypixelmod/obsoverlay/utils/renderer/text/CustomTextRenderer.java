@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.utils.renderer.text;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.*;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.ChatFormatting;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -129,7 +130,18 @@ public class CustomTextRenderer {
    }
 
    public double getWidth(String text, boolean shadow, double scale) {
-      return (this.font.getWidth(text) + (double)(shadow ? 0.5F : 0.0F)) * scale;
+      // 移除颜色代码后计算宽度
+      StringBuilder strippedText = new StringBuilder();
+      for (int i = 0; i < text.length(); i++) {
+         char c = text.charAt(i);
+         if (c == '\u00A7' && i + 1 < text.length()) {
+            // 跳过颜色代码
+            i++;
+         } else {
+            strippedText.append(c);
+         }
+      }
+      return (this.font.getWidth(strippedText.toString()) + (double)(shadow ? 0.5F : 0.0F)) * scale;
    }
 
    public double getHeight(boolean shadow, double scale) {
@@ -137,26 +149,40 @@ public class CustomTextRenderer {
    }
 
    public double render(PoseStack stack, String text, double x, double y, Color color, boolean shadow, double scale) {
-
+      Color currentColor = color;
       double currentX = x;
       double totalWidth = 0;
+      
       for (int i = 0; i < text.length(); i++) {
          char c = text.charAt(i);
+         
+         // 检查是否为颜色控制符
+         if (c == '\u00A7' && i + 1 < text.length()) {
+            char ctrl = text.charAt(i + 1);
+            ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
+            if (byCode != null && byCode.isColor()) {
+               currentColor = new Color(byCode.getColor());
+            } else if (byCode == ChatFormatting.RESET) {
+               currentColor = color;
+            }
+            
+            i++; // 跳过颜色码字符
+            continue;
+         }
+         
          if (isCJKCharacter(c) && com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese != null && com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese != this) {
-
             String charStr = String.valueOf(c);
-            totalWidth += com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese.render(stack, charStr, currentX, y, color, shadow, scale);
+            totalWidth += com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese.render(stack, charStr, currentX, y, currentColor, shadow, scale);
             currentX += com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts.chinese.getWidth(charStr, scale);
          } else {
-
             String charStr = String.valueOf(c);
             this.mesh.begin();
             double width;
             if (shadow) {
                width = this.font.render(this.mesh, charStr, currentX + 0.5, y + 0.5, SHADOW_COLOR, scale, true);
-               this.font.render(this.mesh, charStr, currentX, y, color, scale, false);
+               this.font.render(this.mesh, charStr, currentX, y, currentColor, scale, false);
             } else {
-               width = this.font.render(this.mesh, charStr, currentX, y, color, scale, false);
+               width = this.font.render(this.mesh, charStr, currentX, y, currentColor, scale, false);
             }
             this.mesh.end();
             GL.bindTexture(this.font.texture.getId());
@@ -167,6 +193,7 @@ public class CustomTextRenderer {
       }
       return totalWidth;
    }
+   
    private static boolean isCJKCharacter(char c) {
       Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
       return block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS

@@ -34,7 +34,7 @@ public class TargetHUD {
             return renderNavenStyle(graphics, living, x, y);
         } else if ("New".equals(style)) {
             return renderNewStyle(graphics, living, x, y);
-        } else if ("MoonLightV2".equals(style)) {
+        } else if ("MoonLight".equals(style)) {
             return renderMoonLightV2Style(graphics, living, x, y);
         } else if ("Rise".equals(style)) {
             return renderRise(graphics, living, x, y);
@@ -149,14 +149,14 @@ public class TargetHUD {
 
         Vector4f blurMatrix = new Vector4f(x, y, hudWidth, hudHeight);
 
-        // 1. 绘制 HUD 背景
+
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(graphics.pose(), x, y, hudWidth, hudHeight, 6.0F, 0x70000000);
         StencilUtils.erase(true);
         RenderUtils.fillBound(graphics.pose(), x, y, hudWidth, hudHeight, 0x70000000);
         StencilUtils.dispose();
 
-        // 2. 粒子系统管理与渲染
+
         float currentTotalHealth = living.getHealth() + living.getAbsorptionAmount();
         float previousHealth = lastHealth.getOrDefault(living.getUUID(), currentTotalHealth);
 
@@ -182,7 +182,7 @@ public class TargetHUD {
             particles.removeIf(HealthParticle::isDead);
         }
 
-        // 3. 绘制头像 - 增加默认回退逻辑
+
         float avatarX = x + padding;
         float avatarY = y + (hudHeight - avatarSize) / 2;
         RenderUtils.drawRoundedRect(graphics.pose(), avatarX, avatarY, avatarSize, avatarSize, 4.0F, Color.WHITE.getRGB());
@@ -203,7 +203,7 @@ public class TargetHUD {
                 graphics.blit(skinLocation, (int) avatarX, (int) avatarY, (int) avatarSize, (int) avatarSize, 0, 0, 16, 16, 16, 16);
             }
         } else {
-            // 如果获取不到纹理，绘制 "NONE" 文字
+
             String noneText = "NONE";
             float noneTextWidth = Fonts.harmony.getWidth(noneText, 0.30F);
             float noneTextHeight = (float) Fonts.harmony.getHeight(true, 0.30F);
@@ -212,7 +212,7 @@ public class TargetHUD {
             Fonts.harmony.render(graphics.pose(), noneText, (double) noneTextX, (double) noneTextY, Color.WHITE, true, 0.30F);
         }
 
-        // 4. 绘制文本
+
         String targetName = living.getName().getString() + (living.isBaby() ? " (Baby)" : "");
         float textX = x + avatarSize + padding * 2;
         float textY = y + padding + 2;
@@ -230,7 +230,7 @@ public class TargetHUD {
         float healthTextY = (float) (textY + Fonts.harmony.getHeight(true, 0.30F) + 2.0F);
         Fonts.harmony.render(graphics.pose(), healthText, (double) textX, (double) healthTextY, Color.WHITE, true, 0.30F);
 
-        // 5. 使用New样式的血量条渲染方式
+
         float healthBarX = x + avatarSize + padding * 2;
         float healthBarY = y + hudHeight - padding - 8;
         float healthBarWidth = hudWidth - (healthBarX - x) - padding;
@@ -241,27 +241,27 @@ public class TargetHUD {
         if (healthRatio > 1.0F) healthRatio = 1.0F;
         float currentHealthWidth = healthBarWidth * healthRatio;
 
-// === 关键修复：重置OpenGL状态 ===
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-// 绘制血量条背景（深灰色）
+
         RenderUtils.drawRoundedRect(graphics.pose(), healthBarX, healthBarY, healthBarWidth, healthBarHeight, cornerRadius, 0x80404040);
 
-// 绘制血量条前景（浅蓝色）同样使用圆角
+
         if (currentHealthWidth > 0) {
-            // 计算前景的圆角半径（确保不会超过宽度）
+
             float foregroundRadius = Math.min(cornerRadius, currentHealthWidth / 2);
 
-            // === 修复：使用动态计算的圆角半径 ===
+
             RenderUtils.drawRoundedRect(
                     graphics.pose(),
                     healthBarX,
                     healthBarY,
                     currentHealthWidth,
                     healthBarHeight,
-                    foregroundRadius,  // 使用动态半径而非固定值4.0F
+                    foregroundRadius,
                     0xFF66CCFF
             );
         }

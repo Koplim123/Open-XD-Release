@@ -94,7 +94,6 @@ public class ModuleManager {
          new BetaBackTrack(),
          new BetaAutoThrowable(),
          new BetaSuperKB(),
-         new BetaNoXZ(),
          new ItemTags(),
          new SafeWalk(),
          new AimAssist(),
@@ -117,7 +116,7 @@ public class ModuleManager {
          new Island(),
          new AutoCrystal(),
          new MidPearl(),
-         new IRCModule()
+         new NotificationSelect()
 
       );
    }

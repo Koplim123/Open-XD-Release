@@ -52,7 +52,7 @@ public class IRCLoginScreen extends Screen {
                 IRCLoginManager.openRegisterPage();
             }).bounds(centerX - 100, centerY + 60, 200, 20).build();
             this.addRenderableWidget(this.registerButton);
-            
+
             // 异步加载已保存的凭据
             loadSavedCredentialsAsync();
         } catch (Exception e) {
@@ -242,7 +242,7 @@ public class IRCLoginScreen extends Screen {
             e.printStackTrace();
         }
     }
-    
+
     /**
      * 异步加载已保存的凭据到输入框，避免阻塞UI线程
      */
@@ -253,14 +253,14 @@ public class IRCLoginScreen extends Screen {
                 if (credentials != null) {
                     String username = credentials.getProperty("username", "");
                     String password = credentials.getProperty("password", "");
-                    
+
                     // 在主线程中更新UI
                     this.minecraft.execute(() -> {
                         try {
                             if (!username.isEmpty()) {
                                 this.usernameField.setValue(username);
                             }
-                            
+
                             if (!password.isEmpty()) {
                                 this.passwordField.setValue(password);
                             }

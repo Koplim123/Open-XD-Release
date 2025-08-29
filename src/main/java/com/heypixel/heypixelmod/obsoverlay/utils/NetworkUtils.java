@@ -22,7 +22,7 @@ import java.util.Set;
 public class NetworkUtils {
    public static Set<Packet<?>> passthroughsPackets = new HashSet<>();
    private static final TimeHelper timer = new TimeHelper();
-   private static final Notification lagging = new Notification(NotificationLevel.WARNING, "Server lagging!", 2000L);
+
    private static long totalTime = 0L;
    public static final Logger LOGGER = LogManager.getLogger("PacketUtil");
 
@@ -34,14 +34,8 @@ public class NetworkUtils {
    public void onMotion(EventMotion e) {
       if (e.getType() == EventType.PRE) {
          if (isServerLag()) {
-            Naven.getInstance().getNotificationManager().addNotification(lagging);
-            lagging.setCreateTime(System.currentTimeMillis());
-            lagging.setLevel(NotificationLevel.WARNING);
             totalTime = Math.round(timer.getLastDelay());
-            lagging.setMessage("Server lagging. Aura disabled! (" + totalTime + "ms)");
          } else {
-            lagging.setLevel(NotificationLevel.SUCCESS);
-            lagging.setMessage("Server currently online! (" + totalTime + "ms)");
          }
       }
    }

@@ -12,43 +12,55 @@ import net.minecraft.world.entity.player.Player;
 
 import java.util.Objects;
 
+
 @ModuleInfo(
-   name = "Teams",
-   description = "Prevent attack teammates",
-   category = Category.MISC
+        name = "Teams",
+        description = "Prevent attack teammates",
+        category = Category.MISC
 )
 public class Teams extends Module {
-   public static Teams instance;
-   public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Scoreboard", "Color").build().getModeValue();
+    public static Teams instance;
 
-   public Teams() {
-      instance = this;
-   }
+    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Scoreboard", "Color", "Beta").build().getModeValue();
 
-   public static boolean isSameTeam(Entity player) {
-      if (!Naven.getInstance().getModuleManager().getModule(Teams.class).isEnabled()) {
-         return false;
-      } else if (player instanceof Player) {
-         if (instance.mode.isCurrentMode("Color")) {
-            Integer c1 = player.getTeamColor();
-            Integer c2 = mc.player.getTeamColor();
-            return c1.equals(c2);
-         } else {
-            String playerTeam = getTeam(player);
-            String targetTeam = getTeam(mc.player);
-            return Objects.equals(playerTeam, targetTeam);
-         }
-      } else {
-         return false;
-      }
-   }
+    
+    public Teams() {
+        instance = this;
+    }
 
-   public static String getTeam(Entity entity) {
-      PlayerInfo playerInfo = mc.getConnection().getPlayerInfo(entity.getUUID());
-      if (playerInfo == null) {
-         return null;
-      } else {
-         return playerInfo.getTeam() != null ? playerInfo.getTeam().getName() : null;
-      }
-   }
+    
+    public static boolean isSameTeam(Entity player) {
+
+        if (!Naven.getInstance().getModuleManager().getModule(Teams.class).isEnabled()) {
+            return false;
+        } else if (player instanceof Player) {
+
+            if (instance.mode.isCurrentMode("Color")) {
+
+                Integer c1 = player.getTeamColor();
+                Integer c2 = mc.player.getTeamColor();
+                return c1.equals(c2);
+            } else if (instance.mode.isCurrentMode("Beta")) {
+
+                return mc.player.isAlliedTo(player);
+            } else {
+
+                String playerTeam = getTeam(player);
+                String targetTeam = getTeam(mc.player);
+                return Objects.equals(playerTeam, targetTeam);
+            }
+        } else {
+            return false;
+        }
+    }
+
+    
+    public static String getTeam(Entity entity) {
+        PlayerInfo playerInfo = mc.getConnection().getPlayerInfo(entity.getUUID());
+        if (playerInfo == null) {
+            return null;
+        } else {
+            return playerInfo.getTeam() != null ? playerInfo.getTeam().getName() : null;
+        }
+    }
 }
