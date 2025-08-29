@@ -1,4 +1,4 @@
-// 文件路径: com/heypixel/heypixelmod/obsoverlay/modules/impl/misc/HackerCheck.java
+
 
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 
@@ -57,7 +57,7 @@ public class HackerCheck extends Module {
 
             PlayerData data = playerDataMap.computeIfAbsent(player.getUUID(), u -> new PlayerData());
 
-            // --- VL 重置逻辑 (总是执行) ---
+
             data.resetTicks++;
             if (data.resetTicks > 2400 && data.vl > 0) {
                 if(seedVLmessage.getCurrentValue()){ sendChatMessage(PREFIX + "§fThe VL of §a" + player.getName().getString() + "§f has been reset"); }
@@ -66,7 +66,7 @@ public class HackerCheck extends Module {
                 hackers.remove(player.getUUID());
             }
 
-            // --- 冷却计时器和状态更新 ---
+
             if (data.antiKbCooldown > 0) {
                 data.antiKbCooldown--;
             }
@@ -88,7 +88,7 @@ public class HackerCheck extends Module {
                 checkViolations(player, data);
             }
 
-            // 更新玩家数据以供下次检测
+
             data.lastPosition = player.position();
             data.lastOnGround = player.onGround();
         }
@@ -112,7 +112,7 @@ public class HackerCheck extends Module {
             }
         }
 
-        // --- NoSlow (Block - Cobweb) Check ---
+
         if (data.noSlowBlockCooldown <= 0) {
             if (data.inCobwebTicks > 3) {
                 double deltaX = player.getX() - data.lastPosition.x;
@@ -167,7 +167,7 @@ public class HackerCheck extends Module {
         if (data.vl >= MAX_VL) {
             if (hackers.add(player.getUUID())) {
                 Naven.getInstance().getNotificationManager().addNotification(
-                        new Notification(NotificationLevel.WARNING, "Detected " + checkName + " on " + player.getName().getString(), 3000L)
+                        new Notification("Detected " + checkName + " on " + player.getName().getString(), false)
                 );
                 sendChatMessage(PREFIX + "§c" + player.getName().getString() + " §f is a hacker (§b" + checkName + "§f)");
             }

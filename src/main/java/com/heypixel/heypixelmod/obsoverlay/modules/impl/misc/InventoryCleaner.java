@@ -241,37 +241,48 @@ public class InventoryCleaner extends Module {
    }
 
    public boolean isItemUseful(ItemStack stack) {
-      if (stack.isEmpty()) return false;
-      if (InventoryUtils.isGodItem(stack)) return true;
-      if (stack.getDisplayName().getString().contains("点击使用")) return true;
-
-      Item item = stack.getItem();
-      if (item instanceof ArmorItem armor) {
+      if (stack.isEmpty()) {
+         return false;
+      } else if (InventoryUtils.isGodItem(stack)) {
+         return true;
+      } else if (stack.getDisplayName().getString().contains("点击使用")) {
+         return true;
+      } else if (stack.getItem() instanceof ArmorItem) {
+         ArmorItem item = (ArmorItem)stack.getItem();
          float protection = InventoryUtils.getProtection(stack);
-         return !(InventoryUtils.getCurrentArmorScore(armor.getEquipmentSlot()) >= protection) && !(protection < InventoryUtils.getBestArmorScore(armor.getEquipmentSlot()));
+         if (InventoryUtils.getCurrentArmorScore(item.getEquipmentSlot()) >= protection) {
+            return false;
+         } else {
+            float bestArmor = InventoryUtils.getBestArmorScore(item.getEquipmentSlot());
+            return !(protection < bestArmor);
+         }
+      } else if (stack.getItem() instanceof SwordItem) {
+         return InventoryUtils.getBestSword() == stack;
+      } else if (stack.getItem() instanceof PickaxeItem) {
+         return InventoryUtils.getBestPickaxe() == stack;
+      } else if (stack.getItem() instanceof AxeItem && !InventoryUtils.isSharpnessAxe(stack)) {
+         return InventoryUtils.getBestAxe() == stack;
+      } else if (stack.getItem() instanceof ShovelItem) {
+         return InventoryUtils.getBestShovel() == stack;
+      } else if (stack.getItem() instanceof CrossbowItem) {
+         return InventoryUtils.getBestCrossbow() == stack;
+      } else if (stack.getItem() instanceof BowItem && InventoryUtils.isPunchBow(stack)) {
+         return InventoryUtils.getBestPunchBow() == stack;
+      } else if (stack.getItem() instanceof BowItem && InventoryUtils.isPowerBow(stack)) {
+         return InventoryUtils.getBestPowerBow() == stack;
+      } else if (stack.getItem() instanceof BowItem && InventoryUtils.getItemCount(Items.BOW) > 1) {
+         return false;
+      } else if (stack.getItem() == Items.WATER_BUCKET && InventoryUtils.getItemCount(Items.WATER_BUCKET) > getWaterBucketCount()) {
+         return false;
+      } else if (stack.getItem() == Items.LAVA_BUCKET && InventoryUtils.getItemCount(Items.LAVA_BUCKET) > getLavaBucketCount()) {
+         return false;
+      } else if (stack.getItem() instanceof FishingRodItem && InventoryUtils.getItemCount(Items.FISHING_ROD) > 1) {
+         return false;
+      } else if ((stack.getItem() == Items.SNOWBALL || stack.getItem() == Items.EGG) && !shouldKeepProjectile()) {
+         return false;
+      } else {
+         return stack.getItem() instanceof ItemNameBlockItem ? false : InventoryUtils.isCommonItemUseful(stack);
       }
-
-      // **[核心修复]**
-      // 检查当前物品是否是玩家武器库中最好的一把剑，即使“首选武器”不是剑。
-      if (item instanceof SwordItem) {
-         // 我们总是保留最好的剑，除非有另一把更好的剑。
-         return stack == InventoryUtils.getBestSword();
-      }
-
-      if (item instanceof PickaxeItem) return stack == InventoryUtils.getBestPickaxe();
-      if (item instanceof AxeItem && !InventoryUtils.isSharpnessAxe(stack)) return stack == InventoryUtils.getBestAxe();
-      if (item instanceof ShovelItem) return stack == InventoryUtils.getBestShovel();
-      if (item instanceof CrossbowItem) return stack == InventoryUtils.getBestCrossbow();
-      if (item instanceof BowItem && InventoryUtils.isPunchBow(stack)) return stack == InventoryUtils.getBestPunchBow();
-      if (item instanceof BowItem && InventoryUtils.isPowerBow(stack)) return stack == InventoryUtils.getBestPowerBow();
-      if (item instanceof BowItem && InventoryUtils.getItemCount(Items.BOW) > 1) return false;
-      if (item == Items.WATER_BUCKET && InventoryUtils.getItemCount(Items.WATER_BUCKET) > getWaterBucketCount()) return false;
-      if (item == Items.LAVA_BUCKET && InventoryUtils.getItemCount(Items.LAVA_BUCKET) > getLavaBucketCount()) return false;
-      if (item instanceof FishingRodItem && InventoryUtils.getItemCount(Items.FISHING_ROD) > 1) return false;
-      if ((item == Items.SNOWBALL || item == Items.EGG) && !shouldKeepProjectile()) return false;
-      if (item instanceof ItemNameBlockItem) return false;
-
-      return InventoryUtils.isCommonItemUseful(stack);
    }
 
    @EventTarget
@@ -346,7 +357,7 @@ public class InventoryCleaner extends Module {
       if (e.getType() == EventType.PRE) {
          if (!(mc.screen instanceof ClickGUI) && !this.checkConfig()) {
             Notification notification = new Notification(
-                    NotificationLevel.ERROR, "Duplicate slot config in Inventory Manager! Please check your config!", 8000L
+                    "Duplicate slot config in Inventory Manager! Please check your config!", false
             );
             Naven.getInstance().getNotificationManager().addNotification(notification);
             this.toggle();
@@ -364,6 +375,7 @@ public class InventoryCleaner extends Module {
          }
 
          if (ChestStealer.isWorking()
+                 || Naven.getInstance().getModuleManager().getModule(Scaffold.class).isEnabled()
                  || (this.inventoryOnly.getCurrentValue() ? !(mc.screen instanceof InventoryScreen) : this.noMoveTicks <= 1)) {
             this.clickOffHand = false;
             return;

@@ -100,6 +100,7 @@ public class ModuleManager {
          new MotionBlur(),
          new Helper(),
          new BallAura(),
+         new JumpEffect(),
          new FontSelect(),
          new LagBase(),
          new NoSlow(),
