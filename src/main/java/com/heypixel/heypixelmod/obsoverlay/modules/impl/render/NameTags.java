@@ -7,6 +7,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.HackerCheck;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
@@ -227,6 +228,12 @@ public class NameTags extends Module {
 
             Vector2f position = entry.getValue();
             String text = "";
+
+            Module hackerCheckModule = Naven.getInstance().getModuleManager().getModule(HackerCheck.class);
+            if (hackerCheckModule != null && hackerCheckModule.isEnabled() && HackerCheck.isHacker(living)) {
+               text += "§c[Hacker]§f | ";
+            }
+
             if (Teams.isSameTeam(living)) {
                text = text + "§aTeam§f | ";
             }

@@ -42,6 +42,7 @@ public class ModuleManager {
          new Velocity(),
          new NameTags(),
          new ChestStealer(),
+         new HackerCheck(),
          new InventoryCleaner(),
          new Scaffold(),
          new AntiBots(),
