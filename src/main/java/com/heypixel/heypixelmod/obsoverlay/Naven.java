@@ -1,6 +1,5 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
-import by.radioegor146.nativeobfuscator.Native;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
@@ -29,7 +28,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-@Native
+
 public class Naven {
    public static final String CLIENT_NAME = "Naven-XD";
    public static final String CLIENT_DISPLAY_NAME = "Naven";
@@ -56,12 +55,40 @@ public class Naven {
 
       try {
          Fonts.loadFonts();
+         // 确保图标字体被正确初始化
+         if (Fonts.icons == null) {
+             System.err.println("Icons font failed to load, attempting to reload");
+             Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("icon", 32, 59648, 59652, 512);
+         }
       } catch (IOException var2) {
-         throw new RuntimeException(var2);
+         System.err.println("Failed to load fonts due to IOException");
+         var2.printStackTrace();
+         // 确保即使出错也有默认字体
+         ensureFontsLoaded();
       } catch (FontFormatException var3) {
-         throw new RuntimeException(var3);
+         System.err.println("Failed to load fonts due to FontFormatException");
+         var3.printStackTrace();
+         // 确保即使出错也有默认字体
+         ensureFontsLoaded();
+      } catch (Exception var4) {
+         System.err.println("Failed to load fonts due to unexpected error");
+         var4.printStackTrace();
+         // 确保即使出错也有默认字体
+         ensureFontsLoaded();
       }
 
+      // 验证字体是否正确加载
+      if (Fonts.opensans == null) {
+          System.err.println("Warning: opensans font is null after initialization");
+      }
+      
+      if (Fonts.harmony == null) {
+          System.err.println("Warning: harmony font is null after initialization");
+      }
+      
+      if (Fonts.icons == null) {
+          System.err.println("Warning: icons font is null after initialization");
+      }
       this.eventWrapper = new EventWrapper();
       this.valueManager = new ValueManager();
       this.hasValueManager = new HasValueManager();
@@ -153,4 +180,26 @@ public class Naven {
    public NotificationManager getNotificationManager() {
       return this.notificationManager;
    }
+
+    /**
+     * 确保字体被正确加载的备用方法
+     */
+    private void ensureFontsLoaded() {
+        try {
+            if (Fonts.opensans == null) {
+                Fonts.opensans = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("opensans", 32, 0, 255, 512);
+            }
+            
+            if (Fonts.harmony == null) {
+                Fonts.harmony = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("harmony", 32, 0, 65535, 16384);
+            }
+            
+            if (Fonts.icons == null) {
+                Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("icon", 32, 59648, 59652, 512);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load fallback fonts");
+            e.printStackTrace();
+        }
+    }
 }

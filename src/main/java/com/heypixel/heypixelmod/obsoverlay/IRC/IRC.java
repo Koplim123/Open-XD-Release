@@ -1,9 +1,8 @@
 package com.heypixel.heypixelmod.obsoverlay.IRC;
 
-import by.radioegor146.nativeobfuscator.Native;
 
 import java.net.URISyntaxException;
-@Native
+
 public class IRC {
     private static IRC instance;
     private IRCWebSocketConnectAPI webSocketAPI;
@@ -19,15 +18,26 @@ public class IRC {
         return instance;
     }
     
-    public void connect(String username) throws URISyntaxException {
+    public void connect(String username) {
         this.username = username;
-        // 使用WebSocketChat文件夹中指定的服务器地址
-        webSocketAPI = new IRCWebSocketConnectAPI("ws://156.238.232.145:8080", username);
-        webSocketAPI.connect();
+        try {
+            // 使用WebSocketChat文件夹中指定的服务器地址
+            webSocketAPI = new IRCWebSocketConnectAPI("ws://156.238.232.145:8080", username);
+            webSocketAPI.connect();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            // 可以添加额外的错误处理逻辑
+        }
     }
     
+/**
+ * 断开WebSocket连接的方法
+ * 当webSocketAPI不为null时，调用其disconnect方法断开连接
+ */
     public void disconnect() {
+    // 检查webSocketAPI是否已初始化
         if (webSocketAPI != null) {
+        // 调用WebSocket API的断开连接方法
             webSocketAPI.disconnect();
         }
     }

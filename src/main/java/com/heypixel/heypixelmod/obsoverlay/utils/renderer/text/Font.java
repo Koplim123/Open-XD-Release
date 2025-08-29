@@ -12,6 +12,8 @@ import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
@@ -24,6 +26,8 @@ public class Font {
    private final CharData[] charData;
    private final int from;
    private final HashMap<String, Double> widthCache = new HashMap<>();
+
+   private Font fallbackFont;
 
    public Font(ByteBuffer buffer, int height, int charRangeFrom, int charRangeTo, int textureSize) {
       this.height = height;
@@ -93,12 +97,21 @@ public class Font {
             if (cp == 167 && i + 1 < string.length()) {
                i++;
             } else {
-               if (cp >= this.charData.length) {
-                  cp = 0;
-               }
+               if (cp >= this.charData.length || cp < 0) {
 
-               CharData c = this.charData[cp];
-               width += (double)c.xAdvance;
+                  if (this.fallbackFont != null) {
+                     width += this.fallbackFont.getWidth(String.valueOf(string.charAt(i)));
+                  } else {
+
+                     cp = 0;
+                  }
+               }
+               
+
+               if (cp >= 0 && cp < this.charData.length) {
+                  CharData c = this.charData[cp];
+                  width += (double)c.xAdvance;
+               }
             }
          }
 
@@ -113,23 +126,35 @@ public class Font {
 
    public double render(Mesh mesh, String string, double x, double y, Color color, double scale, boolean shadow) {
       Color currentColor = color;
+
       y += (double)(this.ascent * this.scale) * scale;
 
       for (int i = 0; i < string.length(); i++) {
          int cp = string.charAt(i) - this.from;
-         if (cp == 167 && i + 1 < string.length()) {
+         if (string.charAt(i) == '\u00A7' && i + 1 < string.length()) {
             char ctrl = string.charAt(i + 1);
             ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
-            if (byCode != null && byCode.isColor() && !shadow) {
+            if (byCode != null && byCode.isColor()) {
                currentColor = new Color(byCode.getColor());
             }
-
             i++;
-         } else {
-            if (cp >= this.charData.length) {
+            continue;
+         }
+
+         boolean renderedWithFallback = false;
+         if (cp >= this.charData.length || cp < 0) {
+
+            if (this.fallbackFont != null) {
+
+               x = this.fallbackFont.render(mesh, String.valueOf(string.charAt(i)), x, y - (double)(this.ascent * this.scale) * scale, color, scale, shadow);
+               renderedWithFallback = true;
+            } else {
+
                cp = 0;
             }
+         }
 
+         if (!renderedWithFallback && cp >= 0 && cp < this.charData.length) {
             CharData c = this.charData[cp];
             mesh.quad(
                mesh.vec2(x + (double)c.x0 * scale, y + (double)c.y0 * scale).vec2((double)c.u0, (double)c.v0).color(currentColor).next(),
@@ -142,5 +167,10 @@ public class Font {
       }
 
       return x;
+   }
+   
+
+   public void setFallbackFont(Font fallbackFont) {
+      this.fallbackFont = fallbackFont;
    }
 }
