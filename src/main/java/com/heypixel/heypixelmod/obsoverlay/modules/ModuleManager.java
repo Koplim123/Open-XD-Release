@@ -39,6 +39,7 @@ public class ModuleManager {
       this.registerModule(
          new Aura(),
          new HUD(),
+         new AutoPlay(),
          new Velocity(),
          new NameTags(),
          new ChestStealer(),
