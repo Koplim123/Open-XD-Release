@@ -53,6 +53,7 @@ public class ModuleManager {
          new ClickGUIModule(),
          new Teams(),
          new Glow(),
+         new AutoPlay(),
          new ItemTracker(),
          new AutoMLG(),
          new ClientFriend(),
@@ -94,13 +95,13 @@ public class ModuleManager {
          new BetaBackTrack(),
          new BetaAutoThrowable(),
          new BetaSuperKB(),
-         new BetaNoXZ(),
          new ItemTags(),
          new SafeWalk(),
          new AimAssist(),
          new MotionBlur(),
          new Helper(),
          new BallAura(),
+         new JumpEffect(),
          new FontSelect(),
          new LagBase(),
          new NoSlow(),
@@ -117,7 +118,7 @@ public class ModuleManager {
          new Island(),
          new AutoCrystal(),
          new MidPearl(),
-         new IRCModule()
+         new NotificationSelect()
 
       );
    }

@@ -1,10 +1,15 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
-
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 
 public class Version {
+    public static String getVersion() {
+        String username = IRCLoginManager.getUsername();
 
-   public static String getVersion() {
-      return "Release 1.1";
-   }
+        if ("Noa1337".equals(username)) {
+            return "Developer Build";
+        } else {
+            return "Release 1.1";
+        }
+    }
 }

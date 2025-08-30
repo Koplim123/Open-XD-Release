@@ -18,11 +18,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.*;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gui.GuiGraphics;
 
 @ModuleInfo(
         name = "ChestStealer",
@@ -34,12 +35,23 @@ public class ChestStealer extends Module {
     private final FloatValue delay = ValueBuilder.create(this, "Delay (Ticks)")
             .setDefaultFloatValue(3.0F)
             .setFloatStep(1.0F)
-            .setMinFloatValue(3.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(10.0F)
+            .build()
+            .getFloatValue();
+    private final FloatValue multiStackDelay = ValueBuilder.create(this, "Multi Stack Delay (Ticks)")
+            .setDefaultFloatValue(5.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
     private final BooleanValue pickEnderChest = ValueBuilder.create(this, "Ender Chest").setDefaultBooleanValue(false).build().getBooleanValue();
+    private final BooleanValue instant = ValueBuilder.create(this, "Instant").setDefaultBooleanValue(false).build().getBooleanValue();
+
     private Screen lastTickScreen;
+    private int totalItemsToSteal = 0;
+    private int itemsStolen = 0;
 
     public static boolean isWorking() {
         return !timer.delay(3);
@@ -53,6 +65,8 @@ public class ChestStealer extends Module {
                 ChestMenu menu = (ChestMenu)container.getMenu();
                 if (currentScreen != this.lastTickScreen) {
                     timer.reset();
+                    this.totalItemsToSteal = this.countUsefulItems(menu);
+                    this.itemsStolen = 0;
                 } else {
                     String chestTitle = container.getTitle().getString();
                     String chest = Component.translatable("container.chest").getString();
@@ -62,7 +76,7 @@ public class ChestStealer extends Module {
                             || chestTitle.equals(largeChest)
                             || chestTitle.equals("Chest")
                             || this.pickEnderChest.getCurrentValue() && chestTitle.equals(enderChest)) {
-                        if (this.isChestEmpty(menu) && timer.delay(this.delay.getCurrentValue())) {
+                        if (this.isChestEmpty(menu) && (this.instant.getCurrentValue() || timer.delay(this.delay.getCurrentValue()))) {
                             mc.player.closeContainer();
                         } else {
                             List<Integer> slots = IntStream.range(0, menu.getRowCount() * 9).boxed().collect(Collectors.toList());
@@ -70,8 +84,9 @@ public class ChestStealer extends Module {
 
                             for (Integer pSlotId : slots) {
                                 ItemStack stack = menu.getSlot(pSlotId).getItem();
-                                if (isItemUseful(stack) && this.isBestItemInChest(menu, stack) && timer.delay(this.delay.getCurrentValue())) {
+                                if (isItemUseful(stack) && this.isBestItemInChest(menu, stack) && (this.instant.getCurrentValue() || timer.delay(this.multiStackDelay.getCurrentValue()))) {
                                     mc.gameMode.handleInventoryMouseClick(menu.containerId, pSlotId, 0, ClickType.QUICK_MOVE, mc.player);
+                                    this.itemsStolen++;
                                     timer.reset();
                                     break;
                                 }
@@ -80,9 +95,19 @@ public class ChestStealer extends Module {
                     }
                 }
             }
-
             this.lastTickScreen = currentScreen;
         }
+    }
+
+    private int countUsefulItems(ChestMenu menu) {
+        int count = 0;
+        for (int i = 0; i < menu.getRowCount() * 9; i++) {
+            ItemStack item = menu.getSlot(i).getItem();
+            if (!item.isEmpty() && isItemUseful(item) && this.isBestItemInChest(menu, item)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private boolean isBestItemInChest(ChestMenu menu, ItemStack stack) {

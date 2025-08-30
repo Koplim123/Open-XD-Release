@@ -2,74 +2,121 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.move;
 
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventPacket;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import net.minecraft.client.Minecraft;
+import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-// 写法是对的为什么无法使用啊// 写法是对的为什么无法使用啊
-// 写法是对的为什么无法使用啊// 写法是对的为什么无法使用啊
-// 写法是对的为什么无法使用啊// 写法是对的为什么无法使用啊
-// 写法是对的为什么无法使用啊// 写法是对的为什么无法使用啊
-// 写法是对的为什么无法使用啊// 写法是对的为什么无法使用啊
-
 
 @ModuleInfo(
         name = "NoFall",
-        description = "heypixel",
-        category = Category.MOVEMENT
+        category = Category.MOVEMENT,
+        description = "Prevent fall damage"
 )
 public class NoFall extends Module {
-    private boolean lastGround = false;
-    private float lastFallDis = 0F;
+    FloatValue distance = ValueBuilder.create(this, "Fall Distance").setDefaultFloatValue(3.0F).setFloatStep(0.1F).setMinFloatValue(3.0F).setMaxFloatValue(15.0F).build().getFloatValue();
+    public double preFallDistance;
+    private boolean receivedServerLagback = false;
+    public static boolean isSpoofing = false;
+    private boolean sentSpoofPacket = false;
+    public static boolean forceJump = false;
 
-    @Override
+    public NoFall() {
+    }
+
     public void onEnable() {
-        lastGround = false;
-        lastFallDis = 0F;
+        this.reset();
+    }
+
+    public void onDisable() {
+        this.reset();
+    }
+
+    private void reset() {
+        this.receivedServerLagback = false;
+        isSpoofing = false;
+        this.sentSpoofPacket = false;
+        forceJump = false;
+    }
+
+    private boolean shouldBlockJump() {
+        return isSpoofing || forceJump;
     }
 
     @EventTarget
-    public void onPacket(EventPacket e) {
-        if (e.getType() == EventType.SEND && !e.isCancelled()) {
-            if (e.getPacket() instanceof ServerboundMovePlayerPacket packet) {
-                // 获取原始数据包属性
-                double x = packet.getX(0.0);
-                double y = packet.getY(0.0);
-                double z = packet.getZ(0.0);
-                float yRot = packet.getYRot(0.0F);
-                float xRot = packet.getXRot(0.0F);
-                boolean onGround = packet.isOnGround();
+    public void onTick(EventRunTicks event) {
+        if (event.getType() != EventType.POST && mc.player != null) {
+            if (this.shouldBlockJump()) {
+                mc.options.keyJump.setDown(false);
+            }
 
-                // 检测反作弊触发条件
-                if (onGround && !lastGround && lastFallDis >= 2.5F) {
-                    // 创建修改后的数据包（完全按照原始逻辑）
-                    ServerboundMovePlayerPacket modifiedPacket = new ServerboundMovePlayerPacket.PosRot(
-                            x + 1000.0,  // X 坐标偏移
-                            y,
-                            z + 1337.0,  // Z 坐标偏移
-                            yRot,
-                            xRot,
-                            false        // 取消地面状态
-                    );
+            if (mc.player.onGround()) {
+                this.preFallDistance = 0.0;
+            } else {
+                this.preFallDistance = mc.player.fallDistance;
+            }
 
-                    // 替换原始数据包
-                    e.setCancelled(true);
-                    e.setPacket(modifiedPacket);
+            if (this.receivedServerLagback && isSpoofing) {
+                forceJump = true;
+                isSpoofing = false;
+                this.receivedServerLagback = false;
+            }
+        }
+    }
 
-                    // 触发着陆效果（1.20.1 等效方法）
-                    if (Minecraft.getInstance().player != null) {
-                        Minecraft.getInstance().player.resetFallDistance();
-                    }
-                }
+    @EventTarget
+    public void onLivingUpdate(EventUpdate event) {
+        if (this.shouldBlockJump() && mc.options != null) {
+            mc.options.keyJump.setDown(false);
+        }
+    }
 
-                // 更新状态记录（完全按照原始逻辑）
-                lastGround = onGround;
-                if (Minecraft.getInstance().player != null) {
-                    lastFallDis = Minecraft.getInstance().player.fallDistance;
+    @EventTarget
+    public void onStrafe(EventStrafe event) {
+        if (mc.player.onGround() && forceJump) {
+            // 修正 #2：使用 1.20.1 的正确跳跃方法
+            mc.player.jumpFromGround();
+            forceJump = false;
+        }
+    }
+
+    @EventTarget
+    public void onMoveInput(EventMoveInput event) {
+        if (this.shouldBlockJump()) {
+            event.setJump(false);
+        }
+    }
+
+    @EventTarget
+    public void onMotion(EventMotion event) {
+        if (event.getType() != EventType.POST) {
+            if (!isSpoofing && mc.player.fallDistance > this.distance.getCurrentValue() && !event.isOnGround()) {
+                isSpoofing = true;
+                this.receivedServerLagback = false;
+                this.sentSpoofPacket = false;
+            }
+
+            if (isSpoofing && mc.player.fallDistance < 3.0F) {
+                event.setOnGround(false);
+                if (!this.sentSpoofPacket) {
+                    mc.player.connection.send(new ServerboundMovePlayerPacket.Pos(event.getX() - 1000.0, event.getY(), event.getZ(), false));
+                    this.sentSpoofPacket = true;
                 }
             }
+        }
+    }
+
+    @EventTarget
+    public void onPacket(EventPacket event) {
+        if (event.getType() == EventType.SEND) {
+            if (isSpoofing && this.sentSpoofPacket && !this.receivedServerLagback && event.getPacket() instanceof ServerboundMovePlayerPacket) {
+                event.setCancelled(true);
+            }
+        } else if (isSpoofing && event.getPacket() instanceof ClientboundPlayerPositionPacket) {
+            this.receivedServerLagback = true;
         }
     }
 }

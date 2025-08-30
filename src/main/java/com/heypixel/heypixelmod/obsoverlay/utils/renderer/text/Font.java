@@ -92,26 +92,35 @@ public class Font {
       } else {
          double width = 0.0;
 
+         // 移除颜色代码后计算宽度
+         StringBuilder strippedString = new StringBuilder();
          for (int i = 0; i < string.length(); i++) {
-            int cp = string.charAt(i) - this.from;
-            if (cp == 167 && i + 1 < string.length()) {
+            char c = string.charAt(i);
+            if (c == '\u00A7' && i + 1 < string.length()) {
+               // 跳过颜色代码
                i++;
             } else {
-               if (cp >= this.charData.length || cp < 0) {
+               strippedString.append(c);
+            }
+         }
+         String processedString = strippedString.toString();
 
-                  if (this.fallbackFont != null) {
-                     width += this.fallbackFont.getWidth(String.valueOf(string.charAt(i)));
-                  } else {
+         for (int i = 0; i < processedString.length(); i++) {
+            int cp = processedString.charAt(i) - this.from;
+            if (cp >= this.charData.length || cp < 0) {
 
-                     cp = 0;
-                  }
+               if (this.fallbackFont != null) {
+                  width += this.fallbackFont.getWidth(String.valueOf(processedString.charAt(i)));
+               } else {
+
+                  cp = 0;
                }
-               
+            }
+            
 
-               if (cp >= 0 && cp < this.charData.length) {
-                  CharData c = this.charData[cp];
-                  width += (double)c.xAdvance;
-               }
+            if (cp >= 0 && cp < this.charData.length) {
+               CharData c = this.charData[cp];
+               width += (double)c.xAdvance;
             }
          }
 
@@ -126,27 +135,32 @@ public class Font {
 
    public double render(Mesh mesh, String string, double x, double y, Color color, double scale, boolean shadow) {
       Color currentColor = color;
-
       y += (double)(this.ascent * this.scale) * scale;
-
+      
       for (int i = 0; i < string.length(); i++) {
-         int cp = string.charAt(i) - this.from;
-         if (string.charAt(i) == '\u00A7' && i + 1 < string.length()) {
+         char ch = string.charAt(i);
+         
+         // 检查是否为颜色控制符
+         if (ch == '\u00A7' && i + 1 < string.length()) {
             char ctrl = string.charAt(i + 1);
             ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
             if (byCode != null && byCode.isColor()) {
                currentColor = new Color(byCode.getColor());
+            } else if (byCode == ChatFormatting.RESET) {
+               currentColor = color;
             }
-            i++;
+            
+            i++; // 跳过颜色码字符
             continue;
          }
 
+         int cp = ch - this.from;
          boolean renderedWithFallback = false;
          if (cp >= this.charData.length || cp < 0) {
 
             if (this.fallbackFont != null) {
 
-               x = this.fallbackFont.render(mesh, String.valueOf(string.charAt(i)), x, y - (double)(this.ascent * this.scale) * scale, color, scale, shadow);
+               x = this.fallbackFont.render(mesh, String.valueOf(ch), x, y - (double)(this.ascent * this.scale) * scale, currentColor, scale, shadow);
                renderedWithFallback = true;
             } else {
 

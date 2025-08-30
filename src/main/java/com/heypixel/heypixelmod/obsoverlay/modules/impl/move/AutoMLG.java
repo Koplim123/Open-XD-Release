@@ -76,7 +76,8 @@ public class AutoMLG extends Module {
 
          if (--this.timeout == 0 && this.rotation) {
             this.rotation = false;
-            Notification notification = new Notification(NotificationLevel.WARNING, "Failed to place water!", 3000L);
+
+            Notification notification = new Notification("Failed to place water!", false);
             Naven.getInstance().getNotificationManager().addNotification(notification);
          }
       }
@@ -90,7 +91,8 @@ public class AutoMLG extends Module {
             this.above = ((BlockHitResult)mc.hitResult).getBlockPos().above();
             this.useItem(mc.player, mc.level, InteractionHand.MAIN_HAND);
          } else {
-            Notification notification = new Notification(NotificationLevel.WARNING, "Failed to place water!", 3000L);
+
+            Notification notification = new Notification("Failed to place water!", false);
             Naven.getInstance().getNotificationManager().addNotification(notification);
             this.rotation = false;
          }
@@ -100,7 +102,8 @@ public class AutoMLG extends Module {
          if (above.equals(this.above)) {
             this.useItem(mc.player, mc.level, InteractionHand.MAIN_HAND);
          } else {
-            Notification notification = new Notification(NotificationLevel.WARNING, "Failed to recycle the water dues to moving!", 3000L);
+
+            Notification notification = new Notification("Failed to recycle the water dues to moving!", false);
             Naven.getInstance().getNotificationManager().addNotification(notification);
          }
 

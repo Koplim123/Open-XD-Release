@@ -242,7 +242,10 @@ public class Island extends Module {
         float[] wh = computeAnimatedBoxWH(font);
         float w = wh[0];
         float h = wh[1];
-        String text = titleProvider.getTitle();
+        String text = "";
+        if (titleProvider != null) {
+            text = titleProvider.getTitle();
+        }
         double scale = this.textScale.getCurrentValue();
         float textWidth = font.getWidth(text, scale);
         float textHeight = (float) font.getHeight(true, scale);
@@ -272,7 +275,10 @@ public class Island extends Module {
     private float[] computeAnimatedBoxWH(CustomTextRenderer font) {
         float w = this.width.getCurrentValue();
         float h = this.height.getCurrentValue();
-        String text = titleProvider.getTitle();
+        String text = "";
+        if (titleProvider != null) {
+            text = titleProvider.getTitle();
+        }
         double scale = this.textScale.getCurrentValue();
         float textWidth = font.getWidth(text, scale);
         float textHeight = (float) font.getHeight(true, scale);
