@@ -1,5 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
@@ -8,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Properties;
-
+@JNICObf
 public class IRCCredentialManager {
     private static final String AES_KEY = "a93oqosvxwsrr91p";
     private static final String ALGORITHM = "AES";

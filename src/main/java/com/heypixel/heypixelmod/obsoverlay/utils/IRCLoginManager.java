@@ -2,6 +2,7 @@ package com.heypixel.heypixelmod.obsoverlay.utils;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
@@ -13,7 +14,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-
+@JNICObf
 public class IRCLoginManager {
     public static String username = "";
     public static String rank = "";

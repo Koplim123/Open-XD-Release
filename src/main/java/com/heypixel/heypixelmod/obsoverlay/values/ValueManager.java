@@ -9,6 +9,12 @@ public class ValueManager {
    private final List<Value> values = new ArrayList<>();
 
    public void addValue(Value value) {
+      // Prevent registering the same value twice (same key + name or identical instance).
+      for (Value v : this.values) {
+         if (v == value) return;
+         if (v.getKey() == value.getKey() && v.getName().equals(value.getName())) return;
+      }
+
       this.values.add(value);
    }
 

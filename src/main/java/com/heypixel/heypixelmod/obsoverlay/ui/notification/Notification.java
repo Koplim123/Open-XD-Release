@@ -1,82 +1,93 @@
 package com.heypixel.heypixelmod.obsoverlay.ui.notification;
 
+import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
+import com.heypixel.heypixelmod.obsoverlay.utils.TimeHelper;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.util.Mth;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.awt.Color;
 
 public class Notification {
-    private static final ResourceLocation TRUE_ICON = ResourceLocation.parse("heypixel:textures/icons/true.png");
-    private static final ResourceLocation CANCEL_ICON = ResourceLocation.parse("heypixel:textures/icons/cancel.png");
-
-    private final String text;
-    private final boolean enabled;
-    private final long createTime;
-    private final int maxAge;
+    protected static final Logger LOGGER = LoggerFactory.getLogger(Notification.class);
     
-    private final SmoothAnimationTimer widthTimer;
-    private final SmoothAnimationTimer heightTimer;
-    
-    private float width;
-    private float height;
+    private NotificationLevel level;
+    private String title, description;
+    private long maxAge;
+    private long createTime = System.currentTimeMillis();
+    private SmoothAnimationTimer widthTimer = new SmoothAnimationTimer(0.0F);
+    private SmoothAnimationTimer heightTimer = new SmoothAnimationTimer(0.0F);
+    private TimeHelper timerUtil = new TimeHelper();
 
-    public Notification(String text, boolean enabled) {
-        this.text = text;
-        this.enabled = enabled;
-        this.createTime = System.currentTimeMillis();
-        this.maxAge = 1500;
-        
-        this.widthTimer = new SmoothAnimationTimer(0f, 0f, 0.8f);
-        this.heightTimer = new SmoothAnimationTimer(0f, 0f, 0.8f);
-        
-
-        this.width = 30f + Minecraft.getInstance().font.width(text) + 30f;
-        this.height = 30f;
+    public Notification(NotificationLevel level, String message, long age) {
+        this.level = level;
+        if (message.contains(":")) {
+            String[] parts = message.split(":", 2);
+            this.title = parts[0].trim();
+            this.description = parts[1].trim();
+        } else {
+            this.title = "Notification";
+            this.description = message;
+        }
+        this.maxAge = age;
     }
 
-    public void renderShader(PoseStack poseStack, float x, float y) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
-        GuiGraphics guiGraphics = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
-        guiGraphics.pose().last().pose().set(poseStack.last().pose());
-        
-
-
-        guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)(y + height), 0xAA000000);
-        
-
-        if (enabled) {
-            guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)y + 2, 0xFF00FF00);
-            guiGraphics.fill((int)x, (int)y, (int)x + 2, (int)(y + height), 0xFF00FF00);
-            guiGraphics.fill((int)(x + width - 2), (int)y, (int)(x + width), (int)(y + height), 0xFF00FF00);
-            guiGraphics.fill((int)x, (int)(y + height - 2), (int)(x + width), (int)(y + height), 0xFF00FF00);
+    public Notification(NotificationLevel level, String title, String description, long age) {
+        this.level = level;
+        this.title = title;
+        this.description = description;
+        this.maxAge = age;
+    }
+    
+    // 添加接受(String, boolean)参数的构造函数
+    public Notification(String message, boolean enabled) {
+        this.level = enabled ? NotificationLevel.SUCCESS : NotificationLevel.ERROR;
+        if (message.contains(":")) {
+            String[] parts = message.split(":", 2);
+            this.title = parts[0].trim();
+            this.description = parts[1].trim();
         } else {
-            guiGraphics.fill((int)x, (int)y, (int)(x + width), (int)y + 2, 0xFFFF0000);
-            guiGraphics.fill((int)x, (int)y, (int)x + 2, (int)(y + height), 0xFFFF0000);
-            guiGraphics.fill((int)(x + width - 2), (int)y, (int)(x + width), (int)(y + height), 0xFFFF0000);
-            guiGraphics.fill((int)x, (int)(y + height - 2), (int)(x + width), (int)(y + height), 0xFFFF0000);
+            this.title = "Notification";
+            this.description = message;
         }
+        this.maxAge = 3000L; // 默认3秒
+    }
 
+    public float getWidth() {
+        return 100.0F;
+    }
 
-        guiGraphics.drawString(
-            Minecraft.getInstance().font,
-            text,
-            (int)(x + 20),
-            (int)(y + (height - 8) / 2),
-            enabled ? 0x00FF00 : 0xFF0000,
-            false
-        );
+    public float getHeight() {
+        return 30.0F;
+    }
 
-        ResourceLocation icon = enabled ? TRUE_ICON : CANCEL_ICON;
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        guiGraphics.blit(icon, (int)(x + width - 25), (int)(y + (height - 16) / 2), 0, 0, 16, 16, 16, 16);
-        
-        RenderSystem.disableBlend();
+    public NotificationLevel getLevel() {
+        return level;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getMessage() {
+        return description;
+    }
+
+    public long getMaxAge() {
+        return maxAge;
+    }
+
+    public long getCreateTime() {
+        return createTime;
     }
 
     public SmoothAnimationTimer getWidthTimer() {
@@ -87,19 +98,34 @@ public class Notification {
         return heightTimer;
     }
 
-    public float getWidth() {
-        return width;
+    public TimeHelper getTimerUtil() {
+        return timerUtil;
     }
 
-    public float getHeight() {
-        return height;
+    public boolean isAlive() {
+        return System.currentTimeMillis() - createTime < maxAge;
     }
 
-    public long getCreateTime() {
-        return createTime;
+    public void updateTimers() {
+        widthTimer.update(true);
+        heightTimer.update(true);
     }
 
-    public int getMaxAge() {
-        return maxAge;
+    public float getAlpha() {
+        long elapsed = System.currentTimeMillis() - createTime;
+        if (elapsed < 500) {
+            return Mth.clamp(elapsed / 500.0F, 0.0F, 1.0F);
+        } else if (elapsed > maxAge - 500) {
+            return Mth.clamp(1.0F - (elapsed - (maxAge - 500)) / 500.0F, 0.0F, 1.0F);
+        }
+        return 1.0F;
+    }
+
+    public void render(PoseStack stack, float x, float y) {
+        // 基础渲染实现
+    }
+
+    public void renderShader(PoseStack stack, float x, float y) {
+        // 基础着色器渲染实现
     }
 }

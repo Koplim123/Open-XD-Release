@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.modules;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
+import com.heypixel.heypixelmod.obsoverlay.ui.notification.NewNotification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
@@ -94,7 +95,7 @@ public class Module extends HasValue {
                     if (module.moduleToggleSound.getCurrentValue()) {
                         mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
                     }
-                    Notification notification = new Notification(this.name + " Enabled!", true);
+                    Notification notification = new NewNotification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
                     naven.getNotificationManager().addNotification(notification);
                 }
             } else {
@@ -106,7 +107,7 @@ public class Module extends HasValue {
                     if (module.moduleToggleSound.getCurrentValue()) {
                         mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.8F);
                     }
-                    Notification notification = new Notification(this.name + " Disabled!", false);
+                    Notification notification = new NewNotification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
                     naven.getNotificationManager().addNotification(notification);
                 }
             }

@@ -203,13 +203,10 @@ public class HUD extends Module {
 
             this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
             this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
-            StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-            StencilUtils.erase(true);
             RenderUtils.fill(e.getStack(), 5.0F, 5.0F, 9.0F + this.width, 8.0F, headerColor);
             RenderUtils.fill(e.getStack(), 5.0F, 8.0F, 9.0F + this.width, 16.0F + this.watermarkHeight, bodyColor);
             font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, (double)this.watermarkSize.getCurrentValue());
-            StencilUtils.dispose();
             e.getStack().popPose();
         }
 

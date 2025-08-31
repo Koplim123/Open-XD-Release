@@ -29,11 +29,11 @@ import java.util.Iterator;
 import java.util.List;
 
 @ModuleInfo(
-        name = "JumpEffect",
+        name = "JumpCircle",
         description = "Renders a circle effect when jumping",
         category = Category.RENDER
 )
-public class JumpEffect extends Module {
+public class JumpCircle extends Module {
     
     private final BooleanValue filled = ValueBuilder.create(this, "Filled").setDefaultBooleanValue(true).build().getBooleanValue();
     private final BooleanValue outline = ValueBuilder.create(this, "Outline").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -148,18 +148,19 @@ public class JumpEffect extends Module {
         
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(1.0));
         
         Matrix4f matrix = poseStack.last().pose();
         
         // Render filled circle
         if (filled.getCurrentValue()) {
-            renderFilledCircle(matrix, consumer, radius, alpha, progress);
+            VertexConsumer filledConsumer = bufferSource.getBuffer(RenderType.gui());
+            renderFilledCircle(matrix, filledConsumer, radius, alpha, progress);
         }
         
         // Render outline
         if (outline.getCurrentValue()) {
-            renderOutline(matrix, consumer, radius, alpha, progress);
+            VertexConsumer outlineConsumer = bufferSource.getBuffer(RenderType.debugLineStrip(1.0));
+            renderOutline(matrix, outlineConsumer, radius, alpha, progress);
         }
         
         bufferSource.endBatch();
@@ -171,19 +172,29 @@ public class JumpEffect extends Module {
         float g = 1.0F - progress;
         float b = progress;
         
-        // Center point
-        consumer.vertex(matrix, 0, 0, 0)
-                .color(r, g, b, alpha * 0.3F)
-                .endVertex();
-        
-        // Circle points
         int segments = 32;
-        for (int i = 0; i <= segments; i++) {
-            float angle = (float) (i * (2 * Math.PI) / segments);
-            float x = Mth.cos(angle) * radius;
-            float z = Mth.sin(angle) * radius;
+        
+        // Render circle as triangle fan
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (float) (i * (2 * Math.PI) / segments);
+            float angle2 = (float) ((i + 1) * (2 * Math.PI) / segments);
             
-            consumer.vertex(matrix, x, 0, z)
+            // Center point
+            consumer.vertex(matrix, 0, 0, 0)
+                    .color(r, g, b, alpha * 0.3F)
+                    .endVertex();
+            
+            // First edge point
+            float x1 = Mth.cos(angle1) * radius;
+            float z1 = Mth.sin(angle1) * radius;
+            consumer.vertex(matrix, x1, 0, z1)
+                    .color(r, g, b, alpha * 0.3F)
+                    .endVertex();
+            
+            // Second edge point
+            float x2 = Mth.cos(angle2) * radius;
+            float z2 = Mth.sin(angle2) * radius;
+            consumer.vertex(matrix, x2, 0, z2)
                     .color(r, g, b, alpha * 0.3F)
                     .endVertex();
         }
@@ -206,6 +217,13 @@ public class JumpEffect extends Module {
                     .color(r, g, b, alpha)
                     .endVertex();
         }
+        
+        // Close the circle by connecting last point to first
+        float x = Mth.cos(0) * radius;
+        float z = Mth.sin(0) * radius;
+        consumer.vertex(matrix, x, 0, z)
+                .color(r, g, b, alpha)
+                .endVertex();
     }
     
     private static class Circle {

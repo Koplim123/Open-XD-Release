@@ -4,6 +4,7 @@ import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.exceptions.BadValueTypeException;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.IntValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.StringValue;
 
@@ -28,6 +29,10 @@ public abstract class Value {
    }
 
    public FloatValue getFloatValue() {
+      throw new BadValueTypeException();
+   }
+
+   public IntValue getIntValue() {
       throw new BadValueTypeException();
    }
 

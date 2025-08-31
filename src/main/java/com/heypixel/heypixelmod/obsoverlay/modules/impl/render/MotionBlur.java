@@ -30,7 +30,7 @@ public class MotionBlur extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    private final ResourceLocation shaderLocation = ResourceLocation.parse("minecraft:shaders/post/motion_blur.json");
+   private final ResourceLocation shaderLocation = new ResourceLocation("shaders/post/motion_blur.json");
    public PostChain shader;
    private int lastWidth;
    private float currentBlur;

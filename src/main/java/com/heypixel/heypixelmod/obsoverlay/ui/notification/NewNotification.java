@@ -8,9 +8,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.awt.Color;
 
-public class SouthSideNotification extends Notification {
+public class NewNotification extends Notification {
     private static final int BACKGROUND_COLOR = new Color(21, 22, 25, 220).getRGB();
     private static final int PROGRESS_BAR_COLOR = new Color(50, 100, 255).getRGB();
+    private static final float CORNER_RADIUS = 6.0F; // 适中的圆角半径
 
     // --- [修改] 使用固定宽度和独立的边距常量 ---
 
@@ -23,18 +24,10 @@ public class SouthSideNotification extends Notification {
     private static final float HEIGHT = 50.0F;
 
     private final String title;
-    private final String message;
-    private final long maxAge;
-    private final long createTime;
-    private final NotificationLevel level;
 
-    public SouthSideNotification(NotificationLevel level, String title, String message, long age) {
-        super(title + ": " + message, level == NotificationLevel.SUCCESS || level == NotificationLevel.INFO);
-        this.level = level;
-        this.title = title;
-        this.message = message;
-        this.maxAge = age;
-        this.createTime = System.currentTimeMillis();
+    public NewNotification(NotificationLevel level, String message, long age) {
+        super(level, message, age);
+        this.title = "Module";
     }
 
     @Override
@@ -42,6 +35,7 @@ public class SouthSideNotification extends Notification {
         RenderUtils.fill(stack, x, y, x + this.getWidth(), y + this.getHeight(), BACKGROUND_COLOR);
     }
 
+    @Override
     public void render(PoseStack stack, float x, float y) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -57,26 +51,12 @@ public class SouthSideNotification extends Notification {
         float textY = y + VERTICAL_PADDING;
 
         Fonts.harmony.render(guiGraphics.pose(), this.title, textX, textY, Color.WHITE, true, 0.35f);
-        Fonts.harmony.render(guiGraphics.pose(), "Toggled " + this.message, textX, textY + Fonts.harmony.getHeight(true, 0.35f) + 4, new Color(180, 180, 180), true, 0.3f);
+        Fonts.harmony.render(guiGraphics.pose(), "Module " + this.getMessage(), textX, textY + Fonts.harmony.getHeight(true, 0.35f) + 4, new Color(180, 180, 180), true, 0.3f);
 
-        // 根据通知级别渲染不同的进度条颜色
-        int progressBarColor = PROGRESS_BAR_COLOR;
-        switch (level) {
-            case SUCCESS:
-                progressBarColor = new Color(50, 200, 50).getRGB();
-                break;
-            case WARNING:
-                progressBarColor = new Color(255, 200, 0).getRGB();
-                break;
-            case ERROR:
-                progressBarColor = new Color(255, 50, 50).getRGB();
-                break;
-        }
-
-        float lifeTime = (float)(System.currentTimeMillis() - this.createTime);
-        float progress = Math.min(lifeTime / (float)this.maxAge, 1.0F);
+        float lifeTime = (float)(System.currentTimeMillis() - this.getCreateTime());
+        float progress = Math.min(lifeTime / (float)this.getMaxAge(), 1.0F);
         float progressBarWidth = this.getWidth() * progress;
-        RenderUtils.fill(stack, x, y + this.getHeight() - PROGRESS_BAR_HEIGHT, x + progressBarWidth, y + this.getHeight(), progressBarColor);
+        RenderUtils.fill(stack, x, y + this.getHeight() - PROGRESS_BAR_HEIGHT, x + progressBarWidth, y + this.getHeight(), PROGRESS_BAR_COLOR);
     }
 
     @Override
@@ -85,7 +65,7 @@ public class SouthSideNotification extends Notification {
 
         // 计算文本实际需要的宽度
         float titleWidth = Fonts.harmony.getWidth(this.title, 0.35f);
-        float messageWidth = Fonts.harmony.getWidth("Toggled " + this.message, 0.3f);
+        float messageWidth = Fonts.harmony.getWidth("Module " + this.getMessage(), 0.3f);
         float textWidth = Math.max(titleWidth, messageWidth);
         // 左右都使用 LEFT_PADDING，确保长文本也能有对称的边距
         float requiredContentWidth = LEFT_PADDING + textWidth + LEFT_PADDING;
@@ -97,9 +77,5 @@ public class SouthSideNotification extends Notification {
     @Override
     public float getHeight() {
         return HEIGHT;
-    }
-    
-    public String getMessage() {
-        return message;
     }
 }

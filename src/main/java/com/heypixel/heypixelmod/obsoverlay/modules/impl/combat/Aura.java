@@ -282,15 +282,6 @@ public class Aura extends Module {
     }
 
     @EventTarget
-    public void onAttackSlowdown(EventAttackSlowdown e) {
-        Velocity velocityModule = (Velocity) Naven.getInstance().getModuleManager().getModule(Velocity.class);
-        if (velocityModule.isEnabled() && Velocity.ticksSinceVelocity > 14) {
-            e.setCancelled(true);
-        }
-
-    }
-
-    @EventTarget
     public void onMotion(EventRunTicks event) {
         if (event.getType() == EventType.PRE && mc.player != null) {
             if (mc.screen instanceof AbstractContainerScreen

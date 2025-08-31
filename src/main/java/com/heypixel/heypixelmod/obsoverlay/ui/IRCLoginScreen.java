@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.ui;
 
+import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCCredentialManager;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -10,7 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.Properties;
-
+@JNICObf
 public class IRCLoginScreen extends Screen {
     private EditBox usernameField;
     private EditBox passwordField;
