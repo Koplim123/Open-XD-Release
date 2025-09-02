@@ -137,7 +137,16 @@ public class BackTrack extends Module {
      */
     @Override
     public void onDisable() {
+        releaseAllPacketQueue();
         reset();
+    }
+
+    /**
+     * 释放所有拦截的数据包
+     * 此方法会处理并发送队列中所有被拦截的数据包
+     */
+    public void releaseAllPacketQueue() {
+        releaseAirKBQueue();
     }
 
     /**

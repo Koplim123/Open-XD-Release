@@ -92,14 +92,11 @@ public class Velocity extends Module {
                 && velocityPacket.getId() == mc.player.getId()
                 && random(1, 100) <= (int)chance.getCurrentValue()) {
             velocityInput = true;
-
             boolean sprinting = mc.player.isSprinting();
-
             if (!sprinting) {
                 mc.player.connection.send(new ServerboundMovePlayerPacket.StatusOnly(mc.player.onGround()));
                 mc.player.connection.send(new ServerboundPlayerCommandPacket(mc.player, Action.START_SPRINTING));
             }
-
             for (int i = 0; i < (int)attackTimes.getCurrentValue(); i++) {
 
                 if (target != null) {

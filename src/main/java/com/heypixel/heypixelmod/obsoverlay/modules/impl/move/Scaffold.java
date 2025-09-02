@@ -265,11 +265,30 @@ public class Scaffold extends Module {
 
             if (this.mode.isCurrentMode("Telly Bridge")) {
                 mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
+                float targetYaw = mc.player.getYRot();
+                float currentYaw = this.rots.getX();
+                float yawDiff = Math.abs(targetYaw - currentYaw);
+                if (yawDiff > 90.0F) {
+                    if (targetYaw > currentYaw) {
+                        targetYaw = currentYaw + 90.0F;
+                    } else {
+                        targetYaw = currentYaw - 90.0F;
+                    }
+                }
+                
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
-                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), mc.player.getYRot()));
+                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), targetYaw));
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
                 }
+                
+                // 方块边缘蹲下逻辑
+                if (isOnBlockEdge(0.3F)) {
+                    mc.options.keyShift.setDown(true);
+                } else {
+                    mc.options.keyShift.setDown(false);
+                }
+                
             } else if (this.mode.isCurrentMode("Keep Y")) {
                 mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
             } else {

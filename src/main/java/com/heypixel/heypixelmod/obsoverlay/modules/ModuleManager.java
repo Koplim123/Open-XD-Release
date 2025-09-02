@@ -39,7 +39,7 @@ public class ModuleManager {
       this.registerModule(
          new Aura(),
          new HUD(),
-         new AutoPlay(),
+         new BetaBackTrack(),
          new Velocity(),
          new NameTags(),
          new ChestStealer(),
@@ -53,6 +53,7 @@ public class ModuleManager {
          new ClickGUIModule(),
          new Teams(),
          new Glow(),
+         new NoXZ(),
          new AutoPlay(),
          new ItemTracker(),
          new AutoMLG(),
