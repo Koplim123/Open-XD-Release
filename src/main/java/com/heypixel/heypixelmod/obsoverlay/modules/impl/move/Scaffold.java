@@ -96,7 +96,7 @@ public class Scaffold extends Module {
     public Vector2f rots = new Vector2f();
     public Vector2f lastRots = new Vector2f();
     private int offGroundTicks = 0;
-    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge", "Keep Y").build().getModeValue();
+    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge").build().getModeValue();
     public BooleanValue eagle = ValueBuilder.create(this, "Eagle")
             .setDefaultBooleanValue(true)
             .setVisibility(() -> this.mode.isCurrentMode("Normal"))
@@ -111,6 +111,16 @@ public class Scaffold extends Module {
     public BooleanValue hideSnap = ValueBuilder.create(this, "Hide Snap Rotation")
             .setDefaultBooleanValue(true)
             .setVisibility(() -> this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue())
+            .build()
+            .getBooleanValue();
+    public BooleanValue autoJump = ValueBuilder.create(this, "AutoJump")
+            .setDefaultBooleanValue(true)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getBooleanValue();
+    public BooleanValue keepY = ValueBuilder.create(this, "Keep Y")
+            .setDefaultBooleanValue(true)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
             .build()
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -226,6 +236,7 @@ public class Scaffold extends Module {
             }
 
             boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
+            // 原来的baseY逻辑保持不变，适用于Normal模式
             if (this.baseY == -1
                     || this.baseY > (int)Math.floor(mc.player.getY()) - 1
                     || mc.player.onGround()
@@ -247,34 +258,43 @@ public class Scaffold extends Module {
                 this.rots.setY(this.correctRotation.getY());
             }
 
-            if (this.sneak.getCurrentValue()) {
-                this.lastSneakTicks++;
-                System.out.println(this.lastSneakTicks);
-                if (this.lastSneakTicks == 18) {
-                    if (mc.player.isSprinting()) {
-                        mc.options.keySprint.setDown(false);
-                        mc.player.setSprinting(false);
-                    }
-
-                    mc.options.keyShift.setDown(true);
-                } else if (this.lastSneakTicks >= 21) {
-                    mc.options.keyShift.setDown(false);
-                    this.lastSneakTicks = 0;
-                }
-            }
-
             if (this.mode.isCurrentMode("Telly Bridge")) {
-                mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
-                float targetYaw = mc.player.getYRot();
-                float currentYaw = this.rots.getX();
-                float yawDiff = Math.abs(targetYaw - currentYaw);
-                if (yawDiff > 90.0F) {
-                    if (targetYaw > currentYaw) {
-                        targetYaw = currentYaw + 90.0F;
+                // Keep-Y功能实现 - 保持Y轴不变，防止向上搭路（静止时允许向上搭路）
+                if (this.keepY.getCurrentValue()) {
+                    // 如果启用了Keep-Y并且玩家正在移动，则保持Y轴不变
+                    if (PlayerUtils.movementInput()) {
+                        // 保持当前的baseY值不变
                     } else {
-                        targetYaw = currentYaw - 90.0F;
+                        // 玩家静止时，允许更新Y轴（可以向上搭路）
+                        if (this.baseY == -1
+                                || this.baseY > (int)Math.floor(mc.player.getY()) - 1
+                                || mc.player.onGround()
+                                || isHoldingJump) {
+                            this.baseY = (int)Math.floor(mc.player.getY()) - 1;
+                        }
+                    }
+                } else {
+                    // 如果未启用Keep-Y，则使用正常的Y轴更新逻辑
+                    if (this.baseY == -1
+                            || this.baseY > (int)Math.floor(mc.player.getY()) - 1
+                            || mc.player.onGround()
+                            || !PlayerUtils.movementInput()
+                            || isHoldingJump) {
+                        this.baseY = (int)Math.floor(mc.player.getY()) - 1;
                     }
                 }
+                
+                // AutoJump功能实现 - 在玩家移动且在地面上时自动跳跃
+                if (this.autoJump.getCurrentValue() && PlayerUtils.movementInput() && mc.player.onGround()) {
+                    mc.options.keyJump.setDown(true);
+                } else if (!PlayerUtils.movementInput()) {
+                    mc.options.keyJump.setDown(isHoldingJump);
+                } else {
+                    mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
+                }
+                
+                // 将转头角度固定为72.5度，而不是基于当前角度修改
+                float targetYaw = mc.player.getYRot() + 72.5F;
                 
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
                     this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), targetYaw));
@@ -282,15 +302,10 @@ public class Scaffold extends Module {
                     return;
                 }
                 
-                // 方块边缘蹲下逻辑
-                if (isOnBlockEdge(0.3F)) {
-                    mc.options.keyShift.setDown(true);
-                } else {
-                    mc.options.keyShift.setDown(false);
-                }
-                
-            } else if (this.mode.isCurrentMode("Keep Y")) {
-                mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
+                // 修复Telly Bridge模式蹲下逻辑 - 只在方块边缘蹲下，参考SafeWalk模块实现
+                boolean shouldSneak = isOnBlockEdge(0.3F) && PlayerUtils.movementInput() && mc.player.onGround();
+                boolean isHoldingShift = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyShift.getKey().getValue());
+                mc.options.keyShift.setDown(shouldSneak || isHoldingShift);
             } else {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));

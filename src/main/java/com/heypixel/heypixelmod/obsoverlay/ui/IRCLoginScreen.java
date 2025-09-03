@@ -95,9 +95,10 @@ public class IRCLoginScreen extends Screen {
                                 this.onClose();
                             } else {
                                 // 登录失败，显示错误信息
-                                this.errorText = Component.literal("Login failed. Please check your username and password.");
+                               // this.errorText = Component.literal("Login failed. Please check your username and password.");
                                 this.loggingIn = false;
                                 this.loginButton.active = true;
+                                this.onClose();
                             }
                         } catch (Exception e) {
                             System.err.println("Error in login callback: " + e.getMessage());

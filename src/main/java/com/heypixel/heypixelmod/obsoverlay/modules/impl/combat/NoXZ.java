@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
+import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventPacket;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdate;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMoveInput;
@@ -27,6 +28,7 @@ import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.Mth;
 
+@JNICObf
 @ModuleInfo(
         name = "NoXZ",
         description = "Reduces Knock Back.",

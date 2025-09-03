@@ -54,6 +54,8 @@ public class ModuleManager {
          new Teams(),
          new Glow(),
          new NoXZ(),
+  //       自己玩玩NoXZ就得了 别发出去要不?
+  //       这个是NonIRC版本
          new AutoPlay(),
          new ItemTracker(),
          new AutoMLG(),
