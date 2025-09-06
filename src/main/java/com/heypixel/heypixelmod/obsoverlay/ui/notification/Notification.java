@@ -55,7 +55,7 @@ public class Notification {
             this.title = "Notification";
             this.description = message;
         }
-        this.maxAge = 3000L; // 默认3秒
+        this.maxAge = 2000L;
     }
 
     public float getWidth() {

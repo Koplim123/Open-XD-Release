@@ -5,6 +5,6 @@ import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 public class Version {
     public static String getVersion() {
         String username = IRCLoginManager.getUsername();
-            return "Release 1.2.5-NoIRC";
+            return "Release 1.3";
         }
     }

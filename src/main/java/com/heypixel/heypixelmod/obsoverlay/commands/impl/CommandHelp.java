@@ -22,6 +22,7 @@ public class CommandHelp extends Command {
         ChatUtils.addChatMessage(".language .lang Language settings");
         ChatUtils.addChatMessage(".proxy .prox Proxy settings");
         ChatUtils.addChatMessage(".toggle .t Toggle a feature");
+        ChatUtils.addChatMessage(".irc .irc Chat in IRC!");
 
     }
 

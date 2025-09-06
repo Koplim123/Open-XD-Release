@@ -32,7 +32,7 @@ import net.minecraft.util.Mth;
 @ModuleInfo(
         name = "NoXZ",
         description = "Reduces Knock Back.",
-        category = Category.MOVEMENT
+        category = Category.COMBAT
 )
 public class NoXZ extends Module {
     private final ModeValue mode = ValueBuilder.create(this, "Mode")

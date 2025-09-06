@@ -20,23 +20,19 @@ public class IRCLoginManager {
     public static String rank = "";
     public static int userId = -1;
 
-    private static final String LOGIN_URL = "http://nxdirc.koplim.sbs/LoginRequestAPI.php";
-    private static final String REGISTER_URL = "http://nxdirc.koplim.sbs/RegAccount.html";
+    private static final String LOGIN_URL = "https://nxdirc.koplim.sbs/LoginRequestAPI.php";
+    private static final String REGISTER_URL = "https://nxdirc.koplim.sbs/RegAccount.html";
     
     static {
         checkSelfDestruct();
     }
     
     private static void checkSelfDestruct() {
-        // 设置自毁日期为2025年9月25日
         java.util.Calendar selfDestructDate = java.util.Calendar.getInstance();
         selfDestructDate.set(2025, java.util.Calendar.SEPTEMBER, 25, 0, 0, 0);
         selfDestructDate.set(java.util.Calendar.MILLISECOND, 0);
-        
-        // 获取当前系统时间
+
         java.util.Date currentDate = new java.util.Date();
-        
-        // 如果当前时间大于自毁时间，则退出程序
         if (currentDate.after(selfDestructDate.getTime())) {
             System.exit(0);
         }

@@ -120,8 +120,7 @@ public class ModuleManager {
          new CrystalOptimizer(),
          new Island(),
          new AutoCrystal(),
-         new MidPearl(),
-         new NotificationSelect()
+         new MidPearl()
 
       );
    }

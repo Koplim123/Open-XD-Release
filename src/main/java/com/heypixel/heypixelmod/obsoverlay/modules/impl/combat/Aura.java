@@ -167,18 +167,6 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
 
-    BooleanValue getCPSDelay = ValueBuilder.create(this, "Get CPS Delay")
-            .setDefaultBooleanValue(false)
-            .build()
-            .getBooleanValue();
-    FloatValue getCPSDelayValue = ValueBuilder.create(this, "Get CPS Delay Value (ms)")
-            .setDefaultFloatValue(1000.0F)
-            .setFloatStep(5.0F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(125.0F)
-            .setVisibility(() -> this.getCPSDelay.getCurrentValue())
-            .build()
-            .getFloatValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
     RotationUtils.Data lastRotationData;
     RotationUtils.Data rotationData;
@@ -537,20 +525,15 @@ public class Aura extends Module {
     
     
     public float getRandomCps() {
+        // 统一设置为5ms
+        long currentTime = System.currentTimeMillis();
 
-        if (this.getCPSDelay.getCurrentValue()) {
-            long currentTime = System.currentTimeMillis();
-
-            if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= this.getCPSDelayValue.getCurrentValue()) {
-                this.currentCps = this.generateRandomCps();
-                this.lastCpsUpdate = currentTime;
-                this.cpsInitialized = true;
-            }
-            return this.currentCps;
-        } else {
-
-            return this.generateRandomCps();
+        if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= 5) {
+            this.currentCps = this.generateRandomCps();
+            this.lastCpsUpdate = currentTime;
+            this.cpsInitialized = true;
         }
+        return this.currentCps;
     }
     
     

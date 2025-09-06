@@ -106,6 +106,7 @@ public class Naven {
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       this.eventManager.register(this.notificationManager);
+      this.eventManager.register(new com.heypixel.heypixelmod.obsoverlay.IRCModules.IRCEventHandler());
       MinecraftForge.EVENT_BUS.register(this.eventWrapper);
       MinecraftForge.EVENT_BUS.register(this);
    }
