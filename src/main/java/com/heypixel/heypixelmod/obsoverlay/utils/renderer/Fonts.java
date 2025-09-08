@@ -34,7 +34,7 @@ public class Fonts {
         }
 
         try {
-            icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
+            icons = new CustomTextRenderer("icon", 32, 59648, 59652, 512);
         } catch (Exception e) {
             System.err.println("Failed to load icons font, using default");
             e.printStackTrace();
@@ -63,18 +63,18 @@ public class Fonts {
         if (icons == null) {
             System.err.println("icons font is null, this should not happen");
         }
-        
+
 
         if (chinese == null) {
             System.err.println("chinese font is null, falling back to harmony");
             chinese = harmony;
         }
-        
+
 
         applyUserSelectedFont();
     }
-    
-    
+
+
     private static void applyUserSelectedFont() {
         try {
 
@@ -84,7 +84,7 @@ public class Fonts {
                 String selectedFont = fontSelectModule.getSelectedFont();
                 if (selectedFont != null && !selectedFont.isEmpty() && !"opensans".equals(selectedFont)) {
 
-                    reloadFonts(selectedFont, fontSelectModule);
+                    reloadFonts(selectedFont);
                 }
             }
         } catch (Exception e) {
@@ -92,8 +92,8 @@ public class Fonts {
             e.printStackTrace();
         }
     }
-    
-    
+
+
     private static FontSelect getFontSelectModule() {
         try {
 
@@ -104,12 +104,8 @@ public class Fonts {
         }
     }
 
-    
+
     public static void reloadFonts(String fontName) {
-        reloadFonts(fontName, null);
-    }
-    
-    public static void reloadFonts(String fontName, FontSelect fontSelectModule) {
         try {
 
             if (fontName == null || fontName.isEmpty()) {
@@ -161,41 +157,6 @@ public class Fonts {
                     icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
                 }
             }
-            
-            // 如果开启了OtherCJKFontsRender选项，加载特定的CJK字体
-            if (fontSelectModule != null && fontSelectModule.isOtherCJKFontsRenderEnabled()) {
-                String selectedCJKFont = fontSelectModule.getSelectedCJKFont();
-                try {
-                    chinese = new CustomTextRenderer(selectedCJKFont, 32, 0x4E00, 0x9FFF, 16384);
-                } catch (Exception e) {
-                    System.err.println("Failed to load CJK font: " + selectedCJKFont + ", using HYWenHei 85W as fallback");
-                    e.printStackTrace();
-                    
-                    try {
-                        chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
-                    } catch (Exception ex) {
-                        System.err.println("Failed to load HYWenHei 85W, using harmony as fallback");
-                        ex.printStackTrace();
-                        chinese = harmony;
-                    }
-                }
-            } else {
-                // 使用主字体选项中的字体作为CJK字体
-                try {
-                    chinese = new CustomTextRenderer(fontName, 32, 0x4E00, 0x9FFF, 16384);
-                } catch (Exception e) {
-                    System.err.println("Failed to load CJK font with main font: " + fontName + ", using HYWenHei 85W as fallback");
-                    e.printStackTrace();
-                    
-                    try {
-                        chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
-                    } catch (Exception ex) {
-                        System.err.println("Failed to load HYWenHei 85W, using harmony as fallback");
-                        ex.printStackTrace();
-                        chinese = harmony;
-                    }
-                }
-            }
         } catch (Exception e) {
             System.err.println("Failed to reload fonts with: " + fontName);
             e.printStackTrace();
@@ -210,9 +171,6 @@ public class Fonts {
                 }
                 if (icons == null) {
                     icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
-                }
-                if (chinese == null) {
-                    chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -231,7 +189,7 @@ public class Fonts {
             }
         }
     }
-    
+
 
     public static void renderMixedFont(com.mojang.blaze3d.vertex.PoseStack stack, String text, double x, double y, Color color, boolean shadow, double scale) {
         double currentX = x;
@@ -241,7 +199,7 @@ public class Fonts {
         boolean italic = false;
         boolean underlined = false;
         boolean strikethrough = false;
-        
+
 
         class FormatState {
             Color color;
@@ -250,7 +208,7 @@ public class Fonts {
             boolean italic;
             boolean underlined;
             boolean strikethrough;
-            
+
             FormatState(Color color, boolean shadow, boolean bold, boolean italic, boolean underlined, boolean strikethrough) {
                 this.color = color;
                 this.shadow = shadow;
@@ -260,17 +218,17 @@ public class Fonts {
                 this.strikethrough = strikethrough;
             }
         }
-        
+
         java.util.Stack<FormatState> formatStack = new java.util.Stack<>();
-        
+
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            
+
 
             if (c == '\u00A7' && i + 1 < text.length()) {
                 char ctrl = text.charAt(i + 1);
                 net.minecraft.ChatFormatting byCode = net.minecraft.ChatFormatting.getByCode(ctrl);
-                
+
                 if (byCode != null) {
                     switch (byCode) {
                         case BLACK:
@@ -291,27 +249,27 @@ public class Fonts {
                         case WHITE:
                             currentColor = new Color(byCode.getColor());
                             break;
-                            
+
                         case OBFUSCATED:
 
                             break;
-                            
+
                         case BOLD:
                             bold = true;
                             break;
-                            
+
                         case ITALIC:
                             italic = true;
                             break;
-                            
+
                         case UNDERLINE:
                             underlined = true;
                             break;
-                            
+
                         case STRIKETHROUGH:
                             strikethrough = true;
                             break;
-                            
+
                         case RESET:
                             currentColor = color;
                             currentShadow = shadow;
@@ -322,27 +280,27 @@ public class Fonts {
                             break;
                     }
                 }
-                
+
                 i++;
                 continue;
             }
-            
+
 
             CustomTextRenderer renderer = isCJKCharacter(c) ? chinese : opensans;
-            
+
             if (renderer != null) {
                 String charStr = String.valueOf(c);
-                
+
 
                 int formattedColor = applyFormatting(currentColor.getRGB(), bold, italic, underlined, strikethrough);
-                
+
 
                 renderer.render(stack, charStr, currentX, y, new Color(formattedColor), currentShadow, scale);
                 currentX += renderer.getWidth(charStr, scale);
             }
         }
     }
-    
+
 
     private static int applyFormatting(int color, boolean bold, boolean italic, boolean underlined, boolean strikethrough) {
 
