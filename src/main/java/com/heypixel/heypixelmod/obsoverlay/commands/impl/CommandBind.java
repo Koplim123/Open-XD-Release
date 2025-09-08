@@ -57,6 +57,14 @@ public class CommandBind extends Command {
                   ChatUtils.addChatMessage("Unbound " + moduleName + ".");
                   Naven.getInstance().getFileManager().save();
                } else {
+                  // 特殊处理RShift键
+                  if (keyName.equalsIgnoreCase("rshift")) {
+                     module.setKey(345); // GLFW_KEY_RIGHT_SHIFT的值
+                     ChatUtils.addChatMessage("Bound " + moduleName + " to RSHIFT.");
+                     Naven.getInstance().getFileManager().save();
+                     return;
+                  }
+                  
                   Key key = InputConstants.getKey("key.keyboard." + keyName.toLowerCase());
                   if (key != InputConstants.UNKNOWN) {
                      module.setKey(key.getValue());
@@ -79,6 +87,26 @@ public class CommandBind extends Command {
 
    @Override
    public String[] onTab(String[] args) {
+      // 添加RShift到tab补全建议中
+      if (args.length == 2) {
+         String[] baseSuggestions = Naven.getInstance()
+            .getModuleManager()
+            .getModules()
+            .stream()
+            .map(Module::getName)
+            .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
+            .toArray(String[]::new);
+         
+         // 如果正在输入键名，提供常用键的建议，包括RShift
+         String[] keySuggestions = {"rshift", "none", "a", "b", "c", "shift", "ctrl", "alt"};
+         if (args[1].isEmpty() || "r".startsWith(args[1].toLowerCase())) {
+             return keySuggestions;
+         }
+         return java.util.Arrays.stream(keySuggestions)
+             .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+             .toArray(String[]::new);
+      }
+      
       return Naven.getInstance()
          .getModuleManager()
          .getModules()

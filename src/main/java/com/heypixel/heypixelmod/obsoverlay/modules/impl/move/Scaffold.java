@@ -4,18 +4,28 @@ import com.heypixel.heypixelmod.obsoverlay.annotations.FlowExclude;
 import com.heypixel.heypixelmod.obsoverlay.annotations.ParameterObfuscationExclude;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateFoV;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateHeldItem;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
+import com.heypixel.heypixelmod.obsoverlay.utils.FallingPlayer;
+import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.MoveUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.PlayerUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.mojang.blaze3d.platform.InputConstants;
+import java.util.Arrays;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -24,16 +34,19 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.FlowerBlock;
+import net.minecraft.world.level.block.FungusBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
 import org.apache.commons.lang3.RandomUtils;
-
-import java.awt.*;
-import java.util.Arrays;
-import java.util.List;
 
 @ModuleInfo(
         name = "Scaffold",
@@ -96,7 +109,7 @@ public class Scaffold extends Module {
     public Vector2f rots = new Vector2f();
     public Vector2f lastRots = new Vector2f();
     private int offGroundTicks = 0;
-    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge").build().getModeValue();
+    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge", "Keep Y").build().getModeValue();
     public BooleanValue eagle = ValueBuilder.create(this, "Eagle")
             .setDefaultBooleanValue(true)
             .setVisibility(() -> this.mode.isCurrentMode("Normal"))
@@ -113,34 +126,20 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue())
             .build()
             .getBooleanValue();
-    public BooleanValue autoJump = ValueBuilder.create(this, "AutoJump")
-            .setDefaultBooleanValue(true)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
-            .build()
-            .getBooleanValue();
-    public BooleanValue keepY = ValueBuilder.create(this, "Keep Y")
-            .setDefaultBooleanValue(true)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
-            .build()
-            .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
-    public BooleanValue keepFov = ValueBuilder.create(this, "Keep Fov").setDefaultBooleanValue(true).build().getBooleanValue();
-    FloatValue fov = ValueBuilder.create(this, "Fov")
+    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
+    FloatValue fov = ValueBuilder.create(this, "FoV")
             .setDefaultFloatValue(1.15F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(1.0F)
             .setFloatStep(0.05F)
-            .setVisibility(() -> this.keepFov.getCurrentValue())
+            .setVisibility(() -> this.keepFoV.getCurrentValue())
             .build()
             .getFloatValue();
     int oldSlot;
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
     public int baseY = -1;
-
-    private float blockCounterWidth;
-    private float blockCounterHeight;
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -179,7 +178,7 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onFoV(EventUpdateFoV e) {
-        if (this.keepFov.getCurrentValue() && MoveUtils.isMoving()) {
+        if (this.keepFoV.getCurrentValue() && MoveUtils.isMoving()) {
             e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
         }
     }
@@ -236,7 +235,6 @@ public class Scaffold extends Module {
             }
 
             boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyJump.getKey().getValue());
-            // 原来的baseY逻辑保持不变，适用于Normal模式
             if (this.baseY == -1
                     || this.baseY > (int)Math.floor(mc.player.getY()) - 1
                     || mc.player.onGround()
@@ -258,54 +256,31 @@ public class Scaffold extends Module {
                 this.rots.setY(this.correctRotation.getY());
             }
 
+            if (this.sneak.getCurrentValue()) {
+                this.lastSneakTicks++;
+                System.out.println(this.lastSneakTicks);
+                if (this.lastSneakTicks == 18) {
+                    if (mc.player.isSprinting()) {
+                        mc.options.keySprint.setDown(false);
+                        mc.player.setSprinting(false);
+                    }
+
+                    mc.options.keyShift.setDown(true);
+                } else if (this.lastSneakTicks >= 21) {
+                    mc.options.keyShift.setDown(false);
+                    this.lastSneakTicks = 0;
+                }
+            }
+
             if (this.mode.isCurrentMode("Telly Bridge")) {
-                // Keep-Y功能实现 - 保持Y轴不变，防止向上搭路（静止时允许向上搭路）
-                if (this.keepY.getCurrentValue()) {
-                    // 如果启用了Keep-Y并且玩家正在移动，则保持Y轴不变
-                    if (PlayerUtils.movementInput()) {
-                        // 保持当前的baseY值不变
-                    } else {
-                        // 玩家静止时，允许更新Y轴（可以向上搭路）
-                        if (this.baseY == -1
-                                || this.baseY > (int)Math.floor(mc.player.getY()) - 1
-                                || mc.player.onGround()
-                                || isHoldingJump) {
-                            this.baseY = (int)Math.floor(mc.player.getY()) - 1;
-                        }
-                    }
-                } else {
-                    // 如果未启用Keep-Y，则使用正常的Y轴更新逻辑
-                    if (this.baseY == -1
-                            || this.baseY > (int)Math.floor(mc.player.getY()) - 1
-                            || mc.player.onGround()
-                            || !PlayerUtils.movementInput()
-                            || isHoldingJump) {
-                        this.baseY = (int)Math.floor(mc.player.getY()) - 1;
-                    }
-                }
-                
-                // AutoJump功能实现 - 在玩家移动且在地面上时自动跳跃
-                if (this.autoJump.getCurrentValue() && PlayerUtils.movementInput() && mc.player.onGround()) {
-                    mc.options.keyJump.setDown(true);
-                } else if (!PlayerUtils.movementInput()) {
-                    mc.options.keyJump.setDown(isHoldingJump);
-                } else {
-                    mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
-                }
-                
-                // 将转头角度固定为72.5度，而不是基于当前角度修改
-                float targetYaw = mc.player.getYRot() + 72.5F;
-                
+                mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
-                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), targetYaw));
+                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), mc.player.getYRot()));
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
                 }
-                
-                // 修复Telly Bridge模式蹲下逻辑 - 只在方块边缘蹲下，参考SafeWalk模块实现
-                boolean shouldSneak = isOnBlockEdge(0.3F) && PlayerUtils.movementInput() && mc.player.onGround();
-                boolean isHoldingShift = InputConstants.isKeyDown(mc.getWindow().getWindow(), mc.options.keyShift.getKey().getValue());
-                mc.options.keyShift.setDown(shouldSneak || isHoldingShift);
+            } else if (this.mode.isCurrentMode("Keep Y")) {
+                mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
             } else {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
@@ -471,62 +446,6 @@ public class Scaffold extends Module {
         }
 
         return new Vec3(x, y, z);
-    }
-
-    @EventTarget
-    public void onShader(EventShader e) {
-        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float y = screenHeight / 2.0F + 15.0F;
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-        }
-    }
-
-    @EventTarget
-    public void onRender(EventRender2D e) {
-        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
-            int blockCount = 0;
-            for (ItemStack itemStack : mc.player.getInventory().items) {
-                if (itemStack.getItem() instanceof BlockItem) {
-                    blockCount += itemStack.getCount();
-                }
-            }
-            String text = "Blocks: " + blockCount;
-            double backgroundScale = 0.4;
-            double textScale = 0.35;
-
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
-            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
-
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-
-            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float backgroundY = screenHeight / 2.0F + 15.0F;
-
-            float textWidth = Fonts.opensans.getWidth(text, textScale);
-            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
-
-            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
-            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
-
-            e.getStack().pushPose();
-
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-            StencilUtils.erase(true);
-            int headerColor = new Color(150, 45, 45, 255).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
-
-            int bodyColor = new Color(0, 0, 0, 120).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
-
-            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
-            StencilUtils.dispose();
-            e.getStack().popPose();
-        }
     }
 
     public static record BlockPosWithFacing(BlockPos position, Direction facing) {

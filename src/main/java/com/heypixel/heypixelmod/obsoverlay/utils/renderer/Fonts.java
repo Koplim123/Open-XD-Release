@@ -84,7 +84,7 @@ public class Fonts {
                 String selectedFont = fontSelectModule.getSelectedFont();
                 if (selectedFont != null && !selectedFont.isEmpty() && !"opensans".equals(selectedFont)) {
 
-                    reloadFonts(selectedFont);
+                    reloadFonts(selectedFont, fontSelectModule);
                 }
             }
         } catch (Exception e) {
@@ -106,6 +106,10 @@ public class Fonts {
 
     
     public static void reloadFonts(String fontName) {
+        reloadFonts(fontName, null);
+    }
+    
+    public static void reloadFonts(String fontName, FontSelect fontSelectModule) {
         try {
 
             if (fontName == null || fontName.isEmpty()) {
@@ -146,7 +150,7 @@ public class Fonts {
 
             try {
                 if (icons == null) {
-                    icons = new CustomTextRenderer("icon", 32, 59648, 59652, 512);
+                    icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
                 }
             } catch (Exception e) {
                 System.err.println("Failed to load icons font");
@@ -154,7 +158,42 @@ public class Fonts {
 
                 if (icons == null) {
 
-                    icons = new CustomTextRenderer("icon", 32, 59648, 59652, 512);
+                    icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
+                }
+            }
+            
+            // 如果开启了OtherCJKFontsRender选项，加载特定的CJK字体
+            if (fontSelectModule != null && fontSelectModule.isOtherCJKFontsRenderEnabled()) {
+                String selectedCJKFont = fontSelectModule.getSelectedCJKFont();
+                try {
+                    chinese = new CustomTextRenderer(selectedCJKFont, 32, 0x4E00, 0x9FFF, 16384);
+                } catch (Exception e) {
+                    System.err.println("Failed to load CJK font: " + selectedCJKFont + ", using HYWenHei 85W as fallback");
+                    e.printStackTrace();
+                    
+                    try {
+                        chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
+                    } catch (Exception ex) {
+                        System.err.println("Failed to load HYWenHei 85W, using harmony as fallback");
+                        ex.printStackTrace();
+                        chinese = harmony;
+                    }
+                }
+            } else {
+                // 使用主字体选项中的字体作为CJK字体
+                try {
+                    chinese = new CustomTextRenderer(fontName, 32, 0x4E00, 0x9FFF, 16384);
+                } catch (Exception e) {
+                    System.err.println("Failed to load CJK font with main font: " + fontName + ", using HYWenHei 85W as fallback");
+                    e.printStackTrace();
+                    
+                    try {
+                        chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
+                    } catch (Exception ex) {
+                        System.err.println("Failed to load HYWenHei 85W, using harmony as fallback");
+                        ex.printStackTrace();
+                        chinese = harmony;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -170,7 +209,10 @@ public class Fonts {
                     harmony = new CustomTextRenderer("harmony", 32, 0, 65535, 16384);
                 }
                 if (icons == null) {
-                    icons = new CustomTextRenderer("icon", 32, 59648, 59652, 512);
+                    icons = new CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
+                }
+                if (chinese == null) {
+                    chinese = new CustomTextRenderer("HYWenHei 85W", 32, 0x4E00, 0x9FFF, 16384);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

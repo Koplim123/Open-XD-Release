@@ -548,6 +548,56 @@ public class RenderUtils {
         BufferUploader.drawWithShader(bufferBuilder.end());
     }
 
-    public static void drawCircle(float v, float v1, float v2, int i, int rgb) {
+    public static void drawCircle(float centerX, float centerY, float radius, int color, int segments) {
+        if (radius <= 0) return;
+        
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder buffer = tessellator.getBuilder();
+        Matrix4f matrix = new Matrix4f();
+        
+        float a = (float)(color >> 24 & 0xFF) / 255.0F;
+        float r = (float)(color >> 16 & 0xFF) / 255.0F;
+        float g = (float)(color >> 8 & 0xFF) / 255.0F;
+        float b = (float)(color & 0xFF) / 255.0F;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, centerX, centerY, 0).color(r, g, b, a).endVertex();
+        
+        for (int i = 0; i <= segments; i++) {
+            double angle = 2.0 * Math.PI * i / segments;
+            float x = centerX + (float)(Math.cos(angle) * radius);
+            float y = centerY + (float)(Math.sin(angle) * radius);
+            buffer.vertex(matrix, x, y, 0).color(r, g, b, a).endVertex();
+        }
+        
+        tessellator.end();
+        RenderSystem.disableBlend();
+    }
+    
+    public static void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, int color) {
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder buffer = tessellator.getBuilder();
+        Matrix4f matrix = new Matrix4f();
+        
+        float a = (float)(color >> 24 & 0xFF) / 255.0F;
+        float r = (float)(color >> 16 & 0xFF) / 255.0F;
+        float g = (float)(color >> 8 & 0xFF) / 255.0F;
+        float b = (float)(color & 0xFF) / 255.0F;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        buffer.begin(Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x1, y1, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, x2, y2, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, x3, y3, 0).color(r, g, b, a).endVertex();
+        
+        tessellator.end();
+        RenderSystem.disableBlend();
     }
 }

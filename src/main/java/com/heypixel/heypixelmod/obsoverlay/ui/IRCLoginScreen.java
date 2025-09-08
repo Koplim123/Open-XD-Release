@@ -221,6 +221,11 @@ public class IRCLoginScreen extends Screen {
                 }
             }
 
+            // 阻止ESC键直接关闭屏幕
+            if (keyCode == 256) { // ESC key
+                return true;
+            }
+
             if (this.usernameField.isFocused()) {
                 this.usernameField.keyPressed(keyCode, scanCode, modifiers);
             } else if (this.passwordField.isFocused()) {

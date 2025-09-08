@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.awt.*;
 import java.util.HashMap;
@@ -232,6 +233,11 @@ public class ClickGUI extends Screen {
     }
 
     protected void init() {
+        // 重置OpenGL状态
+        RenderSystem.disableCull();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        
         Naven.getInstance().getEventManager().register(this);
         this.valuesAnimation.forEach((value, animation) -> {
             if (value.getValueType() == ValueType.MODE) {
@@ -260,6 +266,9 @@ public class ClickGUI extends Screen {
     @EventTarget
     public void onShader(EventShader e) {
         if (mc.screen == this) {
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             RenderUtils.drawRoundedRect(e.getStack(), windowX, windowY, this.widthAnimation.value, this.heightAnimation.value, 5.0F, 1073741824);
         }
     }
@@ -279,6 +288,12 @@ public class ClickGUI extends Screen {
 
         this.widthAnimation.update(true);
         this.heightAnimation.update(true);
+        
+        // 确保正确的渲染状态
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        
         RenderUtils.drawRoundedRect(stack, windowX, windowY, this.widthAnimation.value, this.heightAnimation.value, 5.0F, Colors.getColor(0, 0, 0, 40));
 
         for (Category value : Category.values()) {

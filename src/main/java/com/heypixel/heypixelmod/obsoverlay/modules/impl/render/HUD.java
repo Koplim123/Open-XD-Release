@@ -20,15 +20,15 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import org.apache.commons.lang3.StringUtils;
-import org.joml.Vector4f;
-
-import java.awt.*;
+import java.awt.Color;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.joml.Vector4f;
+// 添加必要的导入
+import com.mojang.blaze3d.systems.RenderSystem;
 
 @ModuleInfo(
         name = "HUD",
@@ -40,7 +40,6 @@ public class HUD extends Module {
     public static final int bodyColor = new Color(0, 0, 0, 120).getRGB();
     public static final int backgroundColor = new Color(0, 0, 0, 40).getRGB();
     private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
-
     public BooleanValue waterMark = ValueBuilder.create(this, "Water Mark").setDefaultBooleanValue(true).build().getBooleanValue();
     public FloatValue watermarkSize = ValueBuilder.create(this, "Watermark Size")
             .setVisibility(this.waterMark::getCurrentValue)
@@ -50,31 +49,8 @@ public class HUD extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
-
-    public BooleanValue watermarkShowBuild = ValueBuilder.create(this, "Show Build")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    public BooleanValue watermarkShowUserName = ValueBuilder.create(this, "Show Username")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    public BooleanValue watermarkShowFPS = ValueBuilder.create(this, "Show FPS")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-    public BooleanValue watermarkShowTime = ValueBuilder.create(this, "Show Time")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultBooleanValue(true)
-            .build()
-            .getBooleanValue();
-
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
-
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue prettyModuleName = ValueBuilder.create(this, "Pretty Module Name")
             .setOnUpdate(value -> Module.update = true)
@@ -115,19 +91,19 @@ public class HUD extends Module {
             .setModes("Right", "Left")
             .build()
             .getModeValue();
-    public FloatValue posX = ValueBuilder.create(this, "ArrayList X")
+    public FloatValue xOffset = ValueBuilder.create(this, "X Offset")
             .setVisibility(this.arrayList::getCurrentValue)
-            .setMinFloatValue(-300.0F)
-            .setMaxFloatValue(300.0F)
-            .setDefaultFloatValue(0.0F)
+            .setMinFloatValue(-100.0F)
+            .setMaxFloatValue(100.0F)
+            .setDefaultFloatValue(1.0F)
             .setFloatStep(1.0F)
             .build()
             .getFloatValue();
-    public FloatValue posY = ValueBuilder.create(this, "ArrayList Y")
+    public FloatValue yOffset = ValueBuilder.create(this, "Y Offset")
             .setVisibility(this.arrayList::getCurrentValue)
-            .setMinFloatValue(-300.0F)
-            .setMaxFloatValue(300.0F)
-            .setDefaultFloatValue(0.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(100.0F)
+            .setDefaultFloatValue(1.0F)
             .setFloatStep(1.0F)
             .build()
             .getFloatValue();
@@ -139,7 +115,6 @@ public class HUD extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
-
     List<Module> renderModules;
     float width;
     float watermarkHeight;
@@ -162,12 +137,17 @@ public class HUD extends Module {
         if (this.notification.getCurrentValue() && e.getType() == EventType.SHADOW) {
             Naven.getInstance().getNotificationManager().onRenderShadow(e);
         }
+
         if (this.waterMark.getCurrentValue()) {
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
         }
+
         if (this.arrayList.getCurrentValue()) {
             for (Vector4f blurMatrix : this.blurMatrices) {
-                RenderUtils.fillBound(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 0x40000000);
+                RenderUtils.fillBound(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 1073741824);
             }
         }
     }
@@ -175,54 +155,37 @@ public class HUD extends Module {
     @EventTarget
     public void onRender(EventRender2D e) {
         CustomTextRenderer font = Fonts.opensans;
-
-        // WaterMark
         if (this.waterMark.getCurrentValue()) {
             e.getStack().pushPose();
-            StringBuilder watermarkText = new StringBuilder("Naven");
-
-            if (watermarkShowBuild.getCurrentValue()) {
-                watermarkText.append(" | ").append(Version.getVersion());
-            }
-            if (watermarkShowUserName.getCurrentValue()) {
-                String username = IRCLoginManager.getUsername();
-                if (username != null && !username.isEmpty()) {
-                    watermarkText.append(" | ").append(username);
-                } else {
-                    watermarkText.append(" | ").append("Dev");
-                }
-            }
-            if (watermarkShowFPS.getCurrentValue()) {
-                watermarkText.append(" | ").append(StringUtils.split(mc.fpsString, " ")[0]).append(" FPS");
-            }
-            if (watermarkShowTime.getCurrentValue()) {
-                watermarkText.append(" | ").append(format.format(new Date()));
-            }
-
-            String text = watermarkText.toString();
-
+            String text = "Naven-XD | " + Version.getVersion() + " | " + IRCLoginManager.getUsername() + " | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
             this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
             this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
+            
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+            
+            StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            StencilUtils.erase(true);
             RenderUtils.fill(e.getStack(), 5.0F, 5.0F, 9.0F + this.width, 8.0F, headerColor);
             RenderUtils.fill(e.getStack(), 5.0F, 8.0F, 9.0F + this.width, 16.0F + this.watermarkHeight, bodyColor);
             font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, (double)this.watermarkSize.getCurrentValue());
+            StencilUtils.dispose();
             e.getStack().popPose();
         }
 
-        // ArrayList
         this.blurMatrices.clear();
         if (this.arrayList.getCurrentValue()) {
             e.getStack().pushPose();
             ModuleManager moduleManager = Naven.getInstance().getModuleManager();
             if (update || this.renderModules == null) {
-                this.renderModules = moduleManager.getModules().stream()
-                        .filter(module -> !module.isHidden())
-                        .collect(Collectors.toList());
-
+                this.renderModules = new ArrayList<>(moduleManager.getModules());
                 if (this.hideRenderModules.getCurrentValue()) {
                     this.renderModules.removeIf(modulex -> modulex.getCategory() == Category.RENDER);
                 }
+
                 this.renderModules.sort((o1, o2) -> {
                     float o1Width = font.getWidth(this.getModuleDisplayName(o1), (double)this.arrayListSize.getCurrentValue());
                     float o2Width = font.getWidth(this.getModuleDisplayName(o2), (double)this.arrayListSize.getCurrentValue());
@@ -233,27 +196,33 @@ public class HUD extends Module {
             float maxWidth = this.renderModules.isEmpty()
                     ? 0.0F
                     : font.getWidth(this.getModuleDisplayName(this.renderModules.get(0)), (double)this.arrayListSize.getCurrentValue());
-
             float arrayListX = this.arrayListDirection.isCurrentMode("Right")
-                    ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.posX.getCurrentValue()
-                    : 3.0F + this.posX.getCurrentValue();
-
-            float arrayListY = this.posY.getCurrentValue();
+                    ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.xOffset.getCurrentValue()
+                    : 3.0F + this.xOffset.getCurrentValue();
+            float arrayListY = this.yOffset.getCurrentValue();
             float height = 0.0F;
             double fontHeight = font.getHeight(true, (double)this.arrayListSize.getCurrentValue());
 
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+
             for (Module module : this.renderModules) {
                 SmoothAnimationTimer animation = module.getAnimation();
-                animation.target = module.isEnabled() ? 100.0F : 0.0F;
-                animation.update(true);
+                if (module.isEnabled()) {
+                    animation.target = 100.0F;
+                } else {
+                    animation.target = 0.0F;
+                }
 
+                animation.update(true);
                 if (animation.value > 0.0F) {
                     String displayName = this.getModuleDisplayName(module);
                     float stringWidth = font.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
                     float left = -stringWidth * (1.0F - animation.value / 100.0F);
                     float right = maxWidth - stringWidth * (animation.value / 100.0F);
                     float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
-
                     RenderUtils.fillBound(
                             e.getStack(),
                             arrayListX + innerX,
@@ -262,14 +231,16 @@ public class HUD extends Module {
                             (float)((double)(animation.value / 100.0F) * fontHeight),
                             backgroundColor
                     );
-
-                    this.blurMatrices.add(
-                            new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
-                    );
-
-                    int color = this.rainbow.getCurrentValue()
-                            ? RenderUtils.getRainbowOpaque((int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F)
-                            : -1;
+                    this.blurMatrices
+                            .add(
+                                    new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
+                            );
+                    int color = -1;
+                    if (this.rainbow.getCurrentValue()) {
+                        color = RenderUtils.getRainbowOpaque(
+                                (int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
+                        );
+                    }
 
                     float alpha = animation.value / 100.0F;
                     font.setAlpha(alpha);

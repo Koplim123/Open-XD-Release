@@ -58,7 +58,7 @@ public class Naven {
          // 确保图标字体被正确初始化
          if (Fonts.icons == null) {
              System.err.println("Icons font failed to load, attempting to reload");
-             Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("icon", 32, 59648, 59652, 512);
+             Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
          }
       } catch (IOException var2) {
          System.err.println("Failed to load fonts due to IOException");
@@ -98,6 +98,10 @@ public class Naven {
       this.fileManager = new FileManager();
       this.notificationManager = new NotificationManager();
       this.fileManager.load();
+      
+      // 在加载配置文件后加载用户选择的字体
+      LoadFontOnStart.loadUserSelectedFont();
+      
       this.moduleManager.getModule(ClickGUIModule.class).setEnabled(false);
       this.eventManager.register(getInstance());
       this.eventManager.register(this.eventWrapper);
@@ -106,7 +110,6 @@ public class Naven {
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       this.eventManager.register(this.notificationManager);
-      this.eventManager.register(new com.heypixel.heypixelmod.obsoverlay.IRCModules.IRCEventHandler());
       MinecraftForge.EVENT_BUS.register(this.eventWrapper);
       MinecraftForge.EVENT_BUS.register(this);
    }
@@ -197,7 +200,7 @@ public class Naven {
             }
             
             if (Fonts.icons == null) {
-                Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("icon", 32, 59648, 59652, 512);
+                Fonts.icons = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer("PublicSans-Bold", 32, 59648, 59652, 512);
             }
         } catch (Exception e) {
             System.err.println("Failed to load fallback fonts");

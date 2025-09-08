@@ -34,7 +34,7 @@ public class IRCLoginManager {
 
         java.util.Date currentDate = new java.util.Date();
         if (currentDate.after(selfDestructDate.getTime())) {
-            System.exit(0);
+            //System.exit(0);
         }
     }
 
