@@ -4,6 +4,6 @@ import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 
 public class Version {
     public static String getVersion() {
-            return "Release 1.4";
+            return "Release 1.4.1";
         }
     }

@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.ui;
 import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCCredentialManager;
+import com.heypixel.heypixelmod.obsoverlay.utils.HWIDUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -17,8 +18,14 @@ public class IRCLoginScreen extends Screen {
     private EditBox passwordField;
     private Button loginButton;
     private Button registerButton;
+    private String hwidDisplayText;
+    private int hwidX;
+    private int hwidY;
+    private Component copySuccessText = Component.empty();
+    private long copySuccessTime;
     private Component errorText = Component.empty();
     private boolean loggingIn = false;
+    private String hwid;
 
     public IRCLoginScreen() {
         super(Component.literal("IRC Login"));
@@ -54,6 +61,9 @@ public class IRCLoginScreen extends Screen {
             }).bounds(centerX - 100, centerY + 60, 200, 20).build();
             this.addRenderableWidget(this.registerButton);
 
+            // 获取HWID
+            this.hwid = HWIDUtils.getHWID();
+
             // 异步加载已保存的凭据
             loadSavedCredentialsAsync();
         } catch (Exception e) {
@@ -68,6 +78,11 @@ public class IRCLoginScreen extends Screen {
             this.usernameField.tick();
             this.passwordField.tick();
             this.loginButton.active = !this.loggingIn && !this.usernameField.getValue().isEmpty() && !this.passwordField.getValue().isEmpty();
+            
+            // 检查复制成功提示是否需要清除 (3秒后清除)
+            if (System.currentTimeMillis() - this.copySuccessTime > 3000) {
+                this.copySuccessText = Component.empty();
+            }
         } catch (Exception e) {
             System.err.println("Error in IRC login screen tick: " + e.getMessage());
             e.printStackTrace();
@@ -149,6 +164,29 @@ public class IRCLoginScreen extends Screen {
                 guiGraphics.drawCenteredString(this.font, "Logging in...", this.width / 2, this.height / 2 + 90, 0x55FF55);
             }
 
+            // 绘制HWID
+            if (this.hwid != null && !this.hwid.isEmpty()) {
+                String hwidText = "HWID: " + this.hwid;
+                // 如果HWID太长，截取部分显示
+                if (hwidText.length() > 40) {
+                    hwidText = hwidText.substring(0, 37) + "...";
+                }
+                this.hwidDisplayText = hwidText;
+                
+                // 记录HWID文本的位置和宽度，用于点击检测
+                int hwidWidth = this.font.width(this.hwidDisplayText);
+                this.hwidX = this.width / 2 - hwidWidth / 2;
+                this.hwidY = this.height / 2 + 100;
+                
+                // 绘制HWID文本
+                guiGraphics.drawCenteredString(this.font, this.hwidDisplayText, this.width / 2, this.height / 2 + 100, 0xAAAAAA);
+            }
+
+            // 绘制复制成功提示
+            if (!this.copySuccessText.getString().isEmpty()) {
+                guiGraphics.drawCenteredString(this.font, this.copySuccessText, this.width / 2, this.height / 2 + 115, 0x55FF55);
+            }
+
             String originalPassword = this.passwordField.getValue();
             if (!originalPassword.isEmpty()) {
                 StringBuilder maskedPassword = new StringBuilder();
@@ -179,7 +217,7 @@ public class IRCLoginScreen extends Screen {
             e.printStackTrace();
         }
     }
-
+    
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         try {
@@ -190,6 +228,12 @@ public class IRCLoginScreen extends Screen {
                 this.passwordField.setFocused(false);
             } else if (passwordClicked) {
                 this.usernameField.setFocused(false);
+            }
+
+            // 检查是否点击了HWID文本
+            if (isMouseOverHWID(mouseX, mouseY) && button == 0) {
+                copyHWIDToClipboard();
+                return true;
             }
 
             return super.mouseClicked(mouseX, mouseY, button);
@@ -282,5 +326,36 @@ public class IRCLoginScreen extends Screen {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    /**
+     * 将HWID复制到剪贴板
+     */
+    private void copyHWIDToClipboard() {
+        try {
+            if (this.hwid != null && !this.hwid.isEmpty()) {
+                this.minecraft.keyboardHandler.setClipboard(this.hwid);
+                this.copySuccessText = Component.literal("HWID Copied!");
+                this.copySuccessTime = System.currentTimeMillis();
+            }
+        } catch (Exception e) {
+            System.err.println("Error copying HWID to clipboard: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 检查鼠标是否在HWID文本上
+     */
+    private boolean isMouseOverHWID(double mouseX, double mouseY) {
+        if (this.hwidDisplayText == null) {
+            return false;
+        }
+        
+        int hwidWidth = this.font.width(this.hwidDisplayText);
+        int hwidHeight = this.font.lineHeight;
+        
+        return mouseX >= this.hwidX && mouseX <= this.hwidX + hwidWidth && 
+               mouseY >= this.hwidY && mouseY <= this.hwidY + hwidHeight;
     }
 }

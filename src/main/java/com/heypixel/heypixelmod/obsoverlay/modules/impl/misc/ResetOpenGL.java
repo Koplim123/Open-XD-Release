@@ -18,5 +18,6 @@ public class ResetOpenGL extends Module {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        this.toggle();
     }
 }

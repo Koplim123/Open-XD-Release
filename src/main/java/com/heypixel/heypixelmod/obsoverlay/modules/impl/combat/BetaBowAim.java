@@ -126,10 +126,23 @@ public class BetaBowAim extends Module {
         Vector2f screenPos = ProjectionUtils.project(entityPos.x, entityPos.y, entityPos.z, 1.0F);
         if (screenPos.x != Float.MAX_VALUE && screenPos.y != Float.MAX_VALUE) {
             String text = "AimTarget";
-            float x = screenPos.x - Fonts.harmony.getWidth(text, 0.5) / 2;
-            float y = screenPos.y;
-
-            Fonts.harmony.render(stack, text, x, y, Color.WHITE, true, 0.5);
+            float textWidth = Fonts.harmony.getWidth(text, 0.5);
+            float textHeight = Fonts.harmony.getHeight(text, 0.5);
+            float padding = 4.0F;
+            float cornerRadius = 6.0F;
+            
+            float bgX = screenPos.x - textWidth / 2 - padding;
+            float bgY = screenPos.y - padding;
+            float bgWidth = textWidth + padding * 2;
+            float bgHeight = textHeight + padding * 2;
+            
+            // 绘制带圆角的背景
+            RenderUtils.drawRoundedRect(stack, bgX, bgY, bgWidth, bgHeight, cornerRadius, new Color(0, 0, 0, 120).getRGB());
+            
+            // 绘制文本
+            float textX = screenPos.x - textWidth / 2;
+            float textY = screenPos.y;
+            Fonts.harmony.render(stack, text, textX, textY, Color.WHITE, true, 0.5);
         }
     }
 

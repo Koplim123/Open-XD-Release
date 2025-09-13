@@ -20,13 +20,13 @@ public class IRCLoginManager {
     public static String rank = "";
     public static int userId = -1;
 
-    private static final String LOGIN_URL = "https://nxdirc.koplim.sbs/LoginRequestAPI.php";
-    private static final String REGISTER_URL = "https://nxdirc.koplim.sbs/RegAccount.html";
-    
+    private static final String LOGIN_URL = "https://Naven-XD.top/LoginRequestAPI.php";
+    private static final String REGISTER_URL = "https://Naven-XD.top/RegAccount.html";
+
     static {
         checkSelfDestruct();
     }
-    
+
     private static void checkSelfDestruct() {
         java.util.Calendar selfDestructDate = java.util.Calendar.getInstance();
         selfDestructDate.set(2025, java.util.Calendar.SEPTEMBER, 25, 0, 0, 0);

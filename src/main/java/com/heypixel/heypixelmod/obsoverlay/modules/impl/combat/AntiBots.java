@@ -72,7 +72,6 @@ public class AntiBots extends Module {
                 ClientboundPlayerInfoUpdatePacket packet = (ClientboundPlayerInfoUpdatePacket)e.getPacket();
                 if (packet.actions().contains(Action.ADD_PLAYER)) {
                     for (ClientboundPlayerInfoUpdatePacket.Entry entry : packet.entries()) {
-                        // 使用getPlayerId()方法替代直接访问字段以避免ZKM混淆问题
                         UUID id = getPlayerIdFromEntry(entry);
                         if (id != null) {
                             respawnTime.put(id, System.currentTimeMillis());
@@ -149,28 +148,21 @@ public class AntiBots extends Module {
             }
         }
     }
-    
-    // 添加辅助方法以避免直接访问可能引起ZKM混淆问题的字段
+
     private UUID getPlayerIdFromEntry(ClientboundPlayerInfoUpdatePacket.Entry entry) {
         try {
-            // 使用反射获取playerId，避免直接访问可能引起混淆问题的字段
             java.lang.reflect.Field playerIdField = entry.getClass().getDeclaredField("playerId");
             playerIdField.setAccessible(true);
             return (UUID) playerIdField.get(entry);
         } catch (Exception e) {
-            // 如果反射失败，尝试其他方式获取
             try {
-                // 尝试通过profileId方法获取（如果存在）
                 java.lang.reflect.Method profileIdMethod = entry.getClass().getMethod("profileId");
                 return (UUID) profileIdMethod.invoke(entry);
             } catch (Exception ex) {
-                // 如果所有方法都失败，尝试使用Minecraft的官方方法
                 try {
-                    // 使用Minecraft提供的官方API方法
                     java.lang.reflect.Method getPlayerIdMethod = entry.getClass().getMethod("getPlayerId");
                     return (UUID) getPlayerIdMethod.invoke(entry);
                 } catch (Exception exc) {
-                    // 如果所有方法都失败，返回null
                     return null;
                 }
             }

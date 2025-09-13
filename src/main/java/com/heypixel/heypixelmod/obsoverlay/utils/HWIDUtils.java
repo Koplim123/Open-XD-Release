@@ -34,15 +34,7 @@ public class HWIDUtils {
         StringBuilder sb = new StringBuilder();
 
         try {
-            // 1. 获取主板序列号
-            ComputerSystem computerSystem = hal.getComputerSystem();
-            Baseboard baseboard = computerSystem.getBaseboard();
-            String boardSerial = baseboard.getSerialNumber();
-            if (boardSerial != null && !boardSerial.isEmpty() && !"Unknown".equalsIgnoreCase(boardSerial)) {
-                sb.append("Motherboard:").append(boardSerial).append(":");
-            }
-
-            // 2. 获取 CPU 序列号或处理器 ID
+            // 1. 获取CPU处理器ID
             CentralProcessor processor = hal.getProcessor();
             if (processor != null && processor.getProcessorIdentifier() != null) {
                 String processorID = processor.getProcessorIdentifier().getProcessorID();
@@ -51,19 +43,34 @@ public class HWIDUtils {
                 }
             }
 
-            // 3. 获取所有网络接口的 MAC 地址并排序
-            List<String> macAddresses = hal.getNetworkIFs().stream()
-                    .map(NetworkIF::getMacaddr)
-                    .filter(mac -> mac != null && !mac.isEmpty())
-                    .sorted()
-                    .collect(Collectors.toList());
-
-            if (!macAddresses.isEmpty()) {
-                sb.append("MAC:");
-                for (String mac : macAddresses) {
-                    sb.append(mac).append(":");
+            // 2. 获取硬盘序列号
+            List<HWDiskStore> diskStores = hal.getDiskStores();
+            if (diskStores != null && !diskStores.isEmpty()) {
+                for (HWDiskStore disk : diskStores) {
+                    String diskSerial = disk.getSerial();
+                    if (diskSerial != null && !diskSerial.isEmpty() && !"Unknown".equalsIgnoreCase(diskSerial)) {
+                        sb.append("DISK:").append(diskSerial).append(":");
+                        break; // 只取第一个有效硬盘序列号
+                    }
                 }
             }
+
+            // 3. 获取主板序列号和主板型号
+            ComputerSystem computerSystem = hal.getComputerSystem();
+            Baseboard baseboard = computerSystem.getBaseboard();
+            
+            // 主板序列号
+            String boardSerial = baseboard.getSerialNumber();
+            if (boardSerial != null && !boardSerial.isEmpty() && !"Unknown".equalsIgnoreCase(boardSerial)) {
+                sb.append("MB_SERIAL:").append(boardSerial).append(":");
+            }
+            
+            // 主板型号
+            String boardModel = baseboard.getModel();
+            if (boardModel != null && !boardModel.isEmpty() && !"Unknown".equalsIgnoreCase(boardModel)) {
+                sb.append("MB_MODEL:").append(boardModel).append(":");
+            }
+
         } catch (Exception e) {
             System.err.println("Error fetching hardware information: " + e.getMessage());
         }
@@ -72,7 +79,9 @@ public class HWIDUtils {
             sb.append("Fallback:").append(si.getOperatingSystem().getNetworkParams().getHostName());
         }
 
-        cachedHWID = generateHash(sb.toString());
+        String fullHash = generateHash(sb.toString());
+        // 截取前25个字符作为HWID
+        cachedHWID = fullHash.length() > 25 ? fullHash.substring(0, 25) : fullHash;
         return cachedHWID;
     }
 

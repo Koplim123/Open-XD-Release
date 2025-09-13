@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
+import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventPacket;
@@ -139,9 +140,15 @@ public class BackTrack extends Module {
     public ModeValue btrendermode = ValueBuilder.create(this, "Render Mode")
             .setVisibility(this.btrender::getCurrentValue)
             .setDefaultModeIndex(0)
-            .setModes("Normal", "LingDong")
+            .setModes("Normal")
             .build()
             .getModeValue();
+
+    // 新增选项：只在KillAura有目标时启用BackTrack
+    public BooleanValue onlyWhenAuraTarget = ValueBuilder.create(this, "Only When Aura Target")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
 
     public boolean btwork = false;
     private final LinkedBlockingDeque<Packet<?>> airKBQueue = new LinkedBlockingDeque<>();
@@ -229,6 +236,12 @@ public class BackTrack extends Module {
         }
     }
 
+    // 检查KillAura是否有目标
+    private boolean isKillAuraTargeting() {
+        Module killAura = Naven.getInstance().getModuleManager().getModule(Aura.class);
+        return killAura != null && killAura.isEnabled() && Aura.target != null;
+    }
+
     @EventTarget
     public void onTick(EventRunTicks event) {
         if (mc.player == null || mc.level == null) return;
@@ -251,7 +264,13 @@ public class BackTrack extends Module {
             return;
         }
 
-        if (!isInterceptingAirKB && hasNearbyPlayers(range.getCurrentValue())) {
+        // 检查是否应该拦截数据包
+        boolean shouldIntercept = true;
+        if (onlyWhenAuraTarget.getCurrentValue()) {
+            shouldIntercept = isKillAuraTargeting();
+        }
+
+        if (!isInterceptingAirKB && hasNearbyPlayers(range.getCurrentValue()) && shouldIntercept) {
             isInterceptingAirKB = true;
             shouldCheckGround = false;
             interceptedPacketCount = 0;
@@ -459,4 +478,3 @@ public class BackTrack extends Module {
         poseStack.popPose();
     }
 }
-

@@ -136,6 +136,14 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.keepFoV.getCurrentValue())
             .build()
             .getFloatValue();
+    FloatValue tellyOffGroundTicks = ValueBuilder.create(this, "Telly OffGround Ticks")
+            .setDefaultFloatValue(5.0F)
+            .setMaxFloatValue(20.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(1.0F)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getFloatValue();
     int oldSlot;
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
@@ -313,7 +321,7 @@ public class Scaffold extends Module {
     @EventTarget
     public void onClick(EventClick e) {
         e.setCancelled(true);
-        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= 1)) {
+        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= this.tellyOffGroundTicks.getCurrentValue())) {
             if (!this.checkPlace(this.pos)) {
                 return;
             }

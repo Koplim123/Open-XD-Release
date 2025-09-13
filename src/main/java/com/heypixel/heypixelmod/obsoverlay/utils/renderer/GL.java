@@ -11,6 +11,8 @@ import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.KHRDebug;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -29,6 +31,7 @@ public class GL {
    public static int CURRENT_IBO;
    private static int prevIbo;
    private static boolean changeBufferRenderer = true;
+   private static boolean errorCallbackRegistered = false;
 
    public static int genVertexArray() {
       return GlStateManager._glGenVertexArrays();
@@ -323,5 +326,103 @@ public class GL {
          return null;
       }
       return null;
+   }
+
+   /**
+    * 注册OpenGL错误回调函数，当发生OpenGL错误时自动重置OpenGL状态
+    */
+   public static void registerErrorCallback() {
+      if (!errorCallbackRegistered) {
+         try {
+            if (GL43.glGetInteger(GL43.GL_CONTEXT_FLAGS) == GL43.GL_CONTEXT_FLAG_DEBUG_BIT) {
+               KHRDebug.glDebugMessageCallback((source, type, id, severity, length, message, userParam) -> {
+                  if (type == GL43.GL_DEBUG_TYPE_ERROR) {
+                     System.err.println("OpenGL Error: " + message);
+                     resetOpenGLState();
+                  }
+               }, 0);
+               GL32C.glEnable(KHRDebug.GL_DEBUG_OUTPUT);
+               GL32C.glEnable(KHRDebug.GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            }
+            errorCallbackRegistered = true;
+         } catch (Exception e) {
+            System.err.println("Failed to register OpenGL debug callback: " + e.getMessage());
+         }
+      }
+   }
+
+   /**
+    * 检查OpenGL错误并在发现错误时重置状态
+    */
+   public static void checkAndResetOnError() {
+      int error;
+      boolean hasError = false;
+      while ((error = GlStateManager._getError()) != 0) {
+         System.err.println("OpenGL Error detected: " + getErrorString(error));
+         hasError = true;
+      }
+      
+      if (hasError) {
+         resetOpenGLState();
+      }
+   }
+
+   /**
+    * 重置OpenGL状态到安全状态
+    */
+   public static void resetOpenGLState() {
+      System.err.println("Resetting OpenGL state due to error...");
+      
+      try {
+         // 重置绑定状态
+         GlStateManager._glBindVertexArray(0);
+         GlStateManager._glBindBuffer(34962, 0); // GL_ARRAY_BUFFER
+         GlStateManager._glBindBuffer(34963, 0); // GL_ELEMENT_ARRAY_BUFFER
+         GlStateManager._glBindFramebuffer(36160, 0); // GL_FRAMEBUFFER
+         
+         // 重置纹理状态
+         for (int i = 0; i < 8; i++) {
+            GlStateManager._activeTexture(33984 + i);
+            GlStateManager._bindTexture(0);
+         }
+         GlStateManager._activeTexture(33984);
+         
+         // 重置着色器程序
+         GlStateManager._glUseProgram(0);
+         
+         // 重置功能状态
+         disableDepth();
+         disableBlend();
+         disableCull();
+         disableScissorTest();
+         disableLineSmooth();
+         
+         // 重置视口
+         Minecraft mc = Minecraft.getInstance();
+         if (mc.getWindow() != null) {
+            GlStateManager._viewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
+         }
+         
+         System.err.println("OpenGL state reset completed");
+      } catch (Exception e) {
+         System.err.println("Error during OpenGL state reset: " + e.getMessage());
+      }
+   }
+
+   /**
+    * 将OpenGL错误代码转换为可读字符串
+    */
+   private static String getErrorString(int error) {
+      switch (error) {
+         case 0: return "GL_NO_ERROR";
+         case 0x0500: return "GL_INVALID_ENUM";
+         case 0x0501: return "GL_INVALID_VALUE";
+         case 0x0502: return "GL_INVALID_OPERATION";
+         case 0x0503: return "GL_STACK_OVERFLOW";
+         case 0x0504: return "GL_STACK_UNDERFLOW";
+         case 0x0505: return "GL_OUT_OF_MEMORY";
+         case 0x0506: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+         default: return "Unknown error: " + error;
+      }
    }
 }
