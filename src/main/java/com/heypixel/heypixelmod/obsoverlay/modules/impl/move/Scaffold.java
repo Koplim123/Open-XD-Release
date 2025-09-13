@@ -4,20 +4,12 @@ import com.heypixel.heypixelmod.obsoverlay.annotations.FlowExclude;
 import com.heypixel.heypixelmod.obsoverlay.annotations.ParameterObfuscationExclude;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateFoV;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdateHeldItem;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
-import com.heypixel.heypixelmod.obsoverlay.utils.FallingPlayer;
-import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.MathUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.MoveUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.PlayerUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.RayTraceUtils;
-import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
+import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
@@ -47,6 +39,10 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import org.apache.commons.lang3.RandomUtils;
+
+import java.awt.*;
+import java.util.Arrays;
+import java.util.List;
 
 @ModuleInfo(
         name = "Scaffold",
@@ -115,6 +111,7 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.mode.isCurrentMode("Normal"))
             .build()
             .getBooleanValue();
+    public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
     public BooleanValue sneak = ValueBuilder.create(this, "Sneak").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue snap = ValueBuilder.create(this, "Snap")
             .setDefaultBooleanValue(true)
@@ -149,6 +146,8 @@ public class Scaffold extends Module {
     private int lastSneakTicks;
     public int baseY = -1;
 
+    private float blockCounterWidth;
+    private float blockCounterHeight;
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
             return false;
@@ -454,6 +453,62 @@ public class Scaffold extends Module {
         }
 
         return new Vec3(x, y, z);
+    }
+
+    @EventTarget
+    public void onShader(EventShader e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
+            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+            float y = screenHeight / 2.0F + 15.0F;
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+        }
+    }
+
+    @EventTarget
+    public void onRender(EventRender2D e) {
+        if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
+            int blockCount = 0;
+            for (ItemStack itemStack : mc.player.getInventory().items) {
+                if (itemStack.getItem() instanceof BlockItem) {
+                    blockCount += itemStack.getCount();
+                }
+            }
+            String text = "Blocks: " + blockCount;
+            double backgroundScale = 0.4;
+            double textScale = 0.35;
+
+            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
+            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
+
+            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+
+            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+            float backgroundY = screenHeight / 2.0F + 15.0F;
+
+            float textWidth = Fonts.opensans.getWidth(text, textScale);
+            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
+
+            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
+            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
+
+            e.getStack().pushPose();
+
+            StencilUtils.write(false);
+            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            StencilUtils.erase(true);
+            int headerColor = new Color(150, 45, 45, 255).getRGB();
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
+
+            int bodyColor = new Color(0, 0, 0, 120).getRGB();
+            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
+
+            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
+            StencilUtils.dispose();
+            e.getStack().popPose();
+        }
     }
 
     public static record BlockPosWithFacing(BlockPos position, Direction facing) {
