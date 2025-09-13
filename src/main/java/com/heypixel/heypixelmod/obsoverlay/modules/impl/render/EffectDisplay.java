@@ -27,11 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 @ModuleInfo(
-   name = "EffectDisplay",
-   description = "Displays potion effects on the HUD",
-   category = Category.RENDER
+        name = "EffectDisplay",
+        description = "Displays potion effects on the HUD",
+        category = Category.RENDER
 )
 public class EffectDisplay extends Module {
    private List<Runnable> list;
@@ -39,6 +40,7 @@ public class EffectDisplay extends Module {
    private final Color headerColor = new Color(150, 45, 45, 255);
    private final Color bodyColor = new Color(0, 0, 0, 50);
    private final List<Vector4f> blurMatrices = new ArrayList<>();
+   private static final Pattern CJK_CHAR_PATTERN = Pattern.compile("[\\u4e00-\\u9fa5]");
 
    @EventTarget(4)
    public void renderIcons(EventRender2D e) {
@@ -50,6 +52,14 @@ public class EffectDisplay extends Module {
       for (Vector4f matrix : this.blurMatrices) {
          RenderUtils.drawRoundedRect(e.getStack(), matrix.x(), matrix.y(), matrix.z(), matrix.w(), 5.0F, 1073741824);
       }
+   }
+
+   private float getCorrectedWidth(CustomTextRenderer renderer, String text, double scale) {
+      float baseWidth = renderer.getWidth(text, scale);
+      if (CJK_CHAR_PATTERN.matcher(text).find()) {
+         return baseWidth * 1.6F;
+      }
+      return baseWidth;
    }
 
    @EventTarget
@@ -82,7 +92,10 @@ public class EffectDisplay extends Module {
          }
 
          CustomTextRenderer harmony = Fonts.harmony;
-         effectInfo.width = 25.0F + harmony.getWidth(text, 0.3) + 20.0F;
+
+         float textWidth = getCorrectedWidth(harmony, text, 0.3);
+         effectInfo.width = 25.0F + textWidth + 20.0F;
+
          float x = effectInfo.xTimer.value;
          float y = effectInfo.yTimer.value;
          effectInfo.shouldDisappear = !mc.player.hasEffect(entry.getKey());
