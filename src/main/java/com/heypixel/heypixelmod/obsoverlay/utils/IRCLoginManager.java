@@ -19,9 +19,11 @@ public class IRCLoginManager {
     public static String username = "";
     public static String rank = "";
     public static int userId = -1;
+    public static String lastError = ""; // 添加错误信息字段
 
     private static final String LOGIN_URL = "https://Naven-XD.top/LoginRequestAPI.php";
     private static final String REGISTER_URL = "https://Naven-XD.top/RegAccount.html";
+    private static final String HWID_URL = "https://naven-xd.top/GetHwid.php";
 
     static {
         checkSelfDestruct();
@@ -75,7 +77,60 @@ public class IRCLoginManager {
                     userId = data.has("user_id") ? data.get("user_id").getAsInt() : -1;
                     username = data.has("username") ? data.get("username").getAsString() : "";
                     rank = data.has("Rank") ? data.get("Rank").getAsString() : "";
-                    return true;
+                    
+                    // 登录成功后验证HWID
+                    return verifyHWID(user);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private static boolean verifyHWID(String username) {
+        try {
+            URL url = new URL(HWID_URL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            connection.setRequestProperty("Content-Type", "application/json; utf-8");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setDoOutput(true);
+
+            JsonObject jsonPayload = new JsonObject();
+            jsonPayload.addProperty("username", username);
+
+            try (DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream())) {
+                outputStream.write(jsonPayload.toString().getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                JsonObject responseObject = JsonParser.parseString(response.toString()).getAsJsonObject();
+                int code = responseObject.get("code").getAsInt();
+
+                if (code == 1) {
+                    JsonObject data = responseObject.getAsJsonObject("data");
+                    String serverHWID = data.has("hwid") ? data.get("hwid").getAsString() : "";
+                    
+                    // 比较本地HWID与服务器HWID
+                    String localHWID = HWIDUtils.getHWID();
+                    if (serverHWID.equals(localHWID)) {
+                        return true;
+                    } else {
+                        lastError = "HWID Verify Wrong!Please Check your HWID bind!";
+                        return false;
+                    }
                 }
             }
         } catch (Exception e) {

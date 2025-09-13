@@ -24,6 +24,7 @@ public class IRCLoginScreen extends Screen {
     private Component copySuccessText = Component.empty();
     private long copySuccessTime;
     private Component errorText = Component.empty();
+    private Component hwidErrorText = Component.empty();
     private boolean loggingIn = false;
     private String hwid;
 
@@ -62,7 +63,13 @@ public class IRCLoginScreen extends Screen {
             this.addRenderableWidget(this.registerButton);
 
             // 获取HWID
-            this.hwid = HWIDUtils.getHWID();
+            try {
+                this.hwid = HWIDUtils.getHWID();
+            } catch (Exception e) {
+                this.hwidErrorText = Component.literal("HWID Error: " + e.getMessage());
+                System.err.println("Error getting HWID: " + e.getMessage());
+                e.printStackTrace();
+            }
 
             // 异步加载已保存的凭据
             loadSavedCredentialsAsync();
@@ -110,7 +117,7 @@ public class IRCLoginScreen extends Screen {
                                 this.onClose();
                             } else {
                                 // 登录失败，显示错误信息
-                                this.errorText = Component.literal("Login failed. Please check your username and password.");
+                                this.errorText = Component.literal("Login failed. Please check your username and or HWID.");
                                 this.loggingIn = false;
                                 this.loginButton.active = true;
                                 //this.onClose();
@@ -164,6 +171,11 @@ public class IRCLoginScreen extends Screen {
                 guiGraphics.drawCenteredString(this.font, "Logging in...", this.width / 2, this.height / 2 + 90, 0x55FF55);
             }
 
+            // 绘制HWID错误信息
+            if (!this.hwidErrorText.getString().isEmpty()) {
+                guiGraphics.drawCenteredString(this.font, this.hwidErrorText, this.width / 2, this.height / 2 + 80, 0xFF5555);
+            }
+            
             // 绘制HWID
             if (this.hwid != null && !this.hwid.isEmpty()) {
                 String hwidText = "HWID: " + this.hwid;
@@ -176,10 +188,10 @@ public class IRCLoginScreen extends Screen {
                 // 记录HWID文本的位置和宽度，用于点击检测
                 int hwidWidth = this.font.width(this.hwidDisplayText);
                 this.hwidX = this.width / 2 - hwidWidth / 2;
-                this.hwidY = this.height / 2 + 100;
+                this.hwidY = this.height / 2 + (this.hwidErrorText.getString().isEmpty() ? 100 : 120);
                 
                 // 绘制HWID文本
-                guiGraphics.drawCenteredString(this.font, this.hwidDisplayText, this.width / 2, this.height / 2 + 100, 0xAAAAAA);
+                guiGraphics.drawCenteredString(this.font, this.hwidDisplayText, this.width / 2, this.hwidErrorText.getString().isEmpty() ? this.height / 2 + 100 : this.height / 2 + 120, 0xAAAAAA);
             }
 
             // 绘制复制成功提示

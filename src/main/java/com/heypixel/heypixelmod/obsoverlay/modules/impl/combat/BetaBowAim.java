@@ -127,7 +127,7 @@ public class BetaBowAim extends Module {
         if (screenPos.x != Float.MAX_VALUE && screenPos.y != Float.MAX_VALUE) {
             String text = "AimTarget";
             float textWidth = Fonts.harmony.getWidth(text, 0.5);
-            float textHeight = Fonts.harmony.getHeight(text, 0.5);
+            float textHeight = (float) Fonts.harmony.getHeight(false, 0.5);
             float padding = 4.0F;
             float cornerRadius = 6.0F;
             

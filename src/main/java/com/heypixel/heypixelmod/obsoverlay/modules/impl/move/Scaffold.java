@@ -105,7 +105,7 @@ public class Scaffold extends Module {
     public Vector2f rots = new Vector2f();
     public Vector2f lastRots = new Vector2f();
     private int offGroundTicks = 0;
-    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge", "Keep Y").build().getModeValue();
+    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge").build().getModeValue();
     public BooleanValue eagle = ValueBuilder.create(this, "Eagle")
             .setDefaultBooleanValue(true)
             .setVisibility(() -> this.mode.isCurrentMode("Normal"))
@@ -133,11 +133,11 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.keepFoV.getCurrentValue())
             .build()
             .getFloatValue();
-    FloatValue tellyOffGroundTicks = ValueBuilder.create(this, "Telly OffGround Ticks")
+    FloatValue tellyOffGroundTicks = ValueBuilder.create(this, "OffGround Ticks")
             .setDefaultFloatValue(5.0F)
-            .setMaxFloatValue(20.0F)
+            .setMaxFloatValue(10.0F)
             .setMinFloatValue(0.0F)
-            .setFloatStep(1.0F)
+            .setFloatStep(0.25F)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
             .build()
             .getFloatValue();
@@ -286,8 +286,6 @@ public class Scaffold extends Module {
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
                 }
-            } else if (this.mode.isCurrentMode("Keep Y")) {
-                mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
             } else {
                 if (this.eagle.getCurrentValue()) {
                     mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));

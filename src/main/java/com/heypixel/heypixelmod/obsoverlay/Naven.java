@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay;
 
+import com.google.gson.JsonObject;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventManager;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
@@ -7,6 +8,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShutdown;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
+import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveives;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
 import com.heypixel.heypixelmod.obsoverlay.ui.IRCLoginScreen;
@@ -45,6 +47,8 @@ public class Naven {
    public static float TICK_TIMER = 1.0F;
    public static Queue<Runnable> skipTasks = new ConcurrentLinkedQueue<>();
    private static boolean ircScreenDisplayed = false; // 添加一个标志，防止重复显示
+   private static ConnectAndReveives ircClient; // IRC客户端实例
+   private static boolean ircConnected = false; // IRC连接状态标志
 
    private Naven() {
       System.out.println("Naven Init");
@@ -129,12 +133,80 @@ public class Naven {
          if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
             Minecraft.getInstance().setScreen(new IRCLoginScreen());
             ircScreenDisplayed = true;
+         } else if (!ircConnected) {
+            // 玩家已登录IRC但未连接IRC服务器，自动连接
+            connectToIRC();
+            ircConnected = true;
          }
       }
+   }
+   
+   /**
+    * 连接到IRC服务器喵~
+    */
+   private static void connectToIRC() {
+      try {
+         System.out.println("正在自动连接到IRC服务器... 喵~");
+         ircClient = new ConnectAndReveives();
+         
+         // 设置消息处理器
+         ircClient.setMessageHandler(new ConnectAndReveives.MessageHandler() {
+            @Override
+            public void onMessage(String type, JsonObject data) {
+               // 处理接收到的消息
+               System.out.println("收到IRC消息: " + type + " - " + data + " 喵~");
+            }
+            
+            @Override
+            public void onConnected() {
+               System.out.println("IRC连接成功喵~");
+               // 连接成功后进行认证
+               ircClient.authenticate();
+            }
+            
+            @Override
+            public void onDisconnected() {
+               System.out.println("IRC连接断开喵~");
+               ircConnected = false;
+            }
+            
+            @Override
+            public void onError(String error) {
+               System.err.println("IRC连接错误: " + error + " 喵~");
+               ircConnected = false;
+            }
+         });
+         
+         // 连接到服务器
+         ircClient.connect();
+         
+      } catch (Exception e) {
+         System.err.println("连接IRC服务器时出错: " + e.getMessage() + " 喵~");
+         ircConnected = false;
+      }
+   }
+   
+   /**
+    * 获取IRC客户端实例喵~
+    */
+   public static ConnectAndReveives getIrcClient() {
+      return ircClient;
+   }
+   
+   /**
+    * 检查IRC是否已连接喵~
+    */
+   public static boolean isIrcConnected() {
+      return ircConnected && ircClient != null;
    }
 
    @EventTarget
    public void onShutdown(EventShutdown e) {
+      // 关闭时断开IRC连接
+      if (ircClient != null) {
+         ircClient.disconnect();
+         System.out.println("IRC连接已关闭喵~");
+      }
       this.fileManager.save();
       LogUtils.close();
    }

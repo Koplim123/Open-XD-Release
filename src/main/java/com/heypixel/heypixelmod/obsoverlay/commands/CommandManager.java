@@ -32,6 +32,7 @@ public class CommandManager {
       this.registerCommand(new CommandHelp());
       this.registerCommand(new CommandProxy());
       this.registerCommand(new CommandHide());
+      this.registerCommand(new CommandIRC());
    }
 
    private void registerCommand(Command command) {

@@ -21,6 +21,7 @@ public class FriendManager {
       friends.add(player.getName().getString());
    }
 
+
    public static void addFriend(String name) {
       friends.add(name);
    }
