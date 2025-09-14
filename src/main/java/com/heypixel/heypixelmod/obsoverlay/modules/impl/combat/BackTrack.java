@@ -444,7 +444,6 @@ public class BackTrack extends Module {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        // Mode: Normal
         if (btrendermode.isCurrentMode("Normal")) {
             int screenWidth = mc.getWindow().getGuiScaledWidth();
             int screenHeight = mc.getWindow().getGuiScaledHeight();
@@ -486,28 +485,21 @@ public class BackTrack extends Module {
             );
             poseStack.popPose();
         }
-        // Mode: Naven (Blink Style)
         else if (btrendermode.isCurrentMode("Naven")) {
-            // Update progress target and animation
             this.navenProgress.target = Mth.clamp((float) this.getPacketCount() / this.maxpacket.getCurrentValue() * 100.0F, 0.0F, 100.0F);
             this.navenProgress.update(true);
 
-            // Calculate bar position
             int barX = mc.getWindow().getGuiScaledWidth() / 2 - 50;
             int barY = mc.getWindow().getGuiScaledHeight() / 2 + 15;
             float barWidth = 100.0F;
 
-            // --- Text rendering logic (from Normal mode) ---
             String trackingText = "Tracking...";
             float textScale = 0.35f;
             float textWidth = Fonts.harmony.getWidth(trackingText, textScale);
             float textHeight = (float)Fonts.harmony.getHeight(false, textScale);
 
-            // Calculate text position to be above the bar
             float textX = barX + (barWidth - textWidth) / 2.0f;
-            float textY = barY - textHeight - 2; // 2 pixels spacing above the bar
-
-            // Render the text
+            float textY = barY - textHeight - 2;
             Fonts.harmony.render(
                     guiGraphics.pose(),
                     trackingText,
@@ -517,9 +509,6 @@ public class BackTrack extends Module {
                     false,
                     textScale
             );
-            // --- End of text rendering logic ---
-
-            // Render the progress bar
             RenderUtils.drawRoundedRect(guiGraphics.pose(), (float)barX, (float)barY, barWidth, 5.0F, 2.0F, Integer.MIN_VALUE);
             RenderUtils.drawRoundedRect(guiGraphics.pose(), (float)barX, (float)barY, this.navenProgress.value, 5.0F, 2.0F, navenMainColor);
         }
