@@ -12,6 +12,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
@@ -28,6 +29,7 @@ import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -140,7 +142,7 @@ public class BackTrack extends Module {
     public ModeValue btrendermode = ValueBuilder.create(this, "Render Mode")
             .setVisibility(this.btrender::getCurrentValue)
             .setDefaultModeIndex(0)
-            .setModes("Normal")
+            .setModes("Normal","Naven")
             .build()
             .getModeValue();
 
@@ -162,6 +164,7 @@ public class BackTrack extends Module {
     private final Map<Integer, TrackedPlayer> trackedEnemies = new ConcurrentHashMap<>();
 
 
+    // --- Normal Mode Fields ---
     private static final float PROGRESS_BAR_WIDTH = 200.0f;
     private static final float PROGRESS_BAR_HEIGHT = 10.0f;
     private static final float PROGRESS_BAR_Y_OFFSET = 65.0f;
@@ -169,6 +172,11 @@ public class BackTrack extends Module {
     private static final int PROGRESS_COLOR = 0xFF66CCFF;
     private static final int OVERFLOW_COLOR = 0xFFFF6B6B;
     private static final float CORNER_RADIUS = 5.0f;
+
+    // --- Naven (Blink) Mode Fields ---
+    private final SmoothAnimationTimer navenProgress = new SmoothAnimationTimer(0.0F, 0.2F);
+    private static final int navenMainColor = new Color(150, 45, 45, 255).getRGB();
+
 
     @Override
     public void onEnable() {
@@ -431,50 +439,89 @@ public class BackTrack extends Module {
 
     public void render(GuiGraphics guiGraphics) {
         if (!isInterceptingAirKB && !shouldCheckGround) return;
-        if (!btrendermode.isCurrentMode("Normal")) return;
         if (!btrender.getCurrentValue()) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-        float x = (screenWidth - PROGRESS_BAR_WIDTH) / 2.0f;
-        float y = screenHeight / 2.0f + PROGRESS_BAR_Y_OFFSET;
-        PoseStack poseStack = guiGraphics.pose();
-        poseStack.pushPose();
-        float maxPacketValue = Math.max(1.0f, maxpacket.getCurrentValue());
-        float progress = Math.min(1.0f, interceptedPacketCount / maxPacketValue);
-        float progressWidth = PROGRESS_BAR_WIDTH * progress;
-        RenderUtils.drawRoundedRect(poseStack, x, y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, BACKGROUND_COLOR);
-        if (progressWidth > 0) {
-            RenderUtils.drawRoundedRect(poseStack, x, y, progressWidth, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, PROGRESS_COLOR);
+        // Mode: Normal
+        if (btrendermode.isCurrentMode("Normal")) {
+            int screenWidth = mc.getWindow().getGuiScaledWidth();
+            int screenHeight = mc.getWindow().getGuiScaledHeight();
+            float x = (screenWidth - PROGRESS_BAR_WIDTH) / 2.0f;
+            float y = screenHeight / 2.0f + PROGRESS_BAR_Y_OFFSET;
+            PoseStack poseStack = guiGraphics.pose();
+            poseStack.pushPose();
+            float maxPacketValue = Math.max(1.0f, maxpacket.getCurrentValue());
+            float progress = Math.min(1.0f, interceptedPacketCount / maxPacketValue);
+            float progressWidth = PROGRESS_BAR_WIDTH * progress;
+            RenderUtils.drawRoundedRect(poseStack, x, y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, BACKGROUND_COLOR);
+            if (progressWidth > 0) {
+                RenderUtils.drawRoundedRect(poseStack, x, y, progressWidth, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, PROGRESS_COLOR);
+            }
+            if (OnGroundStop.getCurrentValue() && interceptedPacketCount > maxpacket.getCurrentValue()) {
+                float overflowProgress = (interceptedPacketCount - maxpacket.getCurrentValue()) / maxPacketValue;
+                float overflowWidth = Math.min(PROGRESS_BAR_WIDTH * overflowProgress, PROGRESS_BAR_WIDTH);
+                RenderUtils.drawRoundedRect(poseStack,
+                        x + PROGRESS_BAR_WIDTH - overflowWidth,
+                        y,
+                        overflowWidth,
+                        PROGRESS_BAR_HEIGHT,
+                        CORNER_RADIUS,
+                        OVERFLOW_COLOR);
+            }
+            String trackingText = "Tracking...";
+            float textScale = 0.35f;
+            float textWidth = Fonts.harmony.getWidth(trackingText, textScale);
+            float textX = x + (PROGRESS_BAR_WIDTH - textWidth) / 2.0f;
+            float textY = y + (PROGRESS_BAR_HEIGHT - (float)Fonts.harmony.getHeight(false, textScale)) / 2.0f;
+            Fonts.harmony.render(
+                    poseStack,
+                    trackingText,
+                    (double) textX,
+                    (double) textY,
+                    Color.WHITE,
+                    false,
+                    textScale
+            );
+            poseStack.popPose();
         }
-        if (OnGroundStop.getCurrentValue() && interceptedPacketCount > maxpacket.getCurrentValue()) {
-            float overflowProgress = (interceptedPacketCount - maxpacket.getCurrentValue()) / maxPacketValue;
-            float overflowWidth = Math.min(PROGRESS_BAR_WIDTH * overflowProgress, PROGRESS_BAR_WIDTH);
-            RenderUtils.drawRoundedRect(poseStack,
-                    x + PROGRESS_BAR_WIDTH - overflowWidth,
-                    y,
-                    overflowWidth,
-                    PROGRESS_BAR_HEIGHT,
-                    CORNER_RADIUS,
-                    OVERFLOW_COLOR);
+        // Mode: Naven (Blink Style)
+        else if (btrendermode.isCurrentMode("Naven")) {
+            // Update progress target and animation
+            this.navenProgress.target = Mth.clamp((float) this.getPacketCount() / this.maxpacket.getCurrentValue() * 100.0F, 0.0F, 100.0F);
+            this.navenProgress.update(true);
+
+            // Calculate bar position
+            int barX = mc.getWindow().getGuiScaledWidth() / 2 - 50;
+            int barY = mc.getWindow().getGuiScaledHeight() / 2 + 15;
+            float barWidth = 100.0F;
+
+            // --- Text rendering logic (from Normal mode) ---
+            String trackingText = "Tracking...";
+            float textScale = 0.35f;
+            float textWidth = Fonts.harmony.getWidth(trackingText, textScale);
+            float textHeight = (float)Fonts.harmony.getHeight(false, textScale);
+
+            // Calculate text position to be above the bar
+            float textX = barX + (barWidth - textWidth) / 2.0f;
+            float textY = barY - textHeight - 2; // 2 pixels spacing above the bar
+
+            // Render the text
+            Fonts.harmony.render(
+                    guiGraphics.pose(),
+                    trackingText,
+                    (double) textX,
+                    (double) textY,
+                    Color.WHITE,
+                    false,
+                    textScale
+            );
+            // --- End of text rendering logic ---
+
+            // Render the progress bar
+            RenderUtils.drawRoundedRect(guiGraphics.pose(), (float)barX, (float)barY, barWidth, 5.0F, 2.0F, Integer.MIN_VALUE);
+            RenderUtils.drawRoundedRect(guiGraphics.pose(), (float)barX, (float)barY, this.navenProgress.value, 5.0F, 2.0F, navenMainColor);
         }
-        String trackingText = "Tracking...";
-        float textScale = 0.35f;
-        float textWidth = Fonts.harmony.getWidth(trackingText, textScale);
-        float textX = x + (PROGRESS_BAR_WIDTH - textWidth) / 2.0f;
-        float textY = y + (PROGRESS_BAR_HEIGHT - (float)Fonts.harmony.getHeight(false, textScale)) / 2.0f;
-        Fonts.harmony.render(
-                poseStack,
-                trackingText,
-                (double) textX,
-                (double) textY,
-                Color.WHITE,
-                false,
-                textScale
-        );
-        poseStack.popPose();
     }
 }
