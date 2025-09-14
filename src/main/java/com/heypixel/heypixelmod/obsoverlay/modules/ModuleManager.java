@@ -39,6 +39,7 @@ public class ModuleManager {
       this.registerModule(
          new Aura(),
          new HUD(),
+         new AutoBan(),
          new Freecam(),
          new Velocity(),
          new NameTags(),
