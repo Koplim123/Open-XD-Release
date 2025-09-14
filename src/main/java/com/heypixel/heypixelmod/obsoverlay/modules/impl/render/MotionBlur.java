@@ -21,6 +21,7 @@ import java.io.IOException;
    description = "Make your game smoother.",
    category = Category.RENDER
 )
+@SuppressWarnings("deprecation")
 public class MotionBlur extends Module {
    public static MotionBlur instance;
    private final FloatValue strength = ValueBuilder.create(this, "Strength")

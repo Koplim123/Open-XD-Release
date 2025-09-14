@@ -1,6 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
-import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
+import com.heypixel.heypixelmod.obfuscation.JNICObf;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;

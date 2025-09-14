@@ -8,6 +8,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShutdown;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
+import com.heypixel.heypixelmod.obsoverlay.IRCModules.AutoConnectListener;
 import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveives;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
@@ -111,6 +112,7 @@ public class Naven {
       this.eventManager.register(this.eventWrapper);
       this.eventManager.register(new RotationManager());
       this.eventManager.register(new NetworkUtils());
+      this.eventManager.register(new AutoConnectListener()); // 注册IRC自动连接监听器
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       this.eventManager.register(this.notificationManager);

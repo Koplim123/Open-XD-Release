@@ -106,8 +106,6 @@ public class ModuleManager {
          new Animations(),
          new AttackEffect(),
          new Helper(),
-         new BallAura(),
-         new JumpCircle(),
          new FontSelect(),
          new LagBase(),
          new NoSlow(),

@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
+import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
@@ -42,7 +43,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
-
+@JNICObf
 @ModuleInfo(
         name = "BackTrack",
         description = "Stuck Network,but adversaries",

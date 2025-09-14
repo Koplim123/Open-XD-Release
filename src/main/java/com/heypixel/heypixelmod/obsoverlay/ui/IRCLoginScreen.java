@@ -1,6 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.ui;
 
-import com.heypixel.heypixelmod.obsoverlay.events.api.events.JNICObf;
+import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCCredentialManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.HWIDUtils;
@@ -113,8 +113,10 @@ public class IRCLoginScreen extends Screen {
                             if (success) {
                                 // 登录成功，保存凭据
                                 new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
-                                // 登录成功，关闭当前屏幕
-                                this.onClose();
+                                // 登录成功，跳转到Welcome界面
+                                this.minecraft.execute(() -> {
+                                    this.minecraft.setScreen(new Welcome());
+                                });
                             } else {
                                 // 登录失败，显示错误信息
                                 this.errorText = Component.literal("Login failed. Please check your username and or HWID.");

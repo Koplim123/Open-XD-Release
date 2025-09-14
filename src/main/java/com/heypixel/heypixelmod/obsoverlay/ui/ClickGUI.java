@@ -112,7 +112,7 @@ public class ClickGUI extends Screen {
     private TimeHelper valuesAlphaTimer = new TimeHelper();
 
     public ClickGUI() {
-        super(Component.nullToEmpty("Naven"));
+        super(Component.nullToEmpty("Naven-XD"));
     }
 
     public void onClose() {
@@ -313,15 +313,9 @@ public class ClickGUI extends Screen {
                     Fonts.opensans.setAlpha(yAnimation.value / 255.0F);
                 }
 
-                if (Fonts.icons != null) {
-                    Fonts.icons.render(stack, value.getIcon(), (double)(windowX + 8.0F + xAnimation.value), (double)(windowY + 41.0F + height), Color.WHITE, true, 0.4);
-                } else if (Fonts.opensans != null) {
-                    Fonts.opensans.render(stack, value.getIcon(), (double)(windowX + 8.0F + xAnimation.value), (double)(windowY + 41.0F + height), Color.WHITE, true, 0.4);
-                }
-
                 if (Fonts.opensans != null) {
                     Fonts.opensans.render(
-                            stack, value.getDisplayName(), (double)(windowX + 25.0F + xAnimation.value), (double)(windowY + 40.0F + height), Color.WHITE, true, 0.4
+                            stack, value.getDisplayName(), (double)(windowX + 8.0F + xAnimation.value), (double)(windowY + 40.0F + height), Color.WHITE, true, 0.4
                     );
                     Fonts.opensans.setAlpha(1.0F);
                 }
@@ -739,23 +733,6 @@ public class ClickGUI extends Screen {
                     0.4
             );
             opensans.setAlpha(1.0F);
-        }
-
-        if (this.selectedCategory != null) {
-            if (Fonts.icons != null) {
-                Fonts.icons.setAlpha(0.5F);
-                Fonts.icons
-                        .render(
-                                stack,
-                                FontIcons.RESIZE,
-                                (double) (windowX + this.widthAnimation.value - 10.0F),
-                                (double) (windowY + this.heightAnimation.value - 10.0F),
-                                Color.WHITE,
-                                false,
-                                0.3
-                        );
-                Fonts.icons.setAlpha(1.0F);
-            }
         }
 
         StencilUtils.dispose();

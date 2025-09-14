@@ -6,7 +6,6 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.FontLoader;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
-import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 
 @ModuleInfo(
@@ -20,18 +19,6 @@ public class FontSelect extends Module {
     private final ModeValue fontOption = ValueBuilder.create(this, "Font")
             .setModes(FontLoader.getAvailableFonts())
             .setDefaultModeIndex(0)
-            .build()
-            .getModeValue();
-    
-    private final BooleanValue otherCJKFontsRender = ValueBuilder.create(this, "OtherCJKFontsRender")
-            .setDefaultBooleanValue(false)
-            .build()
-            .getBooleanValue();
-    
-    private final ModeValue cjkFontOption = ValueBuilder.create(this, "CJK Font")
-            .setModes(FontLoader.getAvailableFonts())
-            .setDefaultModeIndex(0)
-            .setVisibility(() -> otherCJKFontsRender.getCurrentValue())
             .build()
             .getModeValue();
 
@@ -60,7 +47,7 @@ public class FontSelect extends Module {
             updateFont();
         }
     }
-    
+
     // 将此方法改为public以便从外部调用
     public void updateFont() {
         try {
@@ -72,7 +59,7 @@ public class FontSelect extends Module {
                         Fonts.reloadFonts(selectedFont);
                         if (Fonts.harmony != null) {
                             Fonts.harmony = new com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer(
-                                selectedFont, 32, 0, 65535, 16384);
+                                    selectedFont, 32, 0, 65535, 16384);
                         }
                     } else {
                         Fonts.reloadFonts(selectedFont);
@@ -93,34 +80,15 @@ public class FontSelect extends Module {
             }
         }
     }
-    
+
     private boolean isChineseFont(String fontName) {
-        // 如果开启了OtherCJKFontsRender选项，则使用CJK字体选项的值
-        if (otherCJKFontsRender.getCurrentValue() && cjkFontOption != null) {
-            return cjkFontOption.getCurrentMode().equals(fontName);
-        }
-        
-        // 否则检查是否是中文字体（基于字体名称）
-        return fontName.contains("中") || fontName.contains("汉") || 
-               "HYWenHei 85W".equals(fontName) || "harmony".equals(fontName);
+
+        return "HYWenHei 85W".equals(fontName) || "harmony".equals(fontName) || fontName.contains("中") || fontName.contains("汉");
     }
-    
     public String getSelectedFont() {
         if (fontOption != null) {
             return fontOption.getCurrentMode();
         }
         return "opensans";
-    }
-    
-    public boolean isOtherCJKFontsRenderEnabled() {
-        return otherCJKFontsRender.getCurrentValue();
-    }
-    
-    public String getSelectedCJKFont() {
-        if (cjkFontOption != null) {
-            return cjkFontOption.getCurrentMode();
-        }
-        // 默认使用主字体选项中的字体
-        return getSelectedFont();
     }
 }
