@@ -76,11 +76,16 @@ public class BackTrack extends Module {
             .getBooleanValue();
 
 
-    public BooleanValue OnGroundStop = ValueBuilder.create(this, "OnGroundStop")
+    public BooleanValue OnGroundStop = ValueBuilder.create(this, "OnGroundRelease")
             .setDefaultBooleanValue(false)
             .build()
             .getBooleanValue();
 
+    // <-- NEW: Added the OnVelocityRelease option
+    public BooleanValue onVelocityRelease = ValueBuilder.create(this, "OnVelocityRelease")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
 
     public FloatValue maxpacket = ValueBuilder.create(this, "Max Packet number")
             .setDefaultFloatValue(45F)
@@ -147,13 +152,11 @@ public class BackTrack extends Module {
             .build()
             .getModeValue();
 
-    // 新增选项：只在KillAura有目标时启用BackTrack
     public BooleanValue onlyWhenAuraTarget = ValueBuilder.create(this, "Only When Aura Target")
             .setDefaultBooleanValue(false)
             .build()
             .getBooleanValue();
 
-    public boolean btwork = false;
     private final LinkedBlockingDeque<Packet<?>> airKBQueue = new LinkedBlockingDeque<>();
     private final List<Integer> knockbackPositions = new ArrayList<>();
     private boolean isInterceptingAirKB = false;
@@ -164,8 +167,6 @@ public class BackTrack extends Module {
 
     private final Map<Integer, TrackedPlayer> trackedEnemies = new ConcurrentHashMap<>();
 
-
-    // --- Normal Mode Fields ---
     private static final float PROGRESS_BAR_WIDTH = 200.0f;
     private static final float PROGRESS_BAR_HEIGHT = 10.0f;
     private static final float PROGRESS_BAR_Y_OFFSET = 65.0f;
@@ -174,7 +175,6 @@ public class BackTrack extends Module {
     private static final int OVERFLOW_COLOR = 0xFFFF6B6B;
     private static final float CORNER_RADIUS = 5.0f;
 
-    // --- Naven (Blink) Mode Fields ---
     private final SmoothAnimationTimer navenProgress = new SmoothAnimationTimer(0.0F, 0.2F);
     private static final int navenMainColor = new Color(150, 45, 45, 255).getRGB();
 
@@ -204,7 +204,6 @@ public class BackTrack extends Module {
         interceptedPacketCount = 0;
         delayTicks = 0;
         shouldCheckGround = false;
-        btwork = false;
         knockbackPositions.clear();
         trackedEnemies.clear();
     }
@@ -245,7 +244,6 @@ public class BackTrack extends Module {
         }
     }
 
-    // 检查KillAura是否有目标
     private boolean isKillAuraTargeting() {
         Module killAura = Naven.getInstance().getModuleManager().getModule(Aura.class);
         return killAura != null && killAura.isEnabled() && Aura.target != null;
@@ -254,9 +252,6 @@ public class BackTrack extends Module {
     @EventTarget
     public void onTick(EventRunTicks event) {
         if (mc.player == null || mc.level == null) return;
-
-        btwork = isInterceptingAirKB || shouldCheckGround;
-
 
         if (isInterceptingAirKB) {
             for (Map.Entry<Integer, TrackedPlayer> entry : trackedEnemies.entrySet()) {
@@ -273,7 +268,6 @@ public class BackTrack extends Module {
             return;
         }
 
-        // 检查是否应该拦截数据包
         boolean shouldIntercept = true;
         if (onlyWhenAuraTarget.getCurrentValue()) {
             shouldIntercept = isKillAuraTargeting();
@@ -386,12 +380,21 @@ public class BackTrack extends Module {
             return;
         }
 
+        Packet<?> packet = event.getPacket();
+
+        if (onVelocityRelease.getCurrentValue() && isInterceptingAirKB && packet instanceof ClientboundSetEntityMotionPacket) {
+            ClientboundSetEntityMotionPacket motionPacket = (ClientboundSetEntityMotionPacket) packet;
+            if (motionPacket.getId() == mc.player.getId()) {
+                log("Velocity packet received, releasing queue due to OnVelocityRelease.");
+                releaseAirKBQueue();
+                resetAfterRelease();
+                return;
+            }
+        }
+
         if (!isInterceptingAirKB) {
             return;
         }
-
-        Packet<?> packet = event.getPacket();
-
 
         if (packet instanceof ClientboundTeleportEntityPacket teleportPacket) {
             if (trackedEnemies.containsKey(teleportPacket.getId())) {
@@ -422,7 +425,6 @@ public class BackTrack extends Module {
         if (packet instanceof ClientboundPlayerPositionPacket) {
             return;
         }
-
 
         if (packet instanceof ClientboundSetEntityMotionPacket motionPacket) {
             if (motionPacket.getId() == mc.player.getId()) {
