@@ -81,7 +81,6 @@ public class BackTrack extends Module {
             .build()
             .getBooleanValue();
 
-    // <-- NEW: Added the OnVelocityRelease option
     public BooleanValue onVelocityRelease = ValueBuilder.create(this, "OnVelocityRelease")
             .setDefaultBooleanValue(false)
             .build()
