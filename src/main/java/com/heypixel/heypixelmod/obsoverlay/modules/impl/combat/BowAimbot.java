@@ -86,11 +86,34 @@ public class BowAimbot extends Module {
             .build()
             .getBooleanValue();
 
+    private final FloatValue rotationSpeedValue = ValueBuilder.create(this, "RotationSpeed")
+            .setDefaultFloatValue(5.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(20.0F)
+            .setFloatStep(0.5F)
+            .build()
+            .getFloatValue();
+
     private Entity target = null;
+    private float currentYaw = 0.0F;
+    private float currentPitch = 0.0F;
+    private float targetYaw = 0.0F;
+    private float targetPitch = 0.0F;
 
     @Override
     public void onDisable() {
         target = null;
+        resetRotations();
+    }
+
+    @Override
+    public void onEnable() {
+        if (mc.player != null) {
+            currentYaw = mc.player.getYRot();
+            currentPitch = mc.player.getXRot();
+            targetYaw = currentYaw;
+            targetPitch = currentPitch;
+        }
     }
 
     @EventTarget
@@ -99,10 +122,16 @@ public class BowAimbot extends Module {
 
         if (mc.player != null && mc.player.isUsingItem() && mc.player.getUseItem().getItem() instanceof BowItem) {
             Entity entity = getTarget(throughWallsValue.getCurrentValue(), priorityValue.getCurrentMode());
-            if (entity == null) return;
+            if (entity == null) {
+                updateSmoothRotation();
+                return;
+            }
             target = entity;
             aimAtEntityWithPrediction(entity);
         }
+        
+        // 始终更新平滑旋转
+        updateSmoothRotation();
     }
 
     @EventTarget
@@ -182,14 +211,7 @@ public class BowAimbot extends Module {
         float rotationYaw = (float) (Math.atan2(d2, d0) * 180.0D / Math.PI) - 90.0F;
         float rotationPitch = (float) -(Math.atan2(d1, d3) * 180.0D / Math.PI);
 
-        if (silentValue.getCurrentValue()) {
-
-            mc.player.setYRot(rotationYaw);
-            mc.player.setXRot(rotationPitch);
-        } else {
-            mc.player.setYRot(rotationYaw);
-            mc.player.setXRot(rotationPitch);
-        }
+        setTargetRotation(rotationYaw, rotationPitch);
     }
 
     private Vec3 calculateArrowImpactPosition(Vec3 playerPos, Vec3 targetPos, float velocity, double gravity) {
@@ -197,7 +219,6 @@ public class BowAimbot extends Module {
                 Math.pow(targetPos.x - playerPos.x, 2) +
                         Math.pow(targetPos.z - playerPos.z, 2)
         );
-        double verticalDistance = targetPos.y - playerPos.y;
         double time = horizontalDistance / (velocity * 3.0);
         double gravityDrop = 0.5 * gravity * time * time;
         return new Vec3(
@@ -219,13 +240,7 @@ public class BowAimbot extends Module {
         float rotationYaw = (float) (Math.atan2(d2, d0) * 180.0D / Math.PI) - 90.0F;
         float rotationPitch = (float) -(Math.atan2(d1, d3) * 180.0D / Math.PI);
 
-        if (silentValue.getCurrentValue()) {
-            mc.player.setYRot(rotationYaw);
-            mc.player.setXRot(rotationPitch);
-        } else {
-            mc.player.setYRot(rotationYaw);
-            mc.player.setXRot(rotationPitch);
-        }
+        setTargetRotation(rotationYaw, rotationPitch);
     }
 
     private float getArrowVelocity(int useDuration) {
@@ -300,5 +315,63 @@ public class BowAimbot extends Module {
 
     public boolean hasTarget() {
         return target != null && mc.player != null && canEntityBeSeen(target);
+    }
+
+    private void resetRotations() {
+        if (mc.player != null) {
+            currentYaw = mc.player.getYRot();
+            currentPitch = mc.player.getXRot();
+            targetYaw = currentYaw;
+            targetPitch = currentPitch;
+        }
+    }
+
+    private float getAngleDifference(float angle1, float angle2) {
+        float diff = angle1 - angle2;
+        while (diff > 180.0F) {
+            diff -= 360.0F;
+        }
+        while (diff < -180.0F) {
+            diff += 360.0F;
+        }
+        return diff;
+    }
+
+    private float interpolateAngle(float current, float target, float speed) {
+        float difference = getAngleDifference(target, current);
+        if (Math.abs(difference) < 0.1F) {
+            return target;
+        }
+        
+        float maxChange = speed;
+        if (Math.abs(difference) < maxChange) {
+            return target;
+        }
+        
+        return current + Math.signum(difference) * maxChange;
+    }
+
+    private void updateSmoothRotation() {
+        if (mc.player == null) return;
+        
+        float rotationSpeed = rotationSpeedValue.getCurrentValue();
+        
+        currentYaw = interpolateAngle(currentYaw, targetYaw, rotationSpeed);
+        currentPitch = interpolateAngle(currentPitch, targetPitch, rotationSpeed);
+        
+        if (silentValue.getCurrentValue()) {
+            // 对于silent模式，直接设置旋转
+            mc.player.setYRot(currentYaw);
+            mc.player.setXRot(currentPitch);
+        } else {
+            // 对于非silent模式，也设置旋转
+            mc.player.setYRot(currentYaw);
+            mc.player.setXRot(currentPitch);
+        }
+    }
+
+    private void setTargetRotation(float yaw, float pitch) {
+        targetYaw = yaw;
+        targetPitch = pitch;
     }
 }

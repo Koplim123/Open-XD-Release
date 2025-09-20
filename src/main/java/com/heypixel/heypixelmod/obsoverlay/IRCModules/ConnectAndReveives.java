@@ -294,7 +294,7 @@ public class ConnectAndReveives {
                 case "message":
                     String username = jsonMessage.get("username").getAsString();
                     String chatMessage = jsonMessage.get("message").getAsString();
-                    System.out.println("[" + username + "] " + chatMessage + " 喵~");
+                    System.out.println("[" + username + "] " + chatMessage );
                     break;
                     
                 case "private_message":

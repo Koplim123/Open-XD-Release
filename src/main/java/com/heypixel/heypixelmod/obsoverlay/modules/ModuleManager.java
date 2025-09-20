@@ -9,6 +9,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.combat.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.*;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.musicplayer.*;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -120,7 +121,8 @@ public class ModuleManager {
          new CrystalOptimizer(),
          new Island(),
          new AutoCrystal(),
-         new MidPearl()
+         new MidPearl(),
+         new MusicPlayerModule()
 
       );
    }

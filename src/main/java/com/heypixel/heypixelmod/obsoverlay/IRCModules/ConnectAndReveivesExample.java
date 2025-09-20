@@ -64,7 +64,7 @@ public class ConnectAndReveivesExample {
     public void sendPublicMessage(String message) {
         if (ircClient.isAuthenticated()) {
             ircClient.sendMessage(message);
-            ChatUtils.addChatMessage("§b[IRC] 发送消息: " + message + " 喵~");
+            ChatUtils.addChatMessage("§b[IRC] 发送消息: " + message);
         } else {
             ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送消息喵~");
         }
