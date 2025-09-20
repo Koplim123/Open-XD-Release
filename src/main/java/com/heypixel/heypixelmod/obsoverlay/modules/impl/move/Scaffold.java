@@ -178,8 +178,8 @@ public class Scaffold extends Module {
             .build()
             .getFloatValue();
     FloatValue tellyRotationSpeed = ValueBuilder.create(this, "rotateToYaw")
-            .setDefaultFloatValue(180.0F)
-            .setMaxFloatValue(360.0F)
+            .setDefaultFloatValue(120.0F)
+            .setMaxFloatValue(180.0F)
             .setMinFloatValue(10.0F)
             .setFloatStep(10.0F)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
