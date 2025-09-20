@@ -65,7 +65,7 @@ public class ModuleManager {
          new AntiWeb(),
          new ScoreboardSpoof(),
          new AutoTools(),
-         new ViewClip(),
+         new Camera(),
          new AnchorExploder(),
          new AutoShieldBreaker(),
          new TriggerBot(),
