@@ -29,7 +29,7 @@ import net.minecraft.world.entity.Entity;
 public class NoXZ extends Module {
     private final ModeValue mode = ValueBuilder.create(this, "Mode")
             .setDefaultModeIndex(0)
-            .setModes("NoXZ", "JumpReset")
+            .setModes("NoXZ")
             .build()
             .getModeValue();
 
@@ -46,42 +46,51 @@ public class NoXZ extends Module {
             .setMaxFloatValue(5.0F)
             .setFloatStep(1.0F)
             .setVisibility(() -> mode.isCurrentMode("NoXZ"))
-            .build()
-            .getFloatValue();
-
-    private final FloatValue jumpTick = ValueBuilder.create(this, "JumpResetTick")
-            .setDefaultFloatValue(1.0F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(5.0F)
-            .setFloatStep(1.0F)
-            .setVisibility(() -> mode.isCurrentMode("JumpReset"))
-            .build()
-            .getFloatValue();
+              .build()
+              .getFloatValue();
 
     private final BooleanValue Logging = ValueBuilder.create(this, "Logging")
             .setDefaultBooleanValue(false)
             .build()
             .getBooleanValue();
 
+    private final BooleanValue AirDelay = ValueBuilder.create(this, "AirDelay")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
 
+    private final FloatValue ReleaseMsWhenAttackOver = ValueBuilder.create(this, "ReleaseMsWhenAttackOver")
+            .setDefaultFloatValue(1000.0F)
+            .setMinFloatValue(0.0F)
+            .setMaxFloatValue(5000.0F)
+            .setFloatStep(100.0F)
+            .setVisibility(() -> AirDelay.getCurrentValue())
+            .build()
+            .getFloatValue();
 
     private Entity targetEntity;
     private boolean velocityInput = false;
     private boolean attacked = false;
-    private int jumpResetTicks = 0;
+
     private double currentKnockbackSpeed = 0.0;
     private int attackQueue = 0;
     private boolean receiveDamage = false;
+    private boolean airDelayActive = false;
+    private long airDelayStartTime = 0;
+    private ClientboundSetEntityMotionPacket delayedVelocityPacket = null;
 
     @Override
     public void onDisable() {
         this.velocityInput = false;
         this.attacked = false;
-        this.jumpResetTicks = 0;
+
         this.targetEntity = null;
         this.currentKnockbackSpeed = 0.0;
         this.attackQueue = 0;
         this.receiveDamage = false;
+        this.airDelayActive = false;
+        this.airDelayStartTime = 0;
+        this.delayedVelocityPacket = null;
     }
 
     @EventTarget
@@ -103,6 +112,19 @@ public class NoXZ extends Module {
                 return;
             }
 
+            // AirDelay logic
+            if (this.AirDelay.getCurrentValue() && !mc.player.onGround() && this.receiveDamage) {
+                this.airDelayActive = true;
+                this.airDelayStartTime = System.currentTimeMillis();
+                this.delayedVelocityPacket = velocityPacket;
+                event.setCancelled(true);
+                
+                if (this.Logging.getCurrentValue()) {
+                    ChatUtils.addChatMessage("AirDelay activated - KB delayed until landing");
+                }
+                return;
+            }
+
             this.velocityInput = true;
             this.targetEntity = Aura.target;
 
@@ -114,11 +136,6 @@ public class NoXZ extends Module {
                     if (this.Logging.getCurrentValue()) {
                         ChatUtils.addChatMessage("NoXZ Queue set: " + this.attackQueue + " attacks");
                     }
-                }
-            } else if (this.mode.isCurrentMode("JumpReset")) {
-                this.jumpResetTicks = (int)this.jumpTick.getCurrentValue();
-                if (this.Logging.getCurrentValue()) {
-                    ChatUtils.addChatMessage("JumpReset scheduled in " + this.jumpResetTicks + " ticks");
                 }
             }
         }
@@ -133,8 +150,44 @@ public class NoXZ extends Module {
             this.currentKnockbackSpeed = 0.0;
         }
 
-        if (this.jumpResetTicks > 0) {
-            this.jumpResetTicks--;
+        // AirDelay release logic
+        if (this.airDelayActive && this.delayedVelocityPacket != null) {
+            long currentTime = System.currentTimeMillis();
+            boolean shouldRelease = false;
+            
+            // Release when on ground or after delay time
+            if (mc.player.onGround()) {
+                shouldRelease = true;
+                if (this.Logging.getCurrentValue()) {
+                    ChatUtils.addChatMessage("AirDelay released - player landed");
+                }
+            } else if (currentTime - this.airDelayStartTime >= this.ReleaseMsWhenAttackOver.getCurrentValue()) {
+                shouldRelease = true;
+                if (this.Logging.getCurrentValue()) {
+                    ChatUtils.addChatMessage("AirDelay released - timeout after " + this.ReleaseMsWhenAttackOver.getCurrentValue() + "ms");
+                }
+            }
+            
+            if (shouldRelease) {
+                // Apply the delayed velocity
+                this.velocityInput = true;
+                this.targetEntity = Aura.target;
+                
+                if (this.mode.isCurrentMode("NoXZ")) {
+                    if (this.receiveDamage) {
+                        this.receiveDamage = false;
+                        this.attackQueue = (int)this.attacks.getCurrentValue();
+
+                        if (this.Logging.getCurrentValue()) {
+                            ChatUtils.addChatMessage("NoXZ Queue set: " + this.attackQueue + " attacks");
+                        }
+                    }
+                }
+                
+                this.airDelayActive = false;
+                this.airDelayStartTime = 0;
+                this.delayedVelocityPacket = null;
+            }
         }
 
         if (this.mode.isCurrentMode("NoXZ") && this.targetEntity != null && this.attackQueue > 0) {
@@ -164,15 +217,5 @@ public class NoXZ extends Module {
         }
     }
 
-    @EventTarget
-    public void onMoveInput(EventMoveInput event) {
-        if (mc.player != null && this.mode.isCurrentMode("JumpReset") &&
-                mc.player.onGround() && this.jumpResetTicks == 1) {
-            event.setJump(true);
-            this.jumpResetTicks = 0;
-            if (this.Logging.getCurrentValue()) {
-                ChatUtils.addChatMessage("Jump reset activated");
-            }
-        }
-    }
+
 }

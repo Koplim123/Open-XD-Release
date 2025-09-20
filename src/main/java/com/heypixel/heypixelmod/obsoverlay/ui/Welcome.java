@@ -5,19 +5,20 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.Window;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.BlurUtils;
 
 public class Welcome extends Screen {
-    // 淡入阶段: 0=初始黑色, 1=显示文字, 2=淡出, 3=完成
-    private int fadeInStage = 0;
-    private int fadeAlpha = 0; // 当前透明度 (0-255)
-    // Minecraft每秒运行约20 tick，所以2.75秒 = 55 ticks
-    private static final int FADE_IN_DURATION = 27;
-    private static final int FADE_OUT_DURATION = 27;
-    private static final int MAX_ALPHA = 255;        // 最大透明度
+    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation("heypixel", "textures/images/background.jpg");
 
-    // 动态背景
-    // 假设视频被转换为300帧 (15秒 @ 20fps)
-    private AnimatedBackground animatedBackground = new AnimatedBackground(300, 20);
+    private int fadeInStage = 0;
+    private int fadeAlpha = 0;
+    private static final int FADE_IN_DURATION = 30;
+    private static final int FADE_OUT_DURATION = 30;
+    private static final int MAX_ALPHA = 255;
+    private boolean textureLoaded = false;
 
     public Welcome() {
         super(Component.literal("Welcome"));
@@ -26,74 +27,192 @@ public class Welcome extends Screen {
     @Override
     protected void init() {
         super.init();
+        textureLoaded = checkTextureLoaded();
+    }
+
+    private boolean checkTextureLoaded() {
+        try {
+            Minecraft.getInstance().getResourceManager().getResource(BACKGROUND_TEXTURE);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public void tick() {
-        // 更新动态背景
-        animatedBackground.tick();
-
         switch (fadeInStage) {
-            case 0: // 淡入阶段，同时显示背景和文字
+            case 0:
                 fadeAlpha += (MAX_ALPHA / FADE_IN_DURATION);
                 if (fadeAlpha >= MAX_ALPHA) {
                     fadeAlpha = MAX_ALPHA;
                     fadeInStage = 1;
                 }
                 break;
-            case 1: // 显示文字阶段，等待用户输入
-                // 等待用户按键或点击
+            case 1:
                 break;
-            case 2: // 淡出阶段
+            case 2:
                 fadeAlpha -= (MAX_ALPHA / FADE_OUT_DURATION);
                 if (fadeAlpha <= 0) {
                     fadeAlpha = 0;
                     fadeInStage = 3;
-                    // 淡出完成后进入客户端
                     this.minecraft.setScreen(null);
                 }
                 break;
-            case 3: // 完成
+            case 3:
                 break;
         }
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        // 绘制动态背景 (带透明度)
-        float alpha = fadeAlpha / 255.0F;
-        guiGraphics.setColor(1.0F, 1.0F, 1.0F, alpha);
-        ResourceLocation currentFrame = animatedBackground.getCurrentFrameLocation();
-        RenderSystem.setShaderTexture(0, currentFrame);
-        guiGraphics.blit(currentFrame, 0, 0, 0, 0, this.width, this.height, this.width, this.height);
-
-        // 绘制半透明黑色叠加层以模拟亚克力模糊效果
-        int overlayColor = ((int)(alpha * 128)) << 24; // 50% 透明度的黑色
-        guiGraphics.fill(0, 0, this.width, this.height, overlayColor);
-        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
-
-        // 绘制文字 (带透明度)
-        int textColor = (fadeAlpha << 24) | 0xFFFFFF;
-        guiGraphics.drawCenteredString(this.font, "Welcome to Naven-XD Client", this.width / 2, this.height / 2 - 10, textColor);
-        guiGraphics.drawCenteredString(this.font, "Press any key into Client", this.width / 2, this.height / 2 + 10, textColor);
-
+        renderBackground(guiGraphics);
+        renderAdvancedBlurredBackground(guiGraphics);
+        renderText(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
+    }
+
+    private void renderBlurredBackground(GuiGraphics guiGraphics) {
+        try {
+            Window window = Minecraft.getInstance().getWindow();
+            int width = window.getGuiScaledWidth();
+            int height = window.getGuiScaledHeight();
+
+            if (width <= 0 || height <= 0) {
+                return;
+            }
+
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (fadeAlpha * 0.7f) / 255.0F);
+            
+            if (textureLoaded) {
+                guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, width, height, width, height);
+            } else {
+                guiGraphics.fillGradient(0, 0, width, height, 0x80000000 | (fadeAlpha << 24), 0x80000000 | (fadeAlpha << 24));
+            }
+            
+            RenderSystem.disableBlend();
+        } catch (Exception e) {
+            System.err.println("Error rendering blurred background: " + e.getMessage());
+        }
+    }
+
+    private void renderTrueBlurredBackground(GuiGraphics guiGraphics) {
+        try {
+            Window window = Minecraft.getInstance().getWindow();
+            int width = window.getGuiScaledWidth();
+            int height = window.getGuiScaledHeight();
+
+            if (width <= 0 || height <= 0) {
+                return;
+            }
+
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            
+            int baseAlpha = (int)(fadeAlpha * 0.8f);
+            
+            guiGraphics.fill(0, 0, width, height, (0x15 << 24) | (baseAlpha << 24));
+            
+            int steps = 5;
+            for (int i = 1; i <= steps; i++) {
+                int blurAlpha = baseAlpha / (i + 1);
+                int offset = i * 3;
+                int color = (0x08 << 24) | (blurAlpha << 24);
+                
+                guiGraphics.fill(-offset, -offset, width + offset, height + offset, color);
+                guiGraphics.fill(offset, offset, width - offset, height - offset, color);
+            }
+            
+            if (textureLoaded) {
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, baseAlpha / 255.0F);
+                guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, width, height, width, height);
+            }
+            
+            RenderSystem.disableBlend();
+        } catch (Exception e) {
+            System.err.println("Error rendering true blurred background: " + e.getMessage());
+            renderBlurredBackground(guiGraphics);
+        }
+    }
+
+    private void renderAdvancedBlurredBackground(GuiGraphics guiGraphics) {
+        try {
+            Window window = Minecraft.getInstance().getWindow();
+            int width = window.getGuiScaledWidth();
+            int height = window.getGuiScaledHeight();
+
+            if (width <= 0 || height <= 0) {
+                return;
+            }
+
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            
+            int alpha = (int)(fadeAlpha * 0.85f);
+            
+            guiGraphics.fill(0, 0, width, height, (0x1A << 24) | (alpha << 24));
+            
+            int[] offsets = {1, 2, 3, 4, 6};
+            int[] alphas = {alpha / 3, alpha / 4, alpha / 6, alpha / 8, alpha / 10};
+            
+            for (int i = 0; i < offsets.length; i++) {
+                int offset = offsets[i];
+                int blurColor = (0x05 << 24) | (alphas[i] << 24);
+                
+                guiGraphics.fill(-offset, -offset, width + offset, height + offset, blurColor);
+                guiGraphics.fill(offset, offset, width - offset, height - offset, blurColor);
+                
+                guiGraphics.fill(-offset, offset, width + offset, height - offset, blurColor);
+                guiGraphics.fill(offset, -offset, width - offset, height + offset, blurColor);
+            }
+            
+            if (textureLoaded) {
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha / 255.0F);
+                guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, width, height, width, height);
+            }
+            
+            RenderSystem.disableBlend();
+        } catch (Exception e) {
+            System.err.println("Error rendering advanced blurred background: " + e.getMessage());
+            renderTrueBlurredBackground(guiGraphics);
+        }
+    }
+
+
+
+    private void renderText(GuiGraphics guiGraphics) {
+        int textAlpha = Math.min(fadeAlpha + 80, 255);
+        int shadowAlpha = textAlpha / 2;
+        int textColor = 0xFFFFFF | (textAlpha << 24);
+        int shadowColor = 0x000000 | (shadowAlpha << 24);
+        
+        String title = "Welcome to Naven-XD Client";
+        String subtitle = "Press any key to continue";
+        
+        int titleY = this.height / 2 - 10;
+        int subtitleY = this.height / 2 + 10;
+        
+        guiGraphics.drawCenteredString(this.font, title, this.width / 2 + 1, titleY + 1, shadowColor);
+        guiGraphics.drawCenteredString(this.font, title, this.width / 2, titleY, textColor);
+        
+        guiGraphics.drawCenteredString(this.font, subtitle, this.width / 2 + 1, subtitleY + 1, shadowColor);
+        guiGraphics.drawCenteredString(this.font, subtitle, this.width / 2, subtitleY, textColor);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // 按任意键进入下一阶段
         if (fadeInStage == 1) {
-            fadeInStage = 2; // 开始淡出
+            fadeInStage = 2;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // 点击鼠标进入下一阶段
         if (fadeInStage == 1) {
-            fadeInStage = 2; // 开始淡出
+            fadeInStage = 2;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -101,5 +220,10 @@ public class Welcome extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
     }
 }

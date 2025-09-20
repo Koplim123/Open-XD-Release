@@ -114,9 +114,7 @@ public class IRCLoginScreen extends Screen {
                                 // 登录成功，保存凭据
                                 new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
                                 // 登录成功，跳转到Welcome界面
-                                this.minecraft.execute(() -> {
-                                    this.minecraft.setScreen(new Welcome());
-                                });
+                                this.minecraft.setScreen(new Welcome());
                             } else {
                                 // 登录失败，显示错误信息
                                 this.errorText = Component.literal("Login failed. Please check your username and or HWID.");

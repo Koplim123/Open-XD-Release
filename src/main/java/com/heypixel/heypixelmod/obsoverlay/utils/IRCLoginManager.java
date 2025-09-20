@@ -77,7 +77,7 @@ public class IRCLoginManager {
                     userId = data.has("user_id") ? data.get("user_id").getAsInt() : -1;
                     username = data.has("username") ? data.get("username").getAsString() : "";
                     rank = data.has("Rank") ? data.get("Rank").getAsString() : "";
-                    
+
                     // 登录成功后验证HWID
                     return verifyHWID(user);
                 }
@@ -122,7 +122,7 @@ public class IRCLoginManager {
                 if (code == 1) {
                     JsonObject data = responseObject.getAsJsonObject("data");
                     String serverHWID = data.has("hwid") ? data.get("hwid").getAsString() : "";
-                    
+
                     // 比较本地HWID与服务器HWID
                     String localHWID = HWIDUtils.getHWID();
                     if (serverHWID.equals(localHWID)) {

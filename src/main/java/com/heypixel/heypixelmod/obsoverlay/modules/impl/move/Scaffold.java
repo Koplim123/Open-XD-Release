@@ -110,6 +110,8 @@ public class Scaffold extends Module {
     private float originalOffGroundTicks = 5.0F;
     private double lastY = 0.0;
     private int fallDetectionTicks = 0;
+    private Vec3 lastVelocity = Vec3.ZERO;
+    private Vec3 lastAcceleration = Vec3.ZERO;
     public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Normal", "Telly Bridge").build().getModeValue();
     public BooleanValue eagle = ValueBuilder.create(this, "Eagle")
             .setDefaultBooleanValue(true)
@@ -138,9 +140,17 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.keepFoV.getCurrentValue())
             .build()
             .getFloatValue();
-    FloatValue tellyOffGroundTicks = ValueBuilder.create(this, "OffGround Ticks")
+    FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
             .setDefaultFloatValue(5.0F)
-            .setMaxFloatValue(5.0F)
+            .setMaxFloatValue(10.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(0.15F)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getFloatValue();
+    FloatValue minOffGroundTicks = ValueBuilder.create(this, "Min OffGround Ticks")
+            .setDefaultFloatValue(0.0F)
+            .setMaxFloatValue(10.0F)
             .setMinFloatValue(0.0F)
             .setFloatStep(0.15F)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
@@ -173,6 +183,19 @@ public class Scaffold extends Module {
             .setMinFloatValue(10.0F)
             .setFloatStep(10.0F)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getFloatValue();
+    public BooleanValue acceleration = ValueBuilder.create(this, "Acceleration")
+            .setDefaultBooleanValue(false)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getBooleanValue();
+    FloatValue probability = ValueBuilder.create(this, "Probability")
+            .setDefaultFloatValue(0.5F)
+            .setMaxFloatValue(1.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(0.1F)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.acceleration.getCurrentValue())
             .build()
             .getFloatValue();
     public BooleanValue swing = ValueBuilder.create(this, "Swing")
@@ -238,9 +261,12 @@ public class Scaffold extends Module {
             this.baseY = 10000;
             this.rescueTicks = 0;
             this.isRescuing = false;
-            this.originalOffGroundTicks = this.tellyOffGroundTicks.getCurrentValue();
+            // 使用计算的中间值替代原来的 tellyOffGroundTicks
+            this.originalOffGroundTicks = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
             this.lastY = mc.player.getY();
             this.fallDetectionTicks = 0;
+            this.lastVelocity = mc.player.getDeltaMovement();
+            this.lastAcceleration = Vec3.ZERO;
         }
     }
 
@@ -279,7 +305,6 @@ public class Scaffold extends Module {
                 this.fallDetectionTicks = 0;
                 if (this.isRescuing) {
                     this.isRescuing = false;
-                    this.tellyOffGroundTicks.setCurrentValue(this.originalOffGroundTicks);
                 }
             } else {
                 this.offGroundTicks++;
@@ -334,7 +359,21 @@ public class Scaffold extends Module {
             if (this.mode.isCurrentMode("Telly Bridge")) {
                 mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
-                    this.rots.setX(RotationUtils.rotateToYaw(this.tellyRotationSpeed.getCurrentValue(), this.rots.getX(), mc.player.getYRot()));
+                    float targetYaw = mc.player.getYRot();
+                    if (this.acceleration.getCurrentValue() && RandomUtils.nextFloat(0.0F, 1.0F) < this.probability.getCurrentValue()) {
+                        Vec3 currentVelocity = mc.player.getDeltaMovement();
+                        Vec3 acceleration = currentVelocity.subtract(this.lastVelocity);
+                        this.lastAcceleration = acceleration;
+                        this.lastVelocity = currentVelocity;
+                        float accelerationMagnitude = (float) acceleration.length();
+                        float noiseFactor = Math.min(accelerationMagnitude * 10.0F, 30.0F);
+                        float randomNoise = RandomUtils.nextFloat(-noiseFactor, noiseFactor);
+                        targetYaw += randomNoise;
+                    } else {
+                        this.lastVelocity = mc.player.getDeltaMovement();
+                    }
+                    
+                    this.rots.setX(RotationUtils.rotateToYaw(this.tellyRotationSpeed.getCurrentValue(), this.rots.getX(), targetYaw));
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
                 }
@@ -370,7 +409,8 @@ public class Scaffold extends Module {
     @EventTarget
     public void onClick(EventClick e) {
         e.setCancelled(true);
-        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= this.tellyOffGroundTicks.getCurrentValue())) {
+        float currentThreshold = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
+        if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= currentThreshold)) {
             if (!this.checkPlace(this.pos)) {
                 return;
             }
@@ -570,11 +610,9 @@ public class Scaffold extends Module {
         double fallSpeed = this.lastY - currentY;
         this.lastY = currentY;
 
-        // 检测是否正在快速下落喵~
         if (fallSpeed > this.fallDetectionThreshold.getCurrentValue() && !mc.player.onGround()) {
             this.fallDetectionTicks++;
 
-            // 如果连续检测到快速下落，触发自救喵~
             if (this.fallDetectionTicks >= 3 && !this.isRescuing) {
                 this.triggerRescue();
             }
@@ -582,14 +620,11 @@ public class Scaffold extends Module {
             this.fallDetectionTicks = 0;
         }
 
-        // 处理自救逻辑喵~
         if (this.isRescuing) {
             this.rescueTicks++;
 
-            // 自救完成后恢复原始设置喵~
             if (this.rescueTicks >= this.rescueDelay.getCurrentValue() * 20) {
                 this.isRescuing = false;
-                this.tellyOffGroundTicks.setCurrentValue(this.originalOffGroundTicks);
                 this.rescueTicks = 0;
             }
         }
@@ -599,16 +634,9 @@ public class Scaffold extends Module {
         this.isRescuing = true;
         this.rescueTicks = 0;
 
-        // 降低OffGround Ticks以更快放置方块自救喵~
-        float rescueOffGroundTicks = Math.max(1.0F, this.tellyOffGroundTicks.getCurrentValue() * 0.6F);
-        this.tellyOffGroundTicks.setCurrentValue(rescueOffGroundTicks);
-
-        // 强制放置方块自救喵~
         if (this.pos != null && isValidStack(mc.player.getMainHandItem())) {
             this.placeBlock();
         }
-
-        System.out.println("[Scaffold] 检测到即将坠机，触发自救措施喵~");
     }
 
     public static record BlockPosWithFacing(BlockPos position, Direction facing) {

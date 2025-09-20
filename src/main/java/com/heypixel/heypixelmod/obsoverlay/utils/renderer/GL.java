@@ -351,9 +351,6 @@ public class GL {
       }
    }
 
-   /**
-    * 检查OpenGL错误并在发现错误时重置状态
-    */
    public static void checkAndResetOnError() {
       int error;
       boolean hasError = false;
@@ -367,37 +364,29 @@ public class GL {
       }
    }
 
-   /**
-    * 重置OpenGL状态到安全状态
-    */
    public static void resetOpenGLState() {
       System.err.println("Resetting OpenGL state due to error...");
       
       try {
-         // 重置绑定状态
          GlStateManager._glBindVertexArray(0);
          GlStateManager._glBindBuffer(34962, 0); // GL_ARRAY_BUFFER
          GlStateManager._glBindBuffer(34963, 0); // GL_ELEMENT_ARRAY_BUFFER
          GlStateManager._glBindFramebuffer(36160, 0); // GL_FRAMEBUFFER
-         
-         // 重置纹理状态
+
          for (int i = 0; i < 8; i++) {
             GlStateManager._activeTexture(33984 + i);
             GlStateManager._bindTexture(0);
          }
          GlStateManager._activeTexture(33984);
-         
-         // 重置着色器程序
+
          GlStateManager._glUseProgram(0);
-         
-         // 重置功能状态
+
          disableDepth();
          disableBlend();
          disableCull();
          disableScissorTest();
          disableLineSmooth();
-         
-         // 重置视口
+
          Minecraft mc = Minecraft.getInstance();
          if (mc.getWindow() != null) {
             GlStateManager._viewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
@@ -409,9 +398,6 @@ public class GL {
       }
    }
 
-   /**
-    * 将OpenGL错误代码转换为可读字符串
-    */
    private static String getErrorString(int error) {
       switch (error) {
          case 0: return "GL_NO_ERROR";
