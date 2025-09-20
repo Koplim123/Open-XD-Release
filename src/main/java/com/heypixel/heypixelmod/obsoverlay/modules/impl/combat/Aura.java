@@ -122,6 +122,20 @@ public class Aura extends Module {
             .build()
             .getFloatValue();
 
+    BooleanValue advancedCPS = ValueBuilder.create(this, "AdvancedCPS")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+
+    FloatValue getCPSDelay = ValueBuilder.create(this, "Get CPS Delay")
+            .setVisibility(advancedCPS::getCurrentValue)
+            .setDefaultFloatValue(5.0F)
+            .setFloatStep(1.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(50.0F)
+            .build()
+            .getFloatValue();
+
     FloatValue switchSize = ValueBuilder.create(this, "Switch Size")
             .setDefaultFloatValue(1.0F)
             .setFloatStep(1.0F)
@@ -218,7 +232,8 @@ public class Aura extends Module {
             RenderUtils.applyRegionalRenderOffset(stack);
 
             for (Entity entity : targets) {
-                if (entity instanceof LivingEntity living) {
+                if (entity instanceof LivingEntity) {
+                    LivingEntity living = (LivingEntity) entity;
                     float[] color = target == living ? targetColorRed : targetColorGreen;
                     stack.pushPose();
                     RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
@@ -250,6 +265,7 @@ public class Aura extends Module {
         aimingTarget = null;
         targets.clear();
 
+        // 重置CPS状态，包括AdvancedCPS
         this.lastCpsUpdate = 0;
         this.currentCps = 0.0F;
         this.cpsInitialized = false;
@@ -413,7 +429,8 @@ public class Aura extends Module {
     public boolean isValidTarget(Entity entity) {
         if (entity == mc.player) {
             return false;
-        } else if (entity instanceof LivingEntity living) {
+        } else if (entity instanceof LivingEntity) {
+            LivingEntity living = (LivingEntity) entity;
             if (living instanceof BlinkingPlayer) {
                 return false;
             } else {
@@ -498,7 +515,7 @@ public class Aura extends Module {
                     Comparator.comparingDouble(o -> (double)RotationUtils.getDistanceBetweenAngles(RotationManager.rotations.x, RotationUtils.getRotations(o).x))
             );
         } else if (this.priority.isCurrentMode("Health")) {
-            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity living ? (double)living.getHealth() : 0.0));
+            possibleTargets.sort(Comparator.comparingDouble(o -> o instanceof LivingEntity ? (double)((LivingEntity)o).getHealth() : 0.0));
         }
 
         if (this.preferBaby.getCurrentValue() && possibleTargets.stream().anyMatch(entity -> entity instanceof LivingEntity && ((LivingEntity)entity).isBaby())) {
@@ -525,10 +542,13 @@ public class Aura extends Module {
     
     
     public float getRandomCps() {
-        // 统一设置为5ms
         long currentTime = System.currentTimeMillis();
+        
+        // 根据AdvancedCPS设置获取CPS的间隔
+        long cpsDelayMs = advancedCPS.getCurrentValue() ? 
+            (long)getCPSDelay.getCurrentValue() : 5L;
 
-        if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= 5) {
+        if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= cpsDelayMs) {
             this.currentCps = this.generateRandomCps();
             this.lastCpsUpdate = currentTime;
             this.cpsInitialized = true;

@@ -7,11 +7,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.Window;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.BlurUtils;
+import javax.annotation.Nonnull;
 
 public class Welcome extends Screen {
-    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation("heypixel", "textures/images/background.jpg");
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("heypixel", "textures/images/background.jpg");
 
     private int fadeInStage = 0;
     private int fadeAlpha = 0;
@@ -19,6 +18,9 @@ public class Welcome extends Screen {
     private static final int FADE_OUT_DURATION = 30;
     private static final int MAX_ALPHA = 255;
     private boolean textureLoaded = false;
+    
+    // Blur effect components
+    private boolean blurInitialized = false;
 
     public Welcome() {
         super(Component.literal("Welcome"));
@@ -28,6 +30,19 @@ public class Welcome extends Screen {
     protected void init() {
         super.init();
         textureLoaded = checkTextureLoaded();
+        initBlurEffects();
+    }
+    
+    private void initBlurEffects() {
+        try {
+            if (!blurInitialized) {
+                // Initialize custom blur effect (no shader needed)
+                blurInitialized = true;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to initialize blur effects: " + e.getMessage());
+            blurInitialized = false;
+        }
     }
 
     private boolean checkTextureLoaded() {
@@ -56,7 +71,9 @@ public class Welcome extends Screen {
                 if (fadeAlpha <= 0) {
                     fadeAlpha = 0;
                     fadeInStage = 3;
-                    this.minecraft.setScreen(null);
+                    if (this.minecraft != null) {
+                        this.minecraft.setScreen(null);
+                    }
                 }
                 break;
             case 3:
@@ -65,9 +82,13 @@ public class Welcome extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+    public void render(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         renderBackground(guiGraphics);
-        renderAdvancedBlurredBackground(guiGraphics);
+        if (blurInitialized) {
+            renderTrueBlurBackground(guiGraphics);
+        } else {
+            renderAdvancedBlurredBackground(guiGraphics);
+        }
         renderText(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
@@ -225,5 +246,91 @@ public class Welcome extends Screen {
     @Override
     public void removed() {
         super.removed();
+        // Clean up blur resources
+        cleanupBlurEffects();
+    }
+    
+    private void cleanupBlurEffects() {
+        try {
+            if (blurInitialized) {
+                blurInitialized = false;
+            }
+        } catch (Exception e) {
+            System.err.println("Error cleaning up blur effects: " + e.getMessage());
+        }
+    }
+    
+    private void renderTrueBlurBackground(GuiGraphics guiGraphics) {
+        try {
+            Window window = Minecraft.getInstance().getWindow();
+            int width = window.getGuiScaledWidth();
+            int height = window.getGuiScaledHeight();
+
+            if (width <= 0 || height <= 0 || !blurInitialized) {
+                renderAdvancedBlurredBackground(guiGraphics);
+                return;
+            }
+
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            
+            // Create base background layer
+            float baseAlpha = (fadeAlpha * 0.9f) / 255.0F;
+            
+            // First draw the background texture/color
+            if (textureLoaded) {
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, baseAlpha);
+                guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, width, height, width, height);
+            } else {
+                int baseColor = 0x80000000 | ((int)(baseAlpha * 255) << 24);
+                guiGraphics.fillGradient(0, 0, width, height, baseColor, baseColor);
+            }
+            
+            // Apply blur effect using custom blur implementation
+            renderCustomBlurEffect(guiGraphics, width, height, baseAlpha);
+            
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+            
+        } catch (Exception e) {
+            System.err.println("Error rendering true blur background: " + e.getMessage());
+            renderAdvancedBlurredBackground(guiGraphics);
+        }
+    }
+    
+    private void renderCustomBlurEffect(GuiGraphics guiGraphics, int width, int height, float baseAlpha) {
+        try {
+            // Create multiple blur layers for a stronger effect
+            int[] blurSizes = {8, 12, 16, 24};
+            float[] alphas = {0.3f, 0.25f, 0.2f, 0.15f};
+            
+            for (int i = 0; i < blurSizes.length; i++) {
+                int blurSize = blurSizes[i];
+                float layerAlpha = alphas[i] * baseAlpha;
+                
+                // Create blur effect by drawing multiple offset rectangles
+                for (int x = -blurSize/2; x <= blurSize/2; x += 2) {
+                    for (int y = -blurSize/2; y <= blurSize/2; y += 2) {
+                        if (x == 0 && y == 0) continue;
+                        
+                        float distance = (float)Math.sqrt(x*x + y*y);
+                        float blurAlpha = layerAlpha * (1.0f - distance / blurSize) * 0.1f;
+                        
+                        if (blurAlpha > 0) {
+                            int color = (int)(blurAlpha * 255) << 24 | 0x000000;
+                            guiGraphics.fill(x, y, width + x, height + y, color);
+                        }
+                    }
+                }
+            }
+            
+            // Add a subtle overlay for depth
+            int overlayAlpha = (int)(baseAlpha * 40);
+            int overlayColor = overlayAlpha << 24 | 0x101030;
+            guiGraphics.fill(0, 0, width, height, overlayColor);
+            
+        } catch (Exception e) {
+            System.err.println("Error in custom blur effect: " + e.getMessage());
+        }
     }
 }
