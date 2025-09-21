@@ -10,8 +10,7 @@ import com.mojang.blaze3d.platform.Window;
 import javax.annotation.Nonnull;
 
 public class Welcome extends Screen {
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("heypixel", "textures/images/background.jpg");
-
+    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation("heypixel", "textures/images/background.jpg");
     private int fadeInStage = 0;
     private int fadeAlpha = 0;
     private static final int FADE_IN_DURATION = 30;
