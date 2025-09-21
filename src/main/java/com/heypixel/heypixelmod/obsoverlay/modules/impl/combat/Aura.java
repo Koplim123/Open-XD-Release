@@ -11,21 +11,15 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.KillSay;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Blink;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Stuck;
-import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD;
 import com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetHUD;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -39,15 +33,12 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -76,6 +67,12 @@ public class Aura extends Module {
             .build()
             .getModeValue();
     BooleanValue targetEsp = ValueBuilder.create(this, "Target ESP").setDefaultBooleanValue(true).build().getBooleanValue();
+    public ModeValue TargetESPStyle = ValueBuilder.create(this, "TargetEsp Style")
+            .setVisibility(this.targetEsp::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "Nitro")
+            .build()
+            .getModeValue();
     BooleanValue attackPlayer = ValueBuilder.create(this, "Attack Player").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackInvisible = ValueBuilder.create(this, "Attack Invisible").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue attackAnimals = ValueBuilder.create(this, "Attack Animals").setDefaultBooleanValue(false).build().getBooleanValue();
@@ -201,6 +198,7 @@ public class Aura extends Module {
         }
     }
 
+
     @EventTarget
     public void onRender(EventRender2D e) {
         this.blurMatrix = null;
@@ -209,8 +207,6 @@ public class Aura extends Module {
             e.getStack().pushPose();
             float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
             float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
-            
-            // 使用TargetHUD类来渲染，而不是硬编码的Naven样式
             this.blurMatrix = TargetHUD.render(e.getGuiGraphics(), living, this.targetHudStyle.getCurrentMode(), x, y);
             
             e.getStack().popPose();
@@ -220,40 +216,12 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender e) {
         if (this.targetEsp.getCurrentValue()) {
-            PoseStack stack = e.getPMatrixStack();
-            float partialTicks = e.getRenderPartialTicks();
-            stack.pushPose();
-            GL11.glEnable(3042);
-            GL11.glBlendFunc(770, 771);
-            GL11.glDisable(2929);
-            GL11.glDepthMask(false);
-            GL11.glEnable(2848);
-            RenderSystem.setShader(GameRenderer::getPositionShader);
-            RenderUtils.applyRegionalRenderOffset(stack);
-
-            for (Entity entity : targets) {
-                if (entity instanceof LivingEntity) {
-                    LivingEntity living = (LivingEntity) entity;
-                    float[] color = target == living ? targetColorRed : targetColorGreen;
-                    stack.pushPose();
-                    RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
-                    double motionX = entity.getX() - entity.xo;
-                    double motionY = entity.getY() - entity.yo;
-                    double motionZ = entity.getZ() - entity.zo;
-                    AABB boundingBox = entity.getBoundingBox()
-                            .move(-motionX, -motionY, -motionZ)
-                            .move((double)partialTicks * motionX, (double)partialTicks * motionY, (double)partialTicks * motionZ);
-                    RenderUtils.drawSolidBox(boundingBox, stack);
-                    stack.popPose();
-                }
-            }
-
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            GL11.glDisable(3042);
-            GL11.glEnable(2929);
-            GL11.glDepthMask(true);
-            GL11.glDisable(2848);
-            stack.popPose();
+            com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetESP.render(
+                    e,
+                    targets,
+                    target,
+                    this.TargetESPStyle.getCurrentMode()
+            );
         }
     }
 
@@ -265,7 +233,6 @@ public class Aura extends Module {
         aimingTarget = null;
         targets.clear();
 
-        // 重置CPS状态，包括AdvancedCPS
         this.lastCpsUpdate = 0;
         this.currentCps = 0.0F;
         this.cpsInitialized = false;
