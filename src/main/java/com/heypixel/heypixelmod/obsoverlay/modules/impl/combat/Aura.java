@@ -19,7 +19,10 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,11 +36,13 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
+import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -67,12 +72,6 @@ public class Aura extends Module {
             .build()
             .getModeValue();
     BooleanValue targetEsp = ValueBuilder.create(this, "Target ESP").setDefaultBooleanValue(true).build().getBooleanValue();
-    public ModeValue TargetESPStyle = ValueBuilder.create(this, "TargetEsp Style")
-            .setVisibility(this.targetEsp::getCurrentValue)
-            .setDefaultModeIndex(0)
-            .setModes("Naven", "Nitro")
-            .build()
-            .getModeValue();
     BooleanValue attackPlayer = ValueBuilder.create(this, "Attack Player").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackInvisible = ValueBuilder.create(this, "Attack Invisible").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue attackAnimals = ValueBuilder.create(this, "Attack Animals").setDefaultBooleanValue(false).build().getBooleanValue();
@@ -82,6 +81,7 @@ public class Aura extends Module {
     BooleanValue preferBaby = ValueBuilder.create(this, "Prefer Baby").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue moreParticles = ValueBuilder.create(this, "More Particles").setDefaultBooleanValue(false).build().getBooleanValue();
     public BooleanValue fakeAutoblock = ValueBuilder.create(this, "Fake Autoblock").setDefaultBooleanValue(false).build().getBooleanValue();
+    BooleanValue blockSprintFov = ValueBuilder.create(this, "Block Sprint FOV").setDefaultBooleanValue(true).build().getBooleanValue();
     FloatValue aimRange = ValueBuilder.create(this, "Aim Range")
             .setDefaultFloatValue(5.0F)
             .setFloatStep(0.1F)
@@ -165,16 +165,16 @@ public class Aura extends Module {
 
     FloatValue rotationSpeedMax = ValueBuilder.create(this, "RotationSpeedMax")
             .setDefaultFloatValue(180.0F)
-            .setFloatStep(1.0F)
+            .setFloatStep(2.0F)
             .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
+            .setMaxFloatValue(360.0F)
             .build()
             .getFloatValue();
     FloatValue rotationSpeedMin = ValueBuilder.create(this, "RotationSpeedMin")
             .setDefaultFloatValue(180.0F)
-            .setFloatStep(1.0F)
+            .setFloatStep(2.0F)
             .setMinFloatValue(1.0F)
-            .setMaxFloatValue(180.0F)
+            .setMaxFloatValue(360.0F)
             .build()
             .getFloatValue();
 
@@ -191,6 +191,11 @@ public class Aura extends Module {
     private float currentCps = 0.0F;
     private boolean cpsInitialized = false;
 
+    // FOV屏蔽相关变量
+    private float baseFov = 1.0F;
+    private long lastAttackTime = 0;
+    private static final long FOV_BLOCK_DURATION = 500; // 攻击后屏蔽FOV变化的持续时间(毫秒)
+
     @EventTarget
     public void onShader(EventShader e) {
         if (this.blurMatrix != null && this.targetHud.getCurrentValue()) {
@@ -198,6 +203,30 @@ public class Aura extends Module {
         }
     }
 
+    @EventTarget
+    public void onFovUpdate(EventUpdateFoV e) {
+        if (this.blockSprintFov.getCurrentValue() && mc.player != null) {
+            long currentTime = System.currentTimeMillis();
+
+            // 如果在攻击后的短时间内，屏蔽FOV变化
+            if (currentTime - lastAttackTime < FOV_BLOCK_DURATION) {
+                e.setFov(baseFov);
+                return;
+            }
+
+            // 如果当前有目标且准备攻击，记录基础FOV并屏蔽变化
+            if (target != null && aimingTarget != null) {
+                // 获取疾跑状态的FOV作为基础FOV
+                if (mc.player.isSprinting()) {
+                    baseFov = e.getFov();
+                } else {
+                    // 如果当前不在疾跑，计算疾跑状态的FOV (通常疾跑会增加约1.3倍的FOV修饰符)
+                    baseFov = e.getFov() * 1.3F;
+                }
+                e.setFov(baseFov);
+            }
+        }
+    }
 
     @EventTarget
     public void onRender(EventRender2D e) {
@@ -205,10 +234,30 @@ public class Aura extends Module {
         if (target instanceof LivingEntity && this.targetHud.getCurrentValue()) {
             LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
-            float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
-            float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
+
+            // 获取HUD编辑器中的TargetHUD位置
+            com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement targetHudElement =
+                    com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("targethud");
+
+            float x, y;
+            if (targetHudElement != null) {
+                x = (float)targetHudElement.x;
+                y = (float)targetHudElement.y;
+            } else {
+                // 后备位置
+                x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
+                y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
+            }
+
+            // 使用TargetHUD类来渲染，而不是硬编码的Naven样式
             this.blurMatrix = TargetHUD.render(e.getGuiGraphics(), living, this.targetHudStyle.getCurrentMode(), x, y);
-            
+
+            // 更新HUD元素大小（根据渲染结果）
+            if (targetHudElement != null && this.blurMatrix != null) {
+                targetHudElement.width = this.blurMatrix.z();
+                targetHudElement.height = this.blurMatrix.w();
+            }
+
             e.getStack().popPose();
         }
     }
@@ -216,12 +265,40 @@ public class Aura extends Module {
     @EventTarget
     public void onRender(EventRender e) {
         if (this.targetEsp.getCurrentValue()) {
-            com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetESP.render(
-                    e,
-                    targets,
-                    target,
-                    this.TargetESPStyle.getCurrentMode()
-            );
+            PoseStack stack = e.getPMatrixStack();
+            float partialTicks = e.getRenderPartialTicks();
+            stack.pushPose();
+            GL11.glEnable(3042);
+            GL11.glBlendFunc(770, 771);
+            GL11.glDisable(2929);
+            GL11.glDepthMask(false);
+            GL11.glEnable(2848);
+            RenderSystem.setShader(GameRenderer::getPositionShader);
+            RenderUtils.applyRegionalRenderOffset(stack);
+
+            for (Entity entity : targets) {
+                if (entity instanceof LivingEntity) {
+                    LivingEntity living = (LivingEntity) entity;
+                    float[] color = target == living ? targetColorRed : targetColorGreen;
+                    stack.pushPose();
+                    RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
+                    double motionX = entity.getX() - entity.xo;
+                    double motionY = entity.getY() - entity.yo;
+                    double motionZ = entity.getZ() - entity.zo;
+                    AABB boundingBox = entity.getBoundingBox()
+                            .move(-motionX, -motionY, -motionZ)
+                            .move((double)partialTicks * motionX, (double)partialTicks * motionY, (double)partialTicks * motionZ);
+                    RenderUtils.drawSolidBox(boundingBox, stack);
+                    stack.popPose();
+                }
+            }
+
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glDisable(3042);
+            GL11.glEnable(2929);
+            GL11.glDepthMask(true);
+            GL11.glDisable(2848);
+            stack.popPose();
         }
     }
 
@@ -233,15 +310,25 @@ public class Aura extends Module {
         aimingTarget = null;
         targets.clear();
 
+        // 重置CPS状态，包括AdvancedCPS
         this.lastCpsUpdate = 0;
         this.currentCps = 0.0F;
         this.cpsInitialized = false;
+
+        // 重置FOV屏蔽状态
+        this.baseFov = 1.0F;
+        this.lastAttackTime = 0;
     }
 
     @Override
     public void onDisable() {
         target = null;
         aimingTarget = null;
+
+        // 重置FOV屏蔽状态
+        this.baseFov = 1.0F;
+        this.lastAttackTime = 0;
+
         super.onDisable();
     }
 
@@ -451,6 +538,10 @@ public class Aura extends Module {
 
     public void attackEntity(Entity entity) {
         this.attackTimes++;
+
+        // 记录攻击时间用于FOV屏蔽
+        this.lastAttackTime = System.currentTimeMillis();
+
         float currentYaw = mc.player.getYRot();
         float currentPitch = mc.player.getXRot();
         mc.player.setYRot(RotationManager.rotations.x);
@@ -494,26 +585,26 @@ public class Aura extends Module {
                 ? possibleTargets
                 : possibleTargets.subList(0, (int)Math.min((float)possibleTargets.size(), this.switchSize.getCurrentValue()));
     }
-    
-    
+
+
     public float getRandomRotationSpeed() {
         float min = Math.min(rotationSpeedMin.getCurrentValue(), rotationSpeedMax.getCurrentValue());
         float max = Math.max(rotationSpeedMin.getCurrentValue(), rotationSpeedMax.getCurrentValue());
-        
+
         if (min == max) {
             return min;
         }
-        
+
         return min + random.nextFloat() * (max - min);
     }
-    
-    
+
+
     public float getRandomCps() {
         long currentTime = System.currentTimeMillis();
-        
+
         // 根据AdvancedCPS设置获取CPS的间隔
-        long cpsDelayMs = advancedCPS.getCurrentValue() ? 
-            (long)getCPSDelay.getCurrentValue() : 5L;
+        long cpsDelayMs = advancedCPS.getCurrentValue() ?
+                (long)getCPSDelay.getCurrentValue() : 5L;
 
         if (!this.cpsInitialized || (currentTime - this.lastCpsUpdate) >= cpsDelayMs) {
             this.currentCps = this.generateRandomCps();
@@ -522,16 +613,16 @@ public class Aura extends Module {
         }
         return this.currentCps;
     }
-    
-    
+
+
     private float generateRandomCps() {
         float min = Math.min(attackCpsMin.getCurrentValue(), attackCpsMax.getCurrentValue());
         float max = Math.max(attackCpsMin.getCurrentValue(), attackCpsMax.getCurrentValue());
-        
+
         if (min == max) {
             return min;
         }
-        
+
         return min + random.nextFloat() * (max - min);
     }
 }

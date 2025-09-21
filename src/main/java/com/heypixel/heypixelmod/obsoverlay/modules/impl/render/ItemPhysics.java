@@ -1,5 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render;
 
+import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
@@ -14,31 +16,34 @@ import net.minecraft.util.Mth;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Random;
 
 @ModuleInfo(
     name = "ItemPhysics",
-    description = "让掉落物拥有真实的物理效果",
+    description = "让掉落物品拥有真实的物理效果",
     category = Category.RENDER
 )
 public class ItemPhysics extends Module {
     private final Minecraft mc = Minecraft.getInstance();
     private final Map<Integer, ItemPhysicsData> physicsData = new ConcurrentHashMap<>();
+    private final Random random = new Random();
     
-    // 物理参数 - 固定值，无需配置
+    // 物理常量 - 经过优化的固定值
     private static final double GRAVITY = 0.04;
+    private static final double BOUNCE_FACTOR = 0.3;
     private static final double AIR_RESISTANCE = 0.98;
     private static final double GROUND_FRICTION = 0.8;
-    private static final double BOUNCE_FACTOR = 0.3;
-    private static final double ROTATION_SPEED = 1.5;
+    private static final double ROTATION_SPEED = 2.0;
     private static final int MAX_AGE = 6000; // 5分钟
 
-    public void onTick() {
-        if (mc.level == null) return;
+    @EventTarget
+    public void onTick(EventRunTicks event) {
+        if (mc.level == null || mc.player == null) return;
         
         // 清理过期数据
         cleanupOldData();
         
-        // 处理所有掉落物
+        // 处理所有掉落物        
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof ItemEntity) || !entity.isAlive()) continue;
             
@@ -49,8 +54,11 @@ public class ItemPhysics extends Module {
     
     private void processItemPhysics(ItemEntity itemEntity) {
         int entityId = itemEntity.getId();
-        ItemPhysicsData data = physicsData.computeIfAbsent(entityId, 
-            id -> new ItemPhysicsData(itemEntity.position()));
+        ItemPhysicsData data = physicsData.get(entityId);
+        if (data == null) {
+            data = new ItemPhysicsData(itemEntity.position());
+            physicsData.put(entityId, data);
+        }
         
         // 应用重力和阻力
         applyPhysics(itemEntity, data);
@@ -94,32 +102,51 @@ public class ItemPhysics extends Module {
         if (data.velocity.length() > maxVelocity) {
             data.velocity = data.velocity.normalize().scale(maxVelocity);
         }
+        
+        // 如果是新创建的物品，添加一些随机初始速度
+        if (data.age == 0 && !data.hasInitialVelocity) {
+            double randomX = (random.nextDouble() - 0.5) * 0.1;
+            double randomZ = (random.nextDouble() - 0.5) * 0.1;
+            data.velocity = data.velocity.add(randomX, 0, randomZ);
+            data.hasInitialVelocity = true;
+        }
     }
     
     private void handleCollisions(ItemEntity entity, ItemPhysicsData data) {
         Level level = entity.level();
-        Vec3 nextPos = entity.position().add(data.velocity);
+        if (level == null) return;
         
-        BlockPos blockPos = new BlockPos(Mth.floor(nextPos.x), Mth.floor(nextPos.y), Mth.floor(nextPos.z));
-        BlockState blockState = level.getBlockState(blockPos);
+        Vec3 currentPos = entity.position();
+        Vec3 nextPos = currentPos.add(data.velocity);
         
-        if (!blockState.isAir()) {
-            // 简单的碰撞反弹
-            if (data.velocity.y < 0 && nextPos.y <= blockPos.getY() + 1) {
-                data.velocity = new Vec3(
-                    data.velocity.x, 
-                    Math.abs(data.velocity.y) * BOUNCE_FACTOR, 
-                    data.velocity.z
-                );
-            }
+        // 检查垂直碰撞
+        BlockPos blockBelowPos = new BlockPos(Mth.floor(currentPos.x), Mth.floor(currentPos.y - 0.1), Mth.floor(currentPos.z));
+        BlockState blockBelowState = level.getBlockState(blockBelowPos);
+        
+        if (!blockBelowState.isAir() && data.velocity.y < 0) {
+            // 垂直反弹
+            data.velocity = new Vec3(
+                data.velocity.x, 
+                Math.abs(data.velocity.y) * BOUNCE_FACTOR, 
+                data.velocity.z
+            );
+        }
+        
+        // 检查水平碰撞
+        BlockPos blockNextPos = new BlockPos(Mth.floor(nextPos.x), Mth.floor(nextPos.y), Mth.floor(nextPos.z));
+        BlockState blockNextState = level.getBlockState(blockNextPos);
+        
+        if (!blockNextState.isAir()) {
+            double bounceForce = BOUNCE_FACTOR * 0.5;
             
-            // 水平碰撞
+            // X轴碰撞
             if (Math.abs(data.velocity.x) > 0.01) {
-                data.velocity = new Vec3(-data.velocity.x * BOUNCE_FACTOR * 0.5, data.velocity.y, data.velocity.z);
+                data.velocity = new Vec3(-data.velocity.x * bounceForce, data.velocity.y, data.velocity.z);
             }
             
+            // Z轴碰撞
             if (Math.abs(data.velocity.z) > 0.01) {
-                data.velocity = new Vec3(data.velocity.x, data.velocity.y, -data.velocity.z * BOUNCE_FACTOR * 0.5);
+                data.velocity = new Vec3(data.velocity.x, data.velocity.y, -data.velocity.z * bounceForce);
             }
         }
         
@@ -129,6 +156,10 @@ public class ItemPhysics extends Module {
                 data.velocity = new Vec3(data.velocity.x, -0.1, data.velocity.z);
             }
         }
+        
+        // 应用位置更新
+        Vec3 newPos = currentPos.add(data.velocity);
+        entity.setPos(newPos.x, newPos.y, newPos.z);
     }
     
     private void updateRotation(ItemPhysicsData data) {
@@ -144,21 +175,7 @@ public class ItemPhysics extends Module {
         data.rotationZ = data.rotationZ % 360;
     }
 
-    public void onRender(float partialTicks) {
-        for (Map.Entry<Integer, ItemPhysicsData> entry : physicsData.entrySet()) {
-            ItemEntity entity = getEntityById(entry.getKey());
-            if (entity != null && entity.isAlive()) {
-                ItemPhysicsData data = entry.getValue();
-                
-                // 平滑插值位置
-                Vec3 currentPos = entity.position();
-                Vec3 newPos = currentPos.add(data.velocity.scale(partialTicks));
-                
-                // 更新实体位置
-                entity.setPos(newPos.x, newPos.y, newPos.z);
-            }
-        }
-    }
+    // 删除了onRender方法，因为我们在handleCollisions中直接更新位置
     
     private void cleanupOldData() {
         physicsData.entrySet().removeIf(entry -> {
@@ -201,6 +218,7 @@ public class ItemPhysics extends Module {
         Vec3 originalPosition;
         int age;
         float rotationX, rotationY, rotationZ;
+        boolean hasInitialVelocity;
         
         public ItemPhysicsData(Vec3 initialPosition) {
             this.velocity = Vec3.ZERO;
@@ -209,6 +227,7 @@ public class ItemPhysics extends Module {
             this.rotationX = 0;
             this.rotationY = 0;
             this.rotationZ = 0;
+            this.hasInitialVelocity = false;
         }
     }
 }

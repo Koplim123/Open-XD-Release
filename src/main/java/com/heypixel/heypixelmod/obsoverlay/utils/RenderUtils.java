@@ -603,4 +603,76 @@ public class RenderUtils {
         tessellator.end();
         RenderSystem.disableBlend();
     }
+    
+    /**
+     * 绘制带有特定圆角的矩形
+     * @param poseStack 渲染堆栈
+     * @param x X坐标
+     * @param y Y坐标
+     * @param width 宽度
+     * @param height 高度
+     * @param topLeftRadius 左上角圆角半径
+     * @param topRightRadius 右上角圆角半径
+     * @param bottomLeftRadius 左下角圆角半径
+     * @param bottomRightRadius 右下角圆角半径
+     * @param color 颜色
+     */
+    public static void drawRoundedRectCustom(PoseStack poseStack, float x, float y, float width, float height, 
+                                           float topLeftRadius, float topRightRadius, float bottomLeftRadius, float bottomRightRadius, int color) {
+        if (color == 16777215) {
+            color = ARGB32.color(255, 255, 255, 255);
+        }
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        
+        // 绘制主体矩形
+        float maxRadius = Math.max(Math.max(topLeftRadius, topRightRadius), Math.max(bottomLeftRadius, bottomRightRadius));
+        if (maxRadius > 0) {
+            drawRectBound(poseStack, x + maxRadius, y + maxRadius, width - maxRadius * 2.0F, height - maxRadius * 2.0F, color);
+        } else {
+            drawRectBound(poseStack, x, y, width, height, color);
+        }
+        
+        // 绘制圆角部分
+        if (topLeftRadius > 0) {
+            drawCornerArc(poseStack, x + topLeftRadius, y + topLeftRadius, topLeftRadius, 180, 270, color);
+        }
+        if (topRightRadius > 0) {
+            drawCornerArc(poseStack, x + width - topRightRadius, y + topRightRadius, topRightRadius, 270, 360, color);
+        }
+        if (bottomLeftRadius > 0) {
+            drawCornerArc(poseStack, x + bottomLeftRadius, y + height - bottomLeftRadius, bottomLeftRadius, 90, 180, color);
+        }
+        if (bottomRightRadius > 0) {
+            drawCornerArc(poseStack, x + width - bottomRightRadius, y + height - bottomRightRadius, bottomRightRadius, 0, 90, color);
+        }
+    }
+    
+    private static void drawCornerArc(PoseStack poseStack, float centerX, float centerY, float radius, int startAngle, int endAngle, int color) {
+        if (radius <= 0) return;
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+        Matrix4f matrix = poseStack.last().pose();
+        
+        float alpha = (float)(color >> 24 & 0xFF) / 255.0F;
+        float red = (float)(color >> 16 & 0xFF) / 255.0F;
+        float green = (float)(color >> 8 & 0xFF) / 255.0F;
+        float blue = (float)(color & 0xFF) / 255.0F;
+        
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, centerX, centerY, 0.0F).color(red, green, blue, alpha).endVertex();
+        
+        for (int i = startAngle; i <= endAngle; i++) {
+            double angle = Math.toRadians(i);
+            float x = centerX + (float)(Math.cos(angle) * radius);
+            float y = centerY + (float)(Math.sin(angle) * radius);
+            buffer.vertex(matrix, x, y, 0.0F).color(red, green, blue, alpha).endVertex();
+        }
+        
+        tesselator.end();
+    }
 }

@@ -102,6 +102,9 @@ public class Naven {
       this.commandManager = new CommandManager();
       this.fileManager = new FileManager();
       this.notificationManager = new NotificationManager();
+      
+      // 初始化HUD编辑器
+      com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance();
       this.fileManager.load();
       
       // 在加载配置文件后加载用户选择的字体

@@ -9,8 +9,6 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ConnectAndReveives {
     private static final String SERVER_HOST = "45.192.105.145";
@@ -48,7 +46,7 @@ public class ConnectAndReveives {
                 @Override
                 public void onOpen(ServerHandshake handshake) {
                     isConnected = true;
-                    System.out.println("WebSocket连接已建立喵~");
+                    System.out.println("WebSocket连接已建立");
                     System.out.println("连接信息: " + handshake.getHttpStatus() + " " + handshake.getHttpStatusMessage());
                     
                     // 连接建立后立即发送认证请求
@@ -71,7 +69,7 @@ public class ConnectAndReveives {
                     isConnected = false;
                     isAuthenticated = false;
                     isAuthenticating = false; // 重置认证状态
-                    System.out.println("WebSocket连接已关闭: " + reason + " (代码: " + code + ", 远程关闭: " + remote + ") 喵~");
+                    System.out.println("WebSocket连接已关闭: " + reason + " (代码: " + code + ", 远程关闭: " + remote + ")");
                     if (messageHandler != null) {
                         messageHandler.onDisconnected();
                     }
@@ -79,7 +77,7 @@ public class ConnectAndReveives {
                 
                 @Override
                 public void onError(Exception ex) {
-                    System.err.println("WebSocket错误: " + ex.getMessage() + " 喵~");
+                    System.err.println("WebSocket错误: " + ex.getMessage());
                     ex.printStackTrace();
                     if (messageHandler != null) {
                         messageHandler.onError(ex.getMessage());
@@ -87,51 +85,51 @@ public class ConnectAndReveives {
                 }
             };
         } catch (URISyntaxException e) {
-            System.err.println("WebSocket URL语法错误: " + e.getMessage() + " 喵~");
+            System.err.println("WebSocket URL语法错误: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     /**
-     * 连接到WebSocket服务器喵~
+     * 连接到WebSocket服务器
      */
     public void connect() {
         if (webSocketClient != null && !isConnected) {
-            System.out.println("正在连接到WebSocket服务器... 喵~");
+            System.out.println("正在连接到WebSocket服务器...");
             System.out.println("服务器地址: " + SERVER_URL);
             webSocketClient.connect();
         } else if (isConnected) {
-            System.out.println("WebSocket已经连接喵~");
+            System.out.println("WebSocket已经连接");
             // 如果已经连接，直接尝试认证
             authenticate();
         } else {
-            System.err.println("WebSocket客户端未初始化喵~");
+            System.err.println("WebSocket客户端未初始化");
         }
     }
     
     /**
-     * 断开WebSocket连接喵~
+     * 断开WebSocket连接
      */
     public void disconnect() {
         if (webSocketClient != null && isConnected) {
-            System.out.println("正在断开WebSocket连接... 喵~");
+            System.out.println("正在断开WebSocket连接...");
             webSocketClient.close();
         } else {
-            System.err.println("WebSocket未连接或客户端未初始化喵~");
+            System.err.println("WebSocket未连接或客户端未初始化");
         }
     }
     
     /**
-     * 发送认证消息喵~
+     * 发送认证消息
      */
     public void authenticate() {
         if (!isConnected) {
-            System.err.println("WebSocket未连接，无法认证喵~");
+            System.err.println("WebSocket未连接，无法认证");
             return;
         }
         
         if (isAuthenticating || isAuthenticated) {
-            System.err.println("已经在认证中或已认证喵~");
+            System.err.println("已经在认证中或已认证");
             return;
         }
         
@@ -139,7 +137,7 @@ public class ConnectAndReveives {
         String mcName = Minecraft.getInstance().getUser().getName();
         
         if (ircNick.isEmpty()) {
-            System.err.println("IRC用户名为空，无法认证喵~");
+            System.err.println("IRC用户名为空，无法认证");
             return;
         }
         
@@ -154,15 +152,15 @@ public class ConnectAndReveives {
         String authMessageStr = authMessage.toString();
         System.out.println("准备发送认证消息: " + authMessageStr);
         sendRawMessage(authMessageStr);
-        System.out.println("发送认证消息完成: IRC=" + ircNick + ", MC=" + mcName + " 喵~");
+        System.out.println("发送认证消息完成: IRC=" + ircNick + ", MC=" + mcName);
     }
     
     /**
-     * 加入聊天喵~
+     * 加入聊天
      */
     public void join() {
         if (!isAuthenticated) {
-            System.err.println("未认证，无法加入聊天喵~");
+            System.err.println("未认证，无法加入聊天");
             return;
         }
         
@@ -170,15 +168,15 @@ public class ConnectAndReveives {
         joinMessage.addProperty("type", "join");
         
         sendRawMessage(joinMessage.toString());
-        System.out.println("发送加入消息喵~");
+        System.out.println("发送加入消息");
     }
     
     /**
-     * 发送公共消息喵~
+     * 发送公共消息
      */
     public void sendMessage(String message) {
         if (!isAuthenticated) {
-            System.err.println("未认证，无法发送消息喵~");
+            System.err.println("未认证，无法发送消息");
             return;
         }
         
@@ -190,11 +188,11 @@ public class ConnectAndReveives {
     }
     
     /**
-     * 发送私聊消息喵~
+     * 发送私聊消息
      */
     public void sendPrivateMessage(String targetUser, String message) {
         if (!isAuthenticated) {
-            System.err.println("未认证，无法发送私聊消息喵~");
+            System.err.println("未认证，无法发送私聊消息");
             return;
         }
         
@@ -204,15 +202,15 @@ public class ConnectAndReveives {
         privateMessage.addProperty("message", message);
         
         sendRawMessage(privateMessage.toString());
-        System.out.println("发送私聊消息给 " + targetUser + ": " + message + " 喵~");
+        System.out.println("发送私聊消息给 " + targetUser + ": " + message);
     }
     
     /**
-     * 发送Minecraft命令喵~
+     * 发送Minecraft命令
      */
     public void sendMinecraftCommand(String command) {
         if (!isAuthenticated) {
-            System.err.println("未认证，无法发送Minecraft命令喵~");
+            System.err.println("未认证，无法发送Minecraft命令");
             return;
         }
         
@@ -221,25 +219,41 @@ public class ConnectAndReveives {
         commandMessage.addProperty("command", command);
         
         sendRawMessage(commandMessage.toString());
-        System.out.println("发送Minecraft命令: " + command + " 喵~");
+        System.out.println("发送Minecraft命令: " + command);
     }
     
     /**
-     * 发送原始消息喵~
+     * 请求在线用户列表
+     */
+    public void requestUserList() {
+        if (!isAuthenticated) {
+            System.err.println("未认证，无法请求用户列表");
+            return;
+        }
+        
+        JsonObject listMessage = new JsonObject();
+        listMessage.addProperty("type", "list_users");
+        
+        sendRawMessage(listMessage.toString());
+        System.out.println("请求用户列表");
+    }
+    
+    /**
+     * 发送原始消息
      */
     private void sendRawMessage(String message) {
         if (webSocketClient != null && isConnected) {
             System.out.println("发送原始消息: " + message);
             webSocketClient.send(message);
-            System.out.println("消息发送完成喵~");
+            System.out.println("消息发送完成");
         } else {
-            System.err.println("WebSocket未连接或客户端未初始化，无法发送消息喵~");
+            System.err.println("WebSocket未连接或客户端未初始化，无法发送消息");
             System.err.println("当前连接状态 - isConnected: " + isConnected + ", webSocketClient is null: " + (webSocketClient == null));
         }
     }
     
     /**
-     * 处理接收到的消息喵~
+     * 处理接收到的消息
      */
     private void handleMessage(String message) {
         try {
@@ -253,11 +267,11 @@ public class ConnectAndReveives {
             
             String type = jsonMessage.get("type").getAsString();
             
-            System.out.println("收到消息类型: " + type + " 喵~");
+            System.out.println("收到消息类型: " + type);
             
             switch (type) {
                 case "auth_required":
-                    System.out.println("服务器要求认证喵~");
+                    System.out.println("服务器要求认证");
                     authenticate();
                     break;
                     
@@ -265,7 +279,7 @@ public class ConnectAndReveives {
                     // 只有收到服务器确认后才设置为认证成功
                     isAuthenticated = true;
                     isAuthenticating = false;
-                    System.out.println("认证成功喵~");
+                    System.out.println("认证成功");
                     join(); // 认证成功后自动加入
                     break;
                     
@@ -273,22 +287,22 @@ public class ConnectAndReveives {
                     // 认证失败，重置状态
                     isAuthenticated = false;
                     isAuthenticating = false;
-                    String errorMessage = jsonMessage.has("message") ? jsonMessage.get("message").getAsString() : "认证失败喵~";
-                    System.err.println("认证失败: " + errorMessage + " 喵~");
+                    String errorMessage = jsonMessage.has("message") ? jsonMessage.get("message").getAsString() : "认证失败";
+                    System.err.println("认证失败: " + errorMessage);
                     break;
                     
                 case "welcome":
-                    System.out.println("收到欢迎消息喵~");
+                    System.out.println("收到欢迎消息");
                     break;
                     
                 case "user_joined":
                     String joinedUser = jsonMessage.get("username").getAsString();
-                    System.out.println("用户 " + joinedUser + " 加入了聊天喵~");
+                    System.out.println("用户 " + joinedUser + " 加入了聊天");
                     break;
                     
                 case "user_left":
                     String leftUser = jsonMessage.get("username").getAsString();
-                    System.out.println("用户 " + leftUser + " 离开了聊天喵~");
+                    System.out.println("用户 " + leftUser + " 离开了聊天");
                     break;
                     
                 case "message":
@@ -300,29 +314,35 @@ public class ConnectAndReveives {
                 case "private_message":
                     String fromUser = jsonMessage.get("from").getAsString();
                     String privateMsg = jsonMessage.get("message").getAsString();
-                    System.out.println("[私聊] " + fromUser + ": " + privateMsg + " 喵~");
+                    System.out.println("[私聊] " + fromUser + ": " + privateMsg);
                     break;
                     
                 case "private_message_sent":
                     String toUser = jsonMessage.get("to").getAsString();
                     String sentMsg = jsonMessage.get("message").getAsString();
-                    System.out.println("私聊消息已发送给 " + toUser + ": " + sentMsg + " 喵~");
+                    System.out.println("私聊消息已发送给 " + toUser + ": " + sentMsg);
                     break;
                     
                 case "minecraft_command":
                     String commandUser = jsonMessage.get("username").getAsString();
                     String command = jsonMessage.get("command").getAsString();
-                    System.out.println("[命令] " + commandUser + ": " + command + " 喵~");
+                    System.out.println("[命令] " + commandUser + ": " + command);
+                    break;
+                    
+                case "user_list":
+                    System.out.println("收到用户列表响应");
+                    if (jsonMessage.has("users")) {
+                        System.out.println("在线用户: " + jsonMessage.get("users").toString());
+                    }
                     break;
                     
                 case "error":
-                    String errorMsg = jsonMessage.has("message") ? jsonMessage.get("message").getAsString() : "未知错误喵~";
-                    System.err.println("服务器错误: " + errorMsg + " 喵~");
+                    String errorMsg = jsonMessage.has("message") ? jsonMessage.get("message").getAsString() : "未知错误";
+                    System.err.println("服务器错误: " + errorMsg);
                     break;
                     
                 default:
-                    System.out.println("未知消息类型: " + type + " 喵~");
-                    System.out.println("完整消息内容: " + message);
+                    // 忽略未知消息类型，不输出日志
                     break;
             }
             
@@ -332,35 +352,35 @@ public class ConnectAndReveives {
             }
             
         } catch (Exception e) {
-            System.err.println("处理消息时出错: " + e.getMessage() + " 喵~");
+            System.err.println("处理消息时出错: " + e.getMessage());
             System.err.println("原始消息内容: " + message);
             e.printStackTrace();
         }
     }
     
     /**
-     * 获取连接状态喵~
+     * 获取连接状态
      */
     public boolean isConnected() {
         return isConnected;
     }
     
     /**
-     * 获取认证状态喵~
+     * 获取认证状态
      */
     public boolean isAuthenticated() {
         return isAuthenticated;
     }
     
     /**
-     * 获取是否正在认证状态喵~
+     * 获取是否正在认证状态
      */
     public boolean isAuthenticating() {
         return isAuthenticating;
     }
     
     /**
-     * 获取服务器地址喵~
+     * 获取服务器地址
      */
     public String getServerAddress() {
         return SERVER_URL;

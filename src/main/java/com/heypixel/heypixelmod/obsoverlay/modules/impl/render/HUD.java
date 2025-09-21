@@ -147,7 +147,8 @@ public class HUD extends Module {
 
         if (this.arrayList.getCurrentValue()) {
             for (Vector4f blurMatrix : this.blurMatrices) {
-                RenderUtils.fillBound(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 1073741824);
+                // 使用圆角矩形渲染模糊背景，保持与主背景一致的圆角效果
+                RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, 1073741824);
             }
         }
     }
@@ -193,13 +194,43 @@ public class HUD extends Module {
                 });
             }
 
-            float maxWidth = this.renderModules.isEmpty()
-                    ? 0.0F
-                    : font.getWidth(this.getModuleDisplayName(this.renderModules.get(0)), (double)this.arrayListSize.getCurrentValue());
-            float arrayListX = this.arrayListDirection.isCurrentMode("Right")
-                    ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.xOffset.getCurrentValue()
-                    : 3.0F + this.xOffset.getCurrentValue();
-            float arrayListY = this.yOffset.getCurrentValue();
+            // 计算实际启用模块中的最大宽度
+            float maxWidth = 0.0F;
+            for (Module module : this.renderModules) {
+                if (module.isEnabled()) {
+                    float moduleWidth = font.getWidth(this.getModuleDisplayName(module), (double)this.arrayListSize.getCurrentValue());
+                    if (moduleWidth > maxWidth) {
+                        maxWidth = moduleWidth;
+                    }
+                }
+            }
+            
+            // 如果没有启用的模块或maxWidth太小，使用合理的默认值
+            if (maxWidth < 50.0F) {
+                maxWidth = 100.0F;
+            }
+            
+            // 获取HUD编辑器中的位置
+            com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement arrayListElement = 
+                com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("arraylist");
+            
+            float arrayListX, arrayListY;
+            if (arrayListElement != null) {
+                // 使用HUDEditor的位置
+                if (this.arrayListDirection.isCurrentMode("Right")) {
+                    // 对于右对齐，HUDEditor存储的是碰撞箱左边界，我们需要计算实际渲染起始位置
+                    arrayListX = (float)arrayListElement.x;
+                } else {
+                    arrayListX = (float)arrayListElement.x;
+                }
+                arrayListY = (float)arrayListElement.y;
+            } else {
+                // 后备位置
+                arrayListX = this.arrayListDirection.isCurrentMode("Right")
+                        ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.xOffset.getCurrentValue()
+                        : 3.0F + this.xOffset.getCurrentValue();
+                arrayListY = this.yOffset.getCurrentValue();
+            }
             float height = 0.0F;
             double fontHeight = font.getHeight(true, (double)this.arrayListSize.getCurrentValue());
 
@@ -223,12 +254,14 @@ public class HUD extends Module {
                     float left = -stringWidth * (1.0F - animation.value / 100.0F);
                     float right = maxWidth - stringWidth * (animation.value / 100.0F);
                     float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
-                    RenderUtils.fillBound(
+                    // 使用圆角矩形渲染背景，实现向下过渡的圆角效果
+                    RenderUtils.drawRoundedRect(
                             e.getStack(),
                             arrayListX + innerX,
                             arrayListY + height + 2.0F,
                             stringWidth + 3.0F,
                             (float)((double)(animation.value / 100.0F) * fontHeight),
+                            3.0F, // 圆角半径
                             backgroundColor
                     );
                     this.blurMatrices
@@ -255,6 +288,12 @@ public class HUD extends Module {
                     );
                     height += (float)((double)(animation.value / 100.0F) * fontHeight);
                 }
+            }
+
+            // 更新HUDEditor中ArrayList的实际大小
+            if (arrayListElement != null) {
+                arrayListElement.width = Math.max(maxWidth, 100.0F);
+                arrayListElement.height = Math.max(height, 50.0F);
             }
 
             font.setAlpha(1.0F);

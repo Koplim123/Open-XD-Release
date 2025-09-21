@@ -132,12 +132,18 @@ public class Scaffold extends Module {
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
-    FloatValue fov = ValueBuilder.create(this, "FoV")
-            .setDefaultFloatValue(1.15F)
+    FloatValue speedFov = ValueBuilder.create(this, "SpeedFov")
+            .setDefaultFloatValue(1.0F)
             .setMaxFloatValue(2.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(0.1F)
+            .build()
+            .getFloatValue();
+    FloatValue fov = ValueBuilder.create(this, "MaxRotationFov")
+            .setDefaultFloatValue(180.0F)
+            .setMaxFloatValue(180.0F)
             .setMinFloatValue(1.0F)
-            .setFloatStep(0.05F)
-            .setVisibility(() -> this.keepFoV.getCurrentValue())
+            .setFloatStep(1.0F)
             .build()
             .getFloatValue();
     FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
@@ -145,7 +151,7 @@ public class Scaffold extends Module {
             .setMaxFloatValue(10.0F)
             .setMinFloatValue(0.0F)
             .setFloatStep(0.15F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.randomOffGroundTicks.getCurrentValue())
             .build()
             .getFloatValue();
     FloatValue minOffGroundTicks = ValueBuilder.create(this, "Min OffGround Ticks")
@@ -153,9 +159,22 @@ public class Scaffold extends Module {
             .setMaxFloatValue(10.0F)
             .setMinFloatValue(0.0F)
             .setFloatStep(0.15F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.randomOffGroundTicks.getCurrentValue())
             .build()
             .getFloatValue();
+    FloatValue offGroundTicksValue = ValueBuilder.create(this, "OffGround Ticks")
+            .setDefaultFloatValue(2.5F)
+            .setMaxFloatValue(5.0F)
+            .setMinFloatValue(0.1F)
+            .setFloatStep(0.15F)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && !this.randomOffGroundTicks.getCurrentValue())
+            .build()
+            .getFloatValue();
+    public BooleanValue randomOffGroundTicks = ValueBuilder.create(this, "Random OffGround Ticks")
+            .setDefaultBooleanValue(false)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getBooleanValue();
     public BooleanValue smartOffGround = ValueBuilder.create(this, "Smart OffGround")
             .setDefaultBooleanValue(true)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
@@ -169,11 +188,11 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.smartOffGround.getCurrentValue())
             .build()
             .getFloatValue();
-    FloatValue rescueDelay = ValueBuilder.create(this, "Rescue Delay")
+    FloatValue rescueDelay = ValueBuilder.create(this, "SetPerform Delay")
             .setDefaultFloatValue(2.0F)
             .setMaxFloatValue(5.0F)
             .setMinFloatValue(0.5F)
-            .setFloatStep(0.5F)
+            .setFloatStep(0.25F)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.smartOffGround.getCurrentValue())
             .build()
             .getFloatValue();
@@ -246,8 +265,24 @@ public class Scaffold extends Module {
 
     @EventTarget
     public void onFoV(EventUpdateFoV e) {
-        if (this.keepFoV.getCurrentValue() && MoveUtils.isMoving()) {
-            e.setFov(this.fov.getCurrentValue() + (float)PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F);
+        if (this.keepFoV.getCurrentValue()) {
+            float baseFov = e.getFov();
+
+            // 运动速度带来的微弱FoV增益（保持原有逻辑）
+            float moveBonus = MoveUtils.isMoving() ? (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F : 0.0F;
+
+            // 根据本模块当前每tick的旋转速度（相对于上一tick）渲染额外的视觉速度效果
+            float yawDelta = Math.abs(this.rots.getX() - this.lastRots.getX());
+            float pitchDelta = Math.abs(this.rots.getY() - this.lastRots.getY());
+            float rotationSpeed = (float) Math.sqrt(yawDelta * yawDelta + pitchDelta * pitchDelta);
+
+            // 归一化旋转速度到[0,1]，以180°/tick为上限（极端快速旋转）
+            float normalized = Math.min(rotationSpeed / 180.0F, 1.0F);
+
+            // 使用“MaxRotationFov”作为最大视觉增益（本类的 fov 值），并叠乘 SpeedFov 系数
+            float rotationFoV = normalized * this.fov.getCurrentValue() * this.speedFov.getCurrentValue();
+
+            e.setFov(baseFov + moveBonus + rotationFoV);
         }
     }
 
@@ -261,8 +296,11 @@ public class Scaffold extends Module {
             this.baseY = 10000;
             this.rescueTicks = 0;
             this.isRescuing = false;
-            // 使用计算的中间值替代原来的 tellyOffGroundTicks
-            this.originalOffGroundTicks = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
+            if (this.randomOffGroundTicks.getCurrentValue()) {
+                this.originalOffGroundTicks = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
+            } else {
+                this.originalOffGroundTicks = this.offGroundTicksValue.getCurrentValue();
+            }
             this.lastY = mc.player.getY();
             this.fallDetectionTicks = 0;
             this.lastVelocity = mc.player.getDeltaMovement();
@@ -409,7 +447,12 @@ public class Scaffold extends Module {
     @EventTarget
     public void onClick(EventClick e) {
         e.setCancelled(true);
-        float currentThreshold = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
+        float currentThreshold;
+        if (this.randomOffGroundTicks.getCurrentValue()) {
+            currentThreshold = (this.maxOffGroundTicks.getCurrentValue() + this.minOffGroundTicks.getCurrentValue()) / 2.0F;
+        } else {
+            currentThreshold = this.offGroundTicksValue.getCurrentValue();
+        }
         if (mc.screen == null && mc.player != null && this.pos != null && (!this.mode.isCurrentMode("Telly Bridge") || this.offGroundTicks >= currentThreshold)) {
             if (!this.checkPlace(this.pos)) {
                 return;
@@ -450,9 +493,19 @@ public class Scaffold extends Module {
     @FlowExclude
     @ParameterObfuscationExclude
     private Vector2f getPlayerYawRotation() {
-        return mc.player != null && this.pos != null
-                ? new Vector2f(RotationUtils.getRotations(this.pos.position(), 0.0F).getYaw(), RotationUtils.getRotations(this.pos.position(), 0.0F).getPitch())
-                : new Vector2f(0.0F, 0.0F);
+        if (mc.player != null && this.pos != null) {
+            Vector2f targetRotation = new Vector2f(RotationUtils.getRotations(this.pos.position(), 0.0F).getYaw(), RotationUtils.getRotations(this.pos.position(), 0.0F).getPitch());
+            Vector2f currentRotation = new Vector2f(this.rots.getX(), this.rots.getY());
+            float yawDifference = Math.abs(RotationUtils.getAngleDifference(targetRotation.getX(), currentRotation.getX()));
+            if (yawDifference > this.fov.getCurrentValue()) {
+                float direction = Math.signum(RotationUtils.getAngleDifference(targetRotation.getX(), currentRotation.getX()));
+                float limitedYaw = currentRotation.getX() + direction * this.fov.getCurrentValue();
+                targetRotation.setX(limitedYaw);
+            }
+            
+            return targetRotation;
+        }
+        return new Vector2f(0.0F, 0.0F);
     }
 
     private boolean shouldBuild() {

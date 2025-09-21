@@ -6,8 +6,7 @@ public enum Category {
    COMBAT("Combat", FontIcons.SWORD),
    MOVEMENT("Movement", FontIcons.RUNNING),
    RENDER("Render", FontIcons.EYE),
-   MISC("Misc", FontIcons.OTHER),
-   MUSICPLAYER("MusicPlayer", FontIcons.OTHER);
+   MISC("Misc", FontIcons.OTHER);
 
    private final String displayName;
    private final String icon;

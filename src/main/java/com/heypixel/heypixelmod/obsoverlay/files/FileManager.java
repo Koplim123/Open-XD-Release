@@ -35,6 +35,7 @@ public class FileManager {
       this.files.add(new CGuiFile());
       this.files.add(new ProxyFile());
       this.files.add(new FriendFile());
+      this.files.add(new HUDPositionFile());
    }
 
    public void load() {

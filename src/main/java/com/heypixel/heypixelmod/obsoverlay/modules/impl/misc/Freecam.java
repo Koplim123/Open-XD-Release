@@ -4,7 +4,6 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMoveInput;
-import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventUpdate;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
@@ -14,93 +13,116 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 @ModuleInfo(
         name = "Freecam",
-        description = "Allows you to move your camera freely while your body stays in place",
+        description = "自由相机 - 让你的相机自由移动，身体保持在原地",
         category = Category.MISC
 )
 public class Freecam extends Module {
     
     private final Minecraft mc = Minecraft.getInstance();
+    
+    // 相机状态
     private Vec3 cameraPosition = Vec3.ZERO;
     private float cameraYaw = 0.0f;
     private float cameraPitch = 0.0f;
-    private Entity originalRiddenEntity = null;
+    private boolean isFreecamActive = false;
+    
+    // 玩家原始状态
+    private Vec3 originalPlayerPosition = Vec3.ZERO;
+    private float originalPlayerYaw = 0.0f;
+    private float originalPlayerPitch = 0.0f;
+    private boolean originalNoClip = false;
+    private boolean originalInvulnerable = false;
+    private Entity originalRidingEntity = null;
     private CameraType originalCameraType = CameraType.FIRST_PERSON;
     
-    public FloatValue speed = ValueBuilder.create(this, "Speed")
-            .setDefaultFloatValue(2.0f)
+    // 鼠标状态
+    private double lastMouseX = 0;
+    private double lastMouseY = 0;
+    private boolean firstMouse = true;
+    
+    // 设置项
+    public FloatValue speed = ValueBuilder.create(this, "移动速度")
+            .setDefaultFloatValue(1.0f)
             .setFloatStep(0.1f)
             .setMinFloatValue(0.1f)
-            .setMaxFloatValue(10.0f)
+            .setMaxFloatValue(5.0f)
             .build()
             .getFloatValue();
             
-    public BooleanValue showPlayer = ValueBuilder.create(this, "Show Player")
+    public BooleanValue noClip = ValueBuilder.create(this, "穿墙模式")
             .setDefaultBooleanValue(true)
             .build()
             .getBooleanValue();
+            
+    public FloatValue mouseSensitivity = ValueBuilder.create(this, "鼠标灵敏度")
+            .setDefaultFloatValue(1.0f)
+            .setFloatStep(0.1f)
+            .setMinFloatValue(0.1f)
+            .setMaxFloatValue(3.0f)
+            .build()
+            .getFloatValue();
     
     @Override
     public void onEnable() {
         if (mc.player == null) return;
         
-        // 保存原始位置和视角
+        // 保存玩家原始状态
+        saveOriginalPlayerState();
+        
+        // 初始化相机位置为玩家当前位置
         cameraPosition = mc.player.position();
         cameraYaw = mc.player.getYRot();
         cameraPitch = mc.player.getXRot();
         
-        // 保存原始相机类型和骑乘实体
-        originalCameraType = mc.options.getCameraType();
-        originalRiddenEntity = mc.player.getVehicle();
+        // 重置鼠标状态
+        firstMouse = true;
         
-        // 设置为第三人称视角以更好地看到效果
-        mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        // 激活自由相机
+        isFreecamActive = true;
+        
+        // 冻结玩家
+        freezePlayer();
     }
     
     @Override
     public void onDisable() {
         if (mc.player == null) return;
         
-        // 恢复原始相机类型
-        mc.options.setCameraType(originalCameraType);
+        // 关闭自由相机
+        isFreecamActive = false;
         
-        // 恢复骑乘实体
-        if (originalRiddenEntity != null) {
-            mc.player.startRiding(originalRiddenEntity, true);
-        }
-        
-        // 恢复玩家状态
-        mc.player.setNoGravity(false);
-        mc.player.setInvulnerable(false);
+        // 恢复玩家原始状态
+        restoreOriginalPlayerState();
     }
     
     @EventTarget
     public void onMotion(EventMotion event) {
-        if (event.getType() != EventType.PRE || mc.player == null) return;
+        if (!isFreecamActive || event.getType() != EventType.PRE || mc.player == null) return;
         
-        // 取消事件以防止正常移动
+        // 取消移动事件，保持玩家在原位
         event.setCancelled(true);
         
-        // 更新玩家位置为相机位置（用于渲染）
-        mc.player.setPos(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-        mc.player.setYRot(cameraYaw);
-        mc.player.setXRot(cameraPitch);
+        // 保持玩家在原始位置
+        event.setX(originalPlayerPosition.x);
+        event.setY(originalPlayerPosition.y);
+        event.setZ(originalPlayerPosition.z);
+        event.setYaw(originalPlayerYaw);
+        event.setPitch(originalPlayerPitch);
     }
     
     @EventTarget
     public void onMoveInput(EventMoveInput event) {
-        if (mc.player == null) return;
+        if (!isFreecamActive || mc.player == null) return;
         
         // 处理相机移动
         handleCameraMovement();
         
-        // 重置移动输入以防止正常移动
+        // 取消所有移动输入
         event.setForward(0.0f);
         event.setStrafe(0.0f);
         event.setJump(false);
@@ -109,76 +131,186 @@ public class Freecam extends Module {
     
     @EventTarget
     public void onUpdate(EventUpdate event) {
+        if (!isFreecamActive || mc.player == null) return;
+        
+        // 处理鼠标视角
+        handleMouseInput();
+        
+        // 确保玩家保持在原位并且受保护
+        maintainPlayerState();
+    }
+    
+    /**
+     * 保存玩家原始状态
+     */
+    private void saveOriginalPlayerState() {
         if (mc.player == null) return;
         
-        // 确保玩家不会受到伤害或其他影响
+        originalPlayerPosition = mc.player.position();
+        originalPlayerYaw = mc.player.getYRot();
+        originalPlayerPitch = mc.player.getXRot();
+        originalNoClip = mc.player.noPhysics;
+        originalInvulnerable = mc.player.isInvulnerable();
+        originalRidingEntity = mc.player.getVehicle();
+        originalCameraType = mc.options.getCameraType();
+    }
+    
+    /**
+     * 恢复玩家原始状态
+     */
+    private void restoreOriginalPlayerState() {
+        if (mc.player == null) return;
+        
+        // 恢复位置和视角
+        mc.player.setPos(originalPlayerPosition.x, originalPlayerPosition.y, originalPlayerPosition.z);
+        mc.player.setYRot(originalPlayerYaw);
+        mc.player.setXRot(originalPlayerPitch);
+        
+        // 恢复物理状态
+        mc.player.noPhysics = originalNoClip;
+        mc.player.setInvulnerable(originalInvulnerable);
+        mc.player.setNoGravity(false);
+        
+        // 恢复骑乘状态
+        if (originalRidingEntity != null && originalRidingEntity.isAlive()) {
+            mc.player.startRiding(originalRidingEntity, true);
+        }
+        
+        // 恢复相机类型
+        mc.options.setCameraType(originalCameraType);
+    }
+    
+    /**
+     * 冻结玩家
+     */
+    private void freezePlayer() {
+        if (mc.player == null) return;
+        
         mc.player.setNoGravity(true);
         mc.player.setInvulnerable(true);
         
-        // 如果玩家在骑乘实体，取消骑乘
+        if (noClip.getCurrentValue()) {
+            mc.player.noPhysics = true;
+        }
+        
+        // 如果在骑乘，先下车
         if (mc.player.getVehicle() != null) {
             mc.player.stopRiding();
         }
     }
     
-    @EventTarget
-    public void onRender(EventRender event) {
+    /**
+     * 维护玩家状态
+     */
+    private void maintainPlayerState() {
         if (mc.player == null) return;
         
-        // 在渲染时更新相机位置
-        if (mc.gameRenderer != null && mc.gameRenderer.getMainCamera() != null) {
-            // 这里可以通过mixin来修改相机位置，但需要额外的mixin支持
+        // 确保玩家保持在原始位置
+        if (mc.player.position().distanceTo(originalPlayerPosition) > 0.1) {
+            mc.player.setPos(originalPlayerPosition.x, originalPlayerPosition.y, originalPlayerPosition.z);
+        }
+        
+        // 维护保护状态
+        mc.player.setNoGravity(true);
+        mc.player.setInvulnerable(true);
+        
+        if (noClip.getCurrentValue()) {
+            mc.player.noPhysics = true;
+        }
+        
+        // 防止重新骑乘
+        if (mc.player.getVehicle() != null) {
+            mc.player.stopRiding();
         }
     }
     
-    private void handleCameraMovement() {
-        float moveSpeed = speed.getCurrentValue();
+    /**
+     * 处理鼠标输入
+     */
+    private void handleMouseInput() {
+        if (!mc.mouseHandler.isMouseGrabbed()) return;
         
-        // 处理前后移动
+        // 获取鼠标移动增量 (这需要通过mixin或反射来获取真正的鼠标增量)
+        // 这里使用一个简化的方法，在实际使用中可能需要mixin支持
+        float sensitivity = mouseSensitivity.getCurrentValue() * 0.6f;
+        
+        // 模拟鼠标增量获取 (实际实现可能需要mixin)
+        double currentMouseX = mc.mouseHandler.xpos();
+        double currentMouseY = mc.mouseHandler.ypos();
+        
+        if (!firstMouse) {
+            double deltaX = (currentMouseX - lastMouseX) * sensitivity;
+            double deltaY = (currentMouseY - lastMouseY) * sensitivity;
+            
+            cameraYaw += deltaX;
+            cameraPitch -= deltaY;
+            
+            // 限制俯仰角度
+            cameraPitch = Math.max(-90.0f, Math.min(90.0f, cameraPitch));
+        } else {
+            firstMouse = false;
+        }
+        
+        lastMouseX = currentMouseX;
+        lastMouseY = currentMouseY;
+    }
+    
+    /**
+     * 处理相机移动
+     */
+    private void handleCameraMovement() {
+        float moveSpeed = speed.getCurrentValue() * 0.05f; // 调整移动速度倍数
+        
+        double motionX = 0;
+        double motionY = 0;
+        double motionZ = 0;
+        
+        // 前后移动
         if (mc.options.keyUp.isDown()) {
-            float moveX = (float) (-Math.sin(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            float moveZ = (float) (Math.cos(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            cameraPosition = cameraPosition.add(moveX, 0, moveZ);
+            motionX -= Math.sin(Math.toRadians(cameraYaw)) * moveSpeed;
+            motionZ += Math.cos(Math.toRadians(cameraYaw)) * moveSpeed;
         }
         if (mc.options.keyDown.isDown()) {
-            float moveX = (float) (Math.sin(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            float moveZ = (float) (-Math.cos(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            cameraPosition = cameraPosition.add(moveX, 0, moveZ);
+            motionX += Math.sin(Math.toRadians(cameraYaw)) * moveSpeed;
+            motionZ -= Math.cos(Math.toRadians(cameraYaw)) * moveSpeed;
         }
         
-        // 处理左右移动
+        // 左右移动
         if (mc.options.keyLeft.isDown()) {
-            float moveX = (float) (-Math.cos(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            float moveZ = (float) (-Math.sin(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            cameraPosition = cameraPosition.add(moveX, 0, moveZ);
+            motionX -= Math.cos(Math.toRadians(cameraYaw)) * moveSpeed;
+            motionZ -= Math.sin(Math.toRadians(cameraYaw)) * moveSpeed;
         }
         if (mc.options.keyRight.isDown()) {
-            float moveX = (float) (Math.cos(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            float moveZ = (float) (Math.sin(Math.toRadians(cameraYaw)) * moveSpeed * 0.1);
-            cameraPosition = cameraPosition.add(moveX, 0, moveZ);
+            motionX += Math.cos(Math.toRadians(cameraYaw)) * moveSpeed;
+            motionZ += Math.sin(Math.toRadians(cameraYaw)) * moveSpeed;
         }
         
-        // 处理上下移动
+        // 上下移动
         if (mc.options.keyJump.isDown()) {
-            cameraPosition = cameraPosition.add(0, moveSpeed * 0.1, 0);
+            motionY += moveSpeed;
         }
         if (mc.options.keyShift.isDown()) {
-            cameraPosition = cameraPosition.add(0, -moveSpeed * 0.1, 0);
+            motionY -= moveSpeed;
         }
         
-        // 处理鼠标视角 - 使用更准确的方式
-        if (mc.mouseHandler.isMouseGrabbed()) {
-            float mouseX = (float) mc.mouseHandler.xpos() * 0.15f;
-            float mouseY = (float) mc.mouseHandler.ypos() * 0.15f;
-            
-            cameraYaw += mouseX;
-            cameraPitch -= mouseY;
-            
-            // 重置鼠标位置以防止无限旋转
-            mc.mouseHandler.grabMouse();
-        }
-        
-        // 限制俯仰角
-        cameraPitch = Math.max(-90, Math.min(90, cameraPitch));
+        // 更新相机位置
+        cameraPosition = cameraPosition.add(motionX, motionY, motionZ);
+    }
+    
+    // 获取相机状态的公共方法 (供mixin使用)
+    public Vec3 getCameraPosition() {
+        return isFreecamActive ? cameraPosition : null;
+    }
+    
+    public float getCameraYaw() {
+        return isFreecamActive ? cameraYaw : 0;
+    }
+    
+    public float getCameraPitch() {
+        return isFreecamActive ? cameraPitch : 0;
+    }
+    
+    public boolean isFreecamActive() {
+        return isFreecamActive;
     }
 }

@@ -7,6 +7,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
@@ -18,6 +19,7 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 )
 public class NoFall extends Module {
     FloatValue distance = ValueBuilder.create(this, "Fall Distance").setDefaultFloatValue(3.0F).setFloatStep(0.1F).setMinFloatValue(3.0F).setMaxFloatValue(15.0F).build().getFloatValue();
+    BooleanValue liquidCheck = ValueBuilder.create(this, "Liquid Check").setDefaultBooleanValue(true).build().getBooleanValue();
     public double preFallDistance;
     private boolean receivedServerLagback = false;
     public static boolean isSpoofing = false;
@@ -46,9 +48,22 @@ public class NoFall extends Module {
         return isSpoofing || forceJump;
     }
 
+    private boolean isPlayerInLiquid() {
+        if (mc.player == null) return false;
+        return mc.player.isInWater() || mc.player.isInLava();
+    }
+
+    private boolean shouldSkipNoFall() {
+        return liquidCheck.getCurrentValue() && isPlayerInLiquid();
+    }
+
     @EventTarget
     public void onTick(EventRunTicks event) {
         if (event.getType() != EventType.POST && mc.player != null) {
+            if (shouldSkipNoFall()) {
+                return;
+            }
+
             if (this.shouldBlockJump()) {
                 mc.options.keyJump.setDown(false);
             }
@@ -69,6 +84,11 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onLivingUpdate(EventUpdate event) {
+        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
+        if (shouldSkipNoFall()) {
+            return;
+        }
+        
         if (this.shouldBlockJump() && mc.options != null) {
             mc.options.keyJump.setDown(false);
         }
@@ -76,6 +96,11 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onStrafe(EventStrafe event) {
+        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
+        if (shouldSkipNoFall()) {
+            return;
+        }
+        
         if (mc.player.onGround() && forceJump) {
             // 修正 #2：使用 1.20.1 的正确跳跃方法
             mc.player.jumpFromGround();
@@ -85,6 +110,11 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onMoveInput(EventMoveInput event) {
+        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
+        if (shouldSkipNoFall()) {
+            return;
+        }
+        
         if (this.shouldBlockJump()) {
             event.setJump(false);
         }
@@ -93,6 +123,11 @@ public class NoFall extends Module {
     @EventTarget
     public void onMotion(EventMotion event) {
         if (event.getType() != EventType.POST) {
+            // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
+            if (shouldSkipNoFall()) {
+                return;
+            }
+            
             if (!isSpoofing && mc.player.fallDistance > this.distance.getCurrentValue() && !event.isOnGround()) {
                 isSpoofing = true;
                 this.receivedServerLagback = false;
@@ -111,6 +146,11 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onPacket(EventPacket event) {
+        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
+        if (shouldSkipNoFall()) {
+            return;
+        }
+        
         if (event.getType() == EventType.SEND) {
             if (isSpoofing && this.sentSpoofPacket && !this.receivedServerLagback && event.getPacket() instanceof ServerboundMovePlayerPacket) {
                 event.setCancelled(true);

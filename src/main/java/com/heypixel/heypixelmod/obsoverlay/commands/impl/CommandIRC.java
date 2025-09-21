@@ -1,15 +1,14 @@
 package com.heypixel.heypixelmod.obsoverlay.commands.impl;
 
-import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveives;
+import com.heypixel.heypixelmod.obsoverlay.IRCModules.AutoConnectListener;
 import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveivesExample;
 import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
-import com.google.gson.JsonObject;
 
 /**
- * IRC指令处理类喵~
- * 支持.irc <message>收发消息和.irc reconnect重连服务器喵~
+ * IRC指令处理类
+ * 支持.irc <message>收发消息和.irc reconnect重连服务器
  */
 @CommandInfo(
     name = "irc",
@@ -17,10 +16,13 @@ import com.google.gson.JsonObject;
     aliases = {"irc"}
 )
 public class CommandIRC extends Command {
-    private ConnectAndReveivesExample ircClient;
     
     public CommandIRC() {
-        this.ircClient = new ConnectAndReveivesExample();
+        // 使用AutoConnectListener的IRC客户端实例
+    }
+    
+    private ConnectAndReveivesExample getIrcClient() {
+        return AutoConnectListener.getIrcClient();
     }
     
     @Override
@@ -37,6 +39,10 @@ public class CommandIRC extends Command {
                 handleReconnect();
                 break;
                 
+            case "list":
+                handleUserList();
+                break;
+                
             default:
                 // 默认情况下，将第一个参数之后的所有内容作为消息发送喵~
                 String message = String.join(" ", args);
@@ -46,10 +52,16 @@ public class CommandIRC extends Command {
     }
     
     /**
-     * 处理重连指令喵~
+     * 处理重连指令
      */
     private void handleReconnect() {
-        ChatUtils.addChatMessage("§e[IRC] 正在重连服务器... 喵~");
+        ConnectAndReveivesExample ircClient = getIrcClient();
+        if (ircClient == null) {
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            return;
+        }
+        
+        ChatUtils.addChatMessage("§e[IRC] 正在重连服务器...");
         
         // 如果已经连接，先断开喵~
         if (ircClient.isConnected()) {
@@ -62,13 +74,37 @@ public class CommandIRC extends Command {
                 Thread.sleep(1000);
                 ircClient.connect();
             } catch (InterruptedException e) {
-                ChatUtils.addChatMessage("§c[IRC] 重连失败: " + e.getMessage() + " 喵~");
+                ChatUtils.addChatMessage("§c[IRC] 重连失败: " + e.getMessage() + "");
             }
         }).start();
     }
     
     /**
-     * 处理消息发送喵~
+     * 处理用户列表指令
+     */
+    private void handleUserList() {
+        ConnectAndReveivesExample ircClient = getIrcClient();
+        if (ircClient == null) {
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            return;
+        }
+        
+        if (!ircClient.isConnected()) {
+            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
+            return;
+        }
+        
+        if (!ircClient.isAuthenticated()) {
+            ChatUtils.addChatMessage("§c[IRC] 未认证，无法获取用户列表喵~");
+            return;
+        }
+        
+        ChatUtils.addChatMessage("§e[IRC] 正在获取在线用户列表...");
+        ircClient.requestUserList();
+    }
+    
+    /**
+     * 处理消息发送
      */
     private void handleMessage(String message) {
         if (message.trim().isEmpty()) {
@@ -91,9 +127,15 @@ public class CommandIRC extends Command {
     }
     
     /**
-     * 处理公共消息喵~
+     * 处理公共消息
      */
     private void handlePublicMessage(String message) {
+        ConnectAndReveivesExample ircClient = getIrcClient();
+        if (ircClient == null) {
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            return;
+        }
+        
         if (!ircClient.isConnected()) {
             ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
             return;
@@ -108,9 +150,15 @@ public class CommandIRC extends Command {
     }
     
     /**
-     * 处理私聊消息喵~
+     * 处理私聊消息
      */
     private void handlePrivateMessage(String message) {
+        ConnectAndReveivesExample ircClient = getIrcClient();
+        if (ircClient == null) {
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            return;
+        }
+        
         if (!ircClient.isConnected()) {
             ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
             return;
@@ -123,7 +171,7 @@ public class CommandIRC extends Command {
         
         String[] parts = message.split(" ", 3);
         if (parts.length < 3) {
-            ChatUtils.addChatMessage("§c[IRC] 私聊格式错误，正确格式: /msg <用户名> <消息> 喵~");
+            ChatUtils.addChatMessage("§c[IRC] 私聊格式错误，正确格式: /msg <用户名> <消息>");
             return;
         }
         
@@ -134,9 +182,15 @@ public class CommandIRC extends Command {
     }
     
     /**
-     * 处理命令喵~
+     * 处理命令
      */
     private void handleCommand(String command) {
+        ConnectAndReveivesExample ircClient = getIrcClient();
+        if (ircClient == null) {
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            return;
+        }
+        
         if (!ircClient.isConnected()) {
             ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
             return;
@@ -151,19 +205,20 @@ public class CommandIRC extends Command {
     }
     
     /**
-     * 显示帮助信息喵~
+     * 显示帮助信息
      */
     private void showHelp() {
         ChatUtils.addChatMessage("§b[IRC] 指令帮助");
         ChatUtils.addChatMessage("§e.irc <message> §7- 发送公共消息");
         ChatUtils.addChatMessage("§e.irc reconnect §7- 重连服务器");
+        ChatUtils.addChatMessage("§e.irc list §7- 显示在线用户列表");
     }
     
     @Override
     public String[] onTab(String[] args) {
-        // 提供基本的tab补全建议喵~
+        // 提供基本的tab补全建议
         if (args.length == 1) {
-            return new String[]{"reconnect", "/msg ", "/tell ", "/w ", "/help"};
+            return new String[]{"reconnect", "list", "/msg ", "/tell ", "/w ", "/help"};
         }
         return new String[0];
     }

@@ -138,7 +138,7 @@ public class MixinGui {
    )
    public void hookRenderEffects(GuiGraphics pPoseStack, CallbackInfo ci) {
       NoRender noRender = (NoRender)Naven.getInstance().getModuleManager().getModule(NoRender.class);
-      if (noRender.isEnabled() && noRender.disableEffects.getCurrentValue()) {
+      if (noRender.isEnabled()) {
          ci.cancel();
       }
    }

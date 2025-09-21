@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
+import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
@@ -11,6 +12,7 @@ import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.Vector2f;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.PostProcess;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
@@ -115,7 +117,35 @@ public class BowAimbot extends Module {
     @EventTarget
     public void onRender2D(EventRender2D event) {
         if (target != null && markValue.getCurrentValue()) {
-            renderTargetLabel(event.getStack(), target);
+            Entity entity = target;
+
+            Vec3 entityPos = entity.position();
+            entityPos = entityPos.add(0, entity.getBoundingBox().getYsize() + 0.5, 0);
+            Vector2f screenPos = ProjectionUtils.project(entityPos.x, entityPos.y, entityPos.z, 1.0F);
+            if (screenPos.x != Float.MAX_VALUE && screenPos.y != Float.MAX_VALUE) {
+                String text = "AimTarget";
+                float textWidth = Fonts.harmony.getWidth(text, 0.5);
+                float textHeight = (float) Fonts.harmony.getHeight(false, 0.5);
+                float padding = 4.0F;
+                float cornerRadius = 6.0F;
+
+                float bgX = screenPos.x - textWidth / 2 - padding;
+                float bgY = screenPos.y - padding;
+                float bgWidth = textWidth + padding * 2;
+                float bgHeight = textHeight + padding * 2;
+
+                PostProcess pp = (PostProcess) Naven.getInstance().getModuleManager().getModule(PostProcess.class);
+                int bgColor = new Color(0, 0, 0, 120).getRGB();
+                if (pp != null && pp.isEnabled()) {
+                    RenderUtils.drawStencilRoundedRect(event.getGuiGraphics(), bgX, bgY, bgWidth, bgHeight, cornerRadius, 8, bgColor);
+                } else {
+                    RenderUtils.drawRoundedRect(event.getStack(), bgX, bgY, bgWidth, bgHeight, cornerRadius, bgColor);
+                }
+
+                float textX = screenPos.x - textWidth / 2;
+                float textY = screenPos.y;
+                Fonts.harmony.render(event.getStack(), text, textX, textY, Color.WHITE, true, 0.5);
+            }
         }
     }
 
