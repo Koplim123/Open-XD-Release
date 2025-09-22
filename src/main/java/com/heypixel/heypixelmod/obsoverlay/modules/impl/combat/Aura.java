@@ -203,6 +203,10 @@ public class Aura extends Module {
         }
     }
 
+    public static Entity getTarget() {
+        return target;
+    }
+
     @EventTarget
     public void onFovUpdate(EventUpdateFoV e) {
         if (this.blockSprintFov.getCurrentValue() && mc.player != null) {

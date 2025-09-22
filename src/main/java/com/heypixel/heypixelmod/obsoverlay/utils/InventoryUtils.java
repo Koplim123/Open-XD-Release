@@ -1,9 +1,12 @@
 package com.heypixel.heypixelmod.obsoverlay.utils;
 
+import com.google.common.collect.Multimap;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.move.Scaffold;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobType;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -12,6 +15,7 @@ import net.minecraft.world.level.block.SkullBlock;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 public class InventoryUtils {
@@ -638,4 +642,26 @@ public class InventoryUtils {
          return true;
       }
    }
+
+    public static double getItemDamage(ItemStack stack) {
+        double damage = 0.0;
+        Multimap<Attribute, AttributeModifier> attributeModifierMap = stack.getAttributeModifiers(EquipmentSlot.MAINHAND);
+
+        for (Attribute attributeName : attributeModifierMap.keySet()) {
+            if (attributeName.getDescriptionId().equals("attribute.name.generic.attack_damage")) {
+                Iterator<AttributeModifier> attributeModifiers = attributeModifierMap.get(attributeName).iterator();
+                if (attributeModifiers.hasNext()) {
+                    damage += attributeModifiers.next().getAmount();
+                }
+                break;
+            }
+        }
+
+        if (stack.hasFoil()) {
+            damage += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FIRE_ASPECT, stack);
+            damage += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SHARPNESS, stack) * 1.25;
+        }
+
+        return damage;
+    }
 }

@@ -19,7 +19,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
         category = Category.MOVEMENT
 )
 public class Speed extends Module {
-    private final ModeValue mode = ValueBuilder.create(this, "Mode")
+    final ModeValue mode = ValueBuilder.create(this, "Mode")
             .setModes("LegitJump", "Simple", "Vanilla")
             .setDefaultModeIndex(0)
             .build()
@@ -112,4 +112,10 @@ public class Speed extends Module {
         }
         isSprinting = false;
     }
+
+    public double getCurrentBPS() {
+        return currentBPS;
+    }
+
+    public double currentBPS = 0.0;
 }
