@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.mixin.O;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
+import com.heypixel.heypixelmod.obsoverlay.Version;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventClick;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
@@ -10,12 +11,15 @@ import com.heypixel.heypixelmod.obsoverlay.utils.AnimationUtils;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.main.GameConfig;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModFileInfo;
 import net.minecraftforge.forgespi.language.IModInfo;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,7 +29,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin({Minecraft.class})
-public class MixinMinecraft {
+public abstract class MixinMinecraft {
+
+    @Inject(
+            method = "createTitle",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void onCreateTitle(CallbackInfoReturnable<String> cir) {
+        cir.setReturnValue("Naven-XD | " + Version.getVersion() +" | 哈基米");
+    }
+    @Shadow
+    public abstract void setScreen(@Nullable Screen p_91153_);
+
    @Unique
    private int skipTicks;
    @Unique

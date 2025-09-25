@@ -615,16 +615,27 @@ public class Scaffold extends Module {
     public void onRender(EventRender2D e) {
         if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
             int blockCount = 0;
+            // 遍历玩家物品栏，计算所有方块的总数
             for (ItemStack itemStack : mc.player.getInventory().items) {
                 if (itemStack.getItem() instanceof BlockItem) {
                     blockCount += itemStack.getCount();
                 }
             }
+
+            // 获取玩家当前主手拿的物品
+            ItemStack itemToRender = mc.player.getMainHandItem();
+            // 检查手持的物品是否是有效的方块，如果不是，则不显示图标
+            if (!isValidStack(itemToRender)) {
+                itemToRender = null;
+            }
+
             String text = "Blocks: " + blockCount;
             double backgroundScale = 0.4;
             double textScale = 0.35;
 
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale);
+            // 如果有图标要渲染，为图标增加额外的宽度
+            float iconWidth = itemToRender != null ? 18.0f : 0;
+            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale) + iconWidth;
             this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
 
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
@@ -636,7 +647,8 @@ public class Scaffold extends Module {
             float textWidth = Fonts.opensans.getWidth(text, textScale);
             float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
 
-            float textX = backgroundX + (this.blockCounterWidth + 6.0F - textWidth) / 2.0F;
+            // 调整文本的X坐标，为图标留出空间
+            float textX = backgroundX + iconWidth + (this.blockCounterWidth - iconWidth + 6.0F - textWidth) / 2.0F;
             float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
 
             e.getStack().pushPose();
@@ -650,6 +662,14 @@ public class Scaffold extends Module {
             int bodyColor = new Color(0, 0, 0, 120).getRGB();
             RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
 
+            // 如果有有效的方块物品，就渲染它的图标
+            if (itemToRender != null) {
+                float itemX = backgroundX + 4;
+                float itemY = backgroundY + 4.0F + (this.blockCounterHeight / 2.0F) - 8.0F;
+                e.getGuiGraphics().renderFakeItem(itemToRender, (int)itemX, (int)itemY);
+            }
+
+            // 渲染方块数量文本
             Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
             StencilUtils.dispose();
             e.getStack().popPose();
