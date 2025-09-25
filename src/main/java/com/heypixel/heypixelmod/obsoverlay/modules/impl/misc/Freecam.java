@@ -18,7 +18,7 @@ import net.minecraft.world.phys.Vec3;
 
 @ModuleInfo(
         name = "Freecam",
-        description = "自由相机 - 让你的相机自由移动，身体保持在原地",
+        description = "Freecam,but is your Soul",
         category = Category.MISC
 )
 public class Freecam extends Module {

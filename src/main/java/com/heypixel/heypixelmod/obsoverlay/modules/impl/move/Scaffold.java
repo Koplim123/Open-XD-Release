@@ -132,6 +132,10 @@ public class Scaffold extends Module {
             .getBooleanValue();
     public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
+    public BooleanValue cancelSprintFovChange = ValueBuilder.create(this, "CancelSprintFovChange")
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
     FloatValue speedFov = ValueBuilder.create(this, "SpeedFov")
             .setDefaultFloatValue(1.0F)
             .setMaxFloatValue(2.0F)
@@ -228,6 +232,8 @@ public class Scaffold extends Module {
 
     private float blockCounterWidth;
     private float blockCounterHeight;
+    private long lastPlaceTime = 0;
+
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
             return false;
@@ -266,22 +272,18 @@ public class Scaffold extends Module {
     @EventTarget
     public void onFoV(EventUpdateFoV e) {
         if (this.keepFoV.getCurrentValue()) {
+            if (this.cancelSprintFovChange.getCurrentValue()) {
+                e.setFov(this.speedFov.getCurrentValue());
+                return;
+            }
+
             float baseFov = e.getFov();
-
-            // 运动速度带来的微弱FoV增益（保持原有逻辑）
             float moveBonus = MoveUtils.isMoving() ? (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F : 0.0F;
-
-            // 根据本模块当前每tick的旋转速度（相对于上一tick）渲染额外的视觉速度效果
             float yawDelta = Math.abs(this.rots.getX() - this.lastRots.getX());
             float pitchDelta = Math.abs(this.rots.getY() - this.lastRots.getY());
             float rotationSpeed = (float) Math.sqrt(yawDelta * yawDelta + pitchDelta * pitchDelta);
-
-            // 归一化旋转速度到[0,1]，以180°/tick为上限（极端快速旋转）
             float normalized = Math.min(rotationSpeed / 180.0F, 1.0F);
-
-            // 使用“MaxRotationFov”作为最大视觉增益（本类的 fov 值），并叠乘 SpeedFov 系数
             float rotationFoV = normalized * this.fov.getCurrentValue() * this.speedFov.getCurrentValue();
-
             e.setFov(baseFov + moveBonus + rotationFoV);
         }
     }
@@ -459,6 +461,8 @@ public class Scaffold extends Module {
             }
 
             this.placeBlock();
+            // 记录放置方块的时间，用于NoSprintYawChange功能
+            this.lastPlaceTime = System.currentTimeMillis();
         }
     }
 

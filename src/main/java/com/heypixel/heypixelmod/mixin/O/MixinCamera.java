@@ -17,6 +17,8 @@ public abstract class MixinCamera {
 
    @Shadow private Vec3 position;
    @Shadow protected abstract void setPosition(Vec3 pPos);
+   // 为了可控相机方向，添加对 setRotation 的 Shadow 引用
+   @Shadow protected abstract void setRotation(float yRot, float xRot);
 
    @Inject(
            at = {@At("HEAD")},
@@ -69,6 +71,19 @@ public abstract class MixinCamera {
             cameraModule.lastMotionCamX = 0.0D;
             cameraModule.lastMotionCamY = 0.0D;
             cameraModule.lastMotionCamZ = 0.0D;
+         }
+
+         // ===== Freecam 支持 =====
+         com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam freecamModule =
+                 (com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam) Naven.getInstance().getModuleManager().getModule(
+                         com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam.class);
+
+         if (freecamModule != null && freecamModule.isEnabled() && freecamModule.isFreecamActive()) {
+             Vec3 freePos = freecamModule.getCameraPosition();
+             if (freePos != null) {
+                 this.setPosition(freePos);
+                 this.setRotation(freecamModule.getCameraYaw(), freecamModule.getCameraPitch());
+             }
          }
       }
    }

@@ -114,7 +114,6 @@ public class ModuleManager {
          new NoSlow(),
          new NoFall(),
          new LongJump(),
-         new JumpReset(),
          new GhostHand(),
          new PreferWeapon(),
          new Speed(),

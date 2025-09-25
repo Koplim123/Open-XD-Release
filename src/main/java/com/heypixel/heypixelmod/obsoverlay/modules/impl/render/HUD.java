@@ -1,6 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
+import com.heypixel.heypixelmod.obsoverlay.Version;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
@@ -9,7 +10,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
-import com.heypixel.heypixelmod.obsoverlay.ui.Watermark.Watermark;
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -19,13 +20,15 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-
 import java.awt.Color;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.joml.Vector4f;
+// 添加必要的导入
+import com.mojang.blaze3d.systems.RenderSystem;
 
 @ModuleInfo(
         name = "HUD",
@@ -36,38 +39,14 @@ public class HUD extends Module {
     public static final int headerColor = new Color(150, 45, 45, 255).getRGB();
     public static final int bodyColor = new Color(0, 0, 0, 120).getRGB();
     public static final int backgroundColor = new Color(0, 0, 0, 40).getRGB();
+    private static final SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
     public BooleanValue waterMark = ValueBuilder.create(this, "Water Mark").setDefaultBooleanValue(true).build().getBooleanValue();
-
-    public ModeValue watermarkStyle = ValueBuilder.create(this, "Watermark Style")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultModeIndex(0)
-            .setModes("Rainbow", "Classic", "Capsule")
-            .build()
-            .getModeValue();
-
     public FloatValue watermarkSize = ValueBuilder.create(this, "Watermark Size")
             .setVisibility(this.waterMark::getCurrentValue)
             .setDefaultFloatValue(0.4F)
             .setFloatStep(0.01F)
             .setMinFloatValue(0.1F)
             .setMaxFloatValue(1.0F)
-            .build()
-            .getFloatValue();
-    public FloatValue watermarkCornerRadius = ValueBuilder.create(this, "Watermark Corner Radius")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultFloatValue(5.0F)
-            .setFloatStep(0.5F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(20.0F)
-            .build()
-            .getFloatValue();
-    // 新增：水印垂直内边距调整
-    public FloatValue watermarkVPadding = ValueBuilder.create(this, "Watermark V-Padding")
-            .setVisibility(this.waterMark::getCurrentValue)
-            .setDefaultFloatValue(4.0F)
-            .setFloatStep(0.5F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -136,16 +115,9 @@ public class HUD extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
-    // 新增：ArrayList中模块之间的垂直间距
-    public FloatValue arrayListSpacing = ValueBuilder.create(this, "ArrayList Spacing")
-            .setVisibility(this.arrayList::getCurrentValue)
-            .setDefaultFloatValue(2.0F)
-            .setFloatStep(0.5F)
-            .setMinFloatValue(0.0F)
-            .setMaxFloatValue(10.0F)
-            .build()
-            .getFloatValue();
     List<Module> renderModules;
+    float width;
+    float watermarkHeight;
     List<Vector4f> blurMatrices = new ArrayList<>();
 
     public String getModuleDisplayName(Module module) {
@@ -167,41 +139,46 @@ public class HUD extends Module {
         }
 
         if (this.waterMark.getCurrentValue()) {
-            Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue());
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
         }
 
-        // 始终为ArrayList的背景板添加模糊/阴影效果
         if (this.arrayList.getCurrentValue()) {
             for (Vector4f blurMatrix : this.blurMatrices) {
+                // 使用圆角矩形渲染模糊背景，保持与主背景一致的圆角效果
                 RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, 1073741824);
             }
         }
     }
 
-    /**
-     * 绘制一个垂直的、颜色渐变的动态彩虹条，用于模块列表的装饰胶囊。
-     * 颜色基于其Y坐标，以实现模块间的平滑过渡。
-     */
-    private void drawVerticalAnimatedRainbowBar(PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
-        for (float i = 0; i < height; i++) {
-            int color = RenderUtils.getRainbowOpaque(
-                    (int)(-(y + i) * rainbowOffset), // 使用实际的Y坐标来计算颜色
-                    1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
-            );
-            RenderUtils.fill(stack, x, y + i, x + width, y + i + 1, color);
-        }
-    }
-
     @EventTarget
     public void onRender(EventRender2D e) {
+        CustomTextRenderer font = Fonts.opensans;
         if (this.waterMark.getCurrentValue()) {
-            // 传递彩虹效果和新的padding相关参数到Watermark
-            Watermark.onRender(e, this.watermarkSize.getCurrentValue(), this.watermarkStyle.getCurrentMode(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkVPadding.getCurrentValue());
+            e.getStack().pushPose();
+            String text = "Naven-XD | " + Version.getVersion() + " | " + IRCLoginManager.getUsername() + " | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
+            this.width = font.getWidth(text, (double)this.watermarkSize.getCurrentValue()) + 14.0F;
+            this.watermarkHeight = (float)font.getHeight(true, (double)this.watermarkSize.getCurrentValue());
+            
+            // 确保正确的渲染状态
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+            
+            StencilUtils.write(false);
+            RenderUtils.drawRoundedRect(e.getStack(), 5.0F, 5.0F, this.width, this.watermarkHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            StencilUtils.erase(true);
+            RenderUtils.fill(e.getStack(), 5.0F, 5.0F, 9.0F + this.width, 8.0F, headerColor);
+            RenderUtils.fill(e.getStack(), 5.0F, 8.0F, 9.0F + this.width, 16.0F + this.watermarkHeight, bodyColor);
+            font.render(e.getStack(), text, 12.0, 10.0, Color.WHITE, true, (double)this.watermarkSize.getCurrentValue());
+            StencilUtils.dispose();
+            e.getStack().popPose();
         }
 
         this.blurMatrices.clear();
         if (this.arrayList.getCurrentValue()) {
-            CustomTextRenderer font = Fonts.opensans;
             e.getStack().pushPose();
             ModuleManager moduleManager = Naven.getInstance().getModuleManager();
             if (update || this.renderModules == null) {
@@ -217,6 +194,7 @@ public class HUD extends Module {
                 });
             }
 
+            // 计算实际启用模块中的最大宽度
             float maxWidth = 0.0F;
             for (Module module : this.renderModules) {
                 if (module.isEnabled()) {
@@ -226,23 +204,28 @@ public class HUD extends Module {
                     }
                 }
             }
-
+            
+            // 如果没有启用的模块或maxWidth太小，使用合理的默认值
             if (maxWidth < 50.0F) {
                 maxWidth = 100.0F;
             }
-
-            com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement arrayListElement =
-                    com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("arraylist");
-
+            
+            // 获取HUD编辑器中的位置
+            com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement arrayListElement = 
+                com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("arraylist");
+            
             float arrayListX, arrayListY;
             if (arrayListElement != null) {
+                // 使用HUDEditor的位置
                 if (this.arrayListDirection.isCurrentMode("Right")) {
+                    // 对于右对齐，HUDEditor存储的是碰撞箱左边界，我们需要计算实际渲染起始位置
                     arrayListX = (float)arrayListElement.x;
                 } else {
                     arrayListX = (float)arrayListElement.x;
                 }
                 arrayListY = (float)arrayListElement.y;
             } else {
+                // 后备位置
                 arrayListX = this.arrayListDirection.isCurrentMode("Right")
                         ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.xOffset.getCurrentValue()
                         : 3.0F + this.xOffset.getCurrentValue();
@@ -251,6 +234,7 @@ public class HUD extends Module {
             float height = 0.0F;
             double fontHeight = font.getHeight(true, (double)this.arrayListSize.getCurrentValue());
 
+            // 确保正确的渲染状态
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.disableCull();
@@ -270,27 +254,22 @@ public class HUD extends Module {
                     float left = -stringWidth * (1.0F - animation.value / 100.0F);
                     float right = maxWidth - stringWidth * (animation.value / 100.0F);
                     float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
-                    float moduleHeight = (float)((double)(animation.value / 100.0F) * fontHeight);
-                    float moduleX = arrayListX + innerX;
-                    float moduleY = arrayListY + height + 2.0F;
-                    float moduleWidth = stringWidth + 3.0F;
-
-                    // 步骤 1: 绘制模块的深色背景
+                    // 使用圆角矩形渲染背景，实现向下过渡的圆角效果
                     RenderUtils.drawRoundedRect(
                             e.getStack(),
-                            moduleX,
-                            moduleY,
-                            moduleWidth,
-                            moduleHeight,
-                            3.0F,
+                            arrayListX + innerX,
+                            arrayListY + height + 2.0F,
+                            stringWidth + 3.0F,
+                            (float)((double)(animation.value / 100.0F) * fontHeight),
+                            3.0F, // 圆角半径
                             backgroundColor
                     );
-                    this.blurMatrices.add(new Vector4f(moduleX, moduleY, moduleWidth, moduleHeight));
-
-                    // 步骤 2: 绘制模块名称文本
-                    int color = -1; // 默认白色
+                    this.blurMatrices
+                            .add(
+                                    new Vector4f(arrayListX + innerX, arrayListY + height + 2.0F, stringWidth + 3.0F, (float)((double)(animation.value / 100.0F) * fontHeight))
+                            );
+                    int color = -1;
                     if (this.rainbow.getCurrentValue()) {
-                        // 如果彩虹效果开启，文本也使用彩虹色
                         color = RenderUtils.getRainbowOpaque(
                                 (int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
                         );
@@ -301,41 +280,17 @@ public class HUD extends Module {
                     font.render(
                             e.getStack(),
                             displayName,
-                            (double)(moduleX + 1.5F),
+                            (double)(arrayListX + innerX + 1.5F),
                             (double)(arrayListY + height + 1.0F),
                             new Color(color),
                             true,
                             (double)this.arrayListSize.getCurrentValue()
                     );
-
-                    // 步骤 3: 如果彩虹效果开启，根据 ArrayListDirection 在模块名称的左侧或右侧绘制一个彩虹胶囊作为装饰
-                    if (this.rainbow.getCurrentValue()) {
-                        float capsuleWidth = 2.0f;
-                        float capsulePadding = 1.5f; // 胶囊与模块背景之间的间距
-                        float capsuleX;
-
-                        if (this.arrayListDirection.isCurrentMode("Left")) {
-                            // 在左侧模式下，胶囊位于模块背景的左边 ("前面")
-                            capsuleX = moduleX - capsuleWidth - capsulePadding;
-                        } else { // "Right"
-                            // 在右侧模式下，胶囊位于模块背景的右边 ("后面")
-                            capsuleX = moduleX + moduleWidth + capsulePadding;
-                        }
-
-                        // 使用模板缓冲绘制带圆角的彩虹胶囊
-                        StencilUtils.write(false);
-                        RenderUtils.drawRoundedRect(e.getStack(), capsuleX, moduleY, capsuleWidth, moduleHeight, 1.0F, Integer.MIN_VALUE);
-                        StencilUtils.erase(true);
-                        // 调用新的方法绘制垂直同步的彩虹渐变
-                        drawVerticalAnimatedRainbowBar(e.getStack(), capsuleX, moduleY, capsuleWidth, moduleHeight, this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue());
-                        StencilUtils.dispose();
-                    }
-
-                    // 使用 arrayListSpacing 调整模块之间的垂直间距
-                    height += (float)((double)(animation.value / 100.0F) * (fontHeight + this.arrayListSpacing.getCurrentValue()));
+                    height += (float)((double)(animation.value / 100.0F) * fontHeight);
                 }
             }
 
+            // 更新HUDEditor中ArrayList的实际大小
             if (arrayListElement != null) {
                 arrayListElement.width = Math.max(maxWidth, 100.0F);
                 arrayListElement.height = Math.max(height, 50.0F);

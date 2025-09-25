@@ -83,6 +83,13 @@ public class BowAimbot extends Module {
             .build()
             .getModeValue();
 
+
+
+    private final BooleanValue nearfrontsightCheck = ValueBuilder.create(this, "NearfrontsightCheck")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+
     private final BooleanValue markValue = ValueBuilder.create(this, "Mark")
             .setDefaultBooleanValue(true)
             .build()
@@ -285,15 +292,36 @@ public class BowAimbot extends Module {
                             (entity instanceof Monster && aimMobs.getCurrentValue()) ||
                             (entity instanceof Animal && aimAnimals.getCurrentValue());
 
+                    double distance = mc.player.distanceTo(entity);
+                    boolean inRange = distance <= 25.0;
+
                     return isTargetType &&
                             livingEntity != mc.player &&
                             livingEntity.isAlive() &&
+                            inRange &&
                             (!throughWalls || canEntityBeSeen(entity));
                 })
                 .collect(Collectors.toList());
 
         if (targets.isEmpty()) {
             return null;
+        }
+
+        if (nearfrontsightCheck.getCurrentValue()) {
+            targets = targets.stream()
+                    .filter(entity -> {
+                        Vec3 playerPos = mc.player.position().add(0, mc.player.getEyeHeight(), 0);
+                        Vec3 entityPos = entity.position().add(0, entity.getBbHeight() * 0.5, 0);
+                        Vec3 direction = entityPos.subtract(playerPos).normalize();
+                        Vec3 lookVec = mc.player.getLookAngle();
+                        double dotProduct = direction.dot(lookVec);
+                        return dotProduct > 0.5;
+                    })
+                    .collect(Collectors.toList());
+
+            if (targets.isEmpty()) {
+                return null;
+            }
         }
 
         switch (priorityMode.toUpperCase()) {

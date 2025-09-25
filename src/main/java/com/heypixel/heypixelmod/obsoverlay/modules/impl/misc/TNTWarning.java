@@ -38,11 +38,11 @@ public class TNTWarning extends Module {
                 PrimedTnt tntEntity = (PrimedTnt) entity;
                 int fuse = tntEntity.getFuse();
 
-                // 检查TNT是否在7格范围内
+                // 检查TNT是否在8格范围内
                 Vec3 tntPos = tntEntity.position();
                 double distance = playerPos.distanceTo(tntPos);
                 
-                if (distance <= 7.0) {
+                if (distance <= 8.0) {
                     tntNearby = true;
                 }
 
