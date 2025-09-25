@@ -85,30 +85,37 @@ public class Module extends HasValue {
                 return;
             }
 
-            Naven naven = Naven.getInstance();
-            if (enabled) {
-                this.enabled = true;
-                naven.getEventManager().register(this);
-                this.onEnable();
-                if (!(this instanceof ClickGUIModule)) {
-                    HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
-                    if (module.moduleToggleSound.getCurrentValue()) {
-                        mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
+            // 只在状态实际改变时触发更新
+            if (this.enabled != enabled) {
+                Naven naven = Naven.getInstance();
+                if (enabled) {
+                    this.enabled = true;
+                    naven.getEventManager().register(this);
+                    this.onEnable();
+                    if (!(this instanceof ClickGUIModule)) {
+                        HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
+                        if (module.moduleToggleSound.getCurrentValue()) {
+                            mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_ON, 0.5F, 1.3F);
+                        }
+                        Notification notification = new NewNotification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
+                        naven.getNotificationManager().addNotification(notification);
                     }
-                    Notification notification = new NewNotification(NotificationLevel.SUCCESS, this.name + " Enabled!", 3000L);
-                    naven.getNotificationManager().addNotification(notification);
-                }
-            } else {
-                this.enabled = false;
-                naven.getEventManager().unregister(this);
-                this.onDisable();
-                if (!(this instanceof ClickGUIModule)) {
-                    HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
-                    if (module.moduleToggleSound.getCurrentValue()) {
-                        mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.8F);
+                    // 触发ArrayList更新但保持禁用模块顺序
+                    update = true;
+                } else {
+                    this.enabled = false;
+                    naven.getEventManager().unregister(this);
+                    this.onDisable();
+                    if (!(this instanceof ClickGUIModule)) {
+                        HUD module = (HUD) Naven.getInstance().getModuleManager().getModule(HUD.class);
+                        if (module.moduleToggleSound.getCurrentValue()) {
+                            mc.player.playSound(SoundEvents.WOODEN_BUTTON_CLICK_OFF, 0.5F, 0.7F);
+                        }
+                        Notification notification = new NewNotification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
+                        naven.getNotificationManager().addNotification(notification);
                     }
-                    Notification notification = new NewNotification(NotificationLevel.ERROR, this.name + " Disabled!", 3000L);
-                    naven.getNotificationManager().addNotification(notification);
+                    // 触发ArrayList更新但保持禁用模块顺序
+                    update = true;
                 }
             }
         } catch (Exception var5) {

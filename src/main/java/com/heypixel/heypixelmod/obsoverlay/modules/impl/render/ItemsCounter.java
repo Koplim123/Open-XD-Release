@@ -121,7 +121,7 @@ public class ItemsCounter extends Module {
         if (currentWidth > 0.1f && currentHeight > 0.1f) {
             float x = this.posX.getCurrentValue();
             float y = this.posY.getCurrentValue();
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, Integer.MIN_VALUE);
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, 1073741824);
         }
     }
 

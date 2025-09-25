@@ -4,6 +4,7 @@ import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCCredentialManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.HWIDUtils;
+import com.heypixel.heypixelmod.obsoverlay.utils.SetTitle;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -113,6 +114,8 @@ public class IRCLoginScreen extends Screen {
                             if (success) {
                                 // 登录成功，保存凭据
                                 new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
+                                // 登录成功，立即更新标题
+                                SetTitle.apply();
                                 // 登录成功，跳转到Welcome界面
                                 this.minecraft.setScreen(new Welcome());
                             } else {
