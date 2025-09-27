@@ -1,18 +1,15 @@
 package com.heypixel.heypixelmod.obsoverlay.ui.notification;
 
-import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.TimeHelper;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.util.Mth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.awt.Color;
 
+/**
+ * 通知选择器基类 - 支持Naven和SouthSide两种模式
+ */
 public class Notification {
     protected static final Logger LOGGER = LoggerFactory.getLogger(Notification.class);
     
@@ -121,11 +118,38 @@ public class Notification {
         return 1.0F;
     }
 
+    /**
+     * 创建通知实例 - 根据当前模式自动选择实现
+     */
+    public static Notification create(NotificationLevel level, String message, long age) {
+        if (NotificationMode.isNavenMode()) {
+            return new NavenNotification(level, message, age);
+        } else {
+            return new NewNotification(level, message, age);
+        }
+    }
+    
+    public static Notification create(NotificationLevel level, String title, String description, long age) {
+        if (NotificationMode.isNavenMode()) {
+            return new NavenNotification(level, description, age);
+        } else {
+            return new NewNotification(level, description, age);
+        }
+    }
+    
+    public static Notification create(String message, boolean enabled) {
+        if (NotificationMode.isNavenMode()) {
+            return new NavenNotification(message, enabled);
+        } else {
+            return new NewNotification(enabled ? NotificationLevel.SUCCESS : NotificationLevel.ERROR, message, 2000L);
+        }
+    }
+
     public void render(PoseStack stack, float x, float y) {
-        // 基础渲染实现
+        // 子类必须实现此方法
     }
 
     public void renderShader(PoseStack stack, float x, float y) {
-        // 基础着色器渲染实现
+        // 子类必须实现此方法
     }
 }

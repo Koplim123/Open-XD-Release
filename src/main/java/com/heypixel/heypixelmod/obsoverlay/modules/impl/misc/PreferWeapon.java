@@ -2,7 +2,6 @@ package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
-import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventKey;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
@@ -14,7 +13,6 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import java.util.HashSet;
 import java.util.Set;
 
-@JNICObf
 @ModuleInfo(
         name = "PreferWeapon",
         description = "Prioritizes a specific weapon for InventoryManager's sword slot",

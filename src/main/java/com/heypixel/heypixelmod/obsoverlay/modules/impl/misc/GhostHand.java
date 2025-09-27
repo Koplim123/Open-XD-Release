@@ -1,7 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.misc;
 
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
-import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventMotion;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender;
@@ -40,7 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@JNICObf
 
 @ModuleInfo(
         name = "GhostHand",

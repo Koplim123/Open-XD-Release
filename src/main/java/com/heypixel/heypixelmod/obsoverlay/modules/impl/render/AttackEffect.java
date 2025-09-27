@@ -135,7 +135,7 @@ public class AttackEffect extends Module {
         // 转换为屏幕坐标进行2D渲染
         Vector2f screenPos = ProjectionUtils.project(pos.x, pos.y, pos.z, 1.0f);
         if (screenPos != null && screenPos.x != Float.MAX_VALUE) {
-            RenderUtils.drawCircle(screenPos.x, screenPos.y, circleRadius * 10, color, segments);
+            RenderUtils.drawCircle(new PoseStack(), screenPos.x, screenPos.y, circleRadius * 10, color, segments);
         }
         
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
@@ -290,7 +290,7 @@ public class AttackEffect extends Module {
                 float y = screenPos.y - size / 2;
                 
                 // 绘制带有透明度的圆形粒子
-                RenderUtils.drawCircle(x + size / 2, y + size / 2, size, particleColor, 8);
+                RenderUtils.drawCircle(new PoseStack(), x + size / 2, y + size / 2, size, particleColor, 8);
             }
             
             RenderSystem.depthMask(true);

@@ -90,7 +90,6 @@ public class ModuleManager {
          new FastWeb(),
          new PostProcess(),
          new AttackCrystal(),
-         new ItemPhysics(),
          new ItemsCounter(),
          new EffectDisplay(),
          new NoRender(),
@@ -98,6 +97,7 @@ public class ModuleManager {
          new BackTrack(),
          new AutoThrowable(),
          new SuperKB(),
+         new NotificationSelect(),
          new ItemTags(),
          new ResetOpenGL(),
          new SafeWalk(),
@@ -107,7 +107,7 @@ public class ModuleManager {
          new AttackEffect(),
          new KillEffect(),
          new Helper(),
-         new TargetStrafe(),
+         new Speed(),
          new InventoryMove(),
          new FontSelect(),
          new LagBase(),
@@ -122,7 +122,8 @@ public class ModuleManager {
          new CrystalOptimizer(),
          new Island(),
          new AutoCrystal(),
-         new MidPearl()
+         new MidPearl(),
+         new NotificationSelect()
 
       );
    }

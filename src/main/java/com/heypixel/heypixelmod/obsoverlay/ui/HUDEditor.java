@@ -67,6 +67,9 @@ public class HUDEditor {
         int screenHeight = mc.getWindow().getGuiScaledHeight();
         hudElements.put("targethud", new HUDElement("targethud", "TargetHUD",
                 screenWidth / 2.0F + 10.0F, screenHeight / 2.0F + 10.0F, 160, 50));
+        
+        // 添加 "itemscounter" 元素
+        hudElements.put("itemscounter", new HUDElement("itemscounter", "Items Counter", 10, 10, 100, 80));
     }
 
     /**

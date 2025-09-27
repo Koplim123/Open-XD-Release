@@ -356,7 +356,7 @@ public class InventoryCleaner extends Module {
    public void onMotion(EventMotion e) {
       if (e.getType() == EventType.PRE) {
          if (!(mc.screen instanceof ClickGUI) && !this.checkConfig()) {
-            Notification notification = new Notification(
+            Notification notification = Notification.create(
                     "Duplicate slot config in Inventory Manager! Please check your config!", false
             );
             Naven.getInstance().getNotificationManager().addNotification(notification);

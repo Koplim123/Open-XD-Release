@@ -217,13 +217,12 @@ public class HUD extends Module {
                 });
             }
 
+            // 计算最大可能的宽度（包括所有模块，无论是否启用）
             float maxWidth = 0.0F;
             for (Module module : this.renderModules) {
-                if (module.isEnabled()) {
-                    float moduleWidth = font.getWidth(this.getModuleDisplayName(module), (double)this.arrayListSize.getCurrentValue());
-                    if (moduleWidth > maxWidth) {
-                        maxWidth = moduleWidth;
-                    }
+                float moduleWidth = font.getWidth(this.getModuleDisplayName(module), (double)this.arrayListSize.getCurrentValue());
+                if (moduleWidth > maxWidth) {
+                    maxWidth = moduleWidth;
                 }
             }
 

@@ -1,6 +1,5 @@
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
-import com.heypixel.heypixelmod.obfuscation.JNICObf;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
@@ -29,6 +28,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -40,10 +40,10 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
-@JNICObf
 @ModuleInfo(
         name = "BackTrack",
         description = "Stuck Network,but adversaries",
@@ -86,7 +86,31 @@ public class BackTrack extends Module {
             .build()
             .getBooleanValue();
 
+    public BooleanValue randomPacket = ValueBuilder.create(this, "RandomPacket")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+
+    public FloatValue randomMaxPacket = ValueBuilder.create(this, "RandomMaxPacket")
+            .setVisibility(this.randomPacket::getCurrentValue)
+            .setDefaultFloatValue(60F)
+            .setFloatStep(5F)
+            .setMinFloatValue(1F)
+            .setMaxFloatValue(450F)
+            .build()
+            .getFloatValue();
+
+    public FloatValue randomMinPacket = ValueBuilder.create(this, "RandomMinPacket")
+            .setVisibility(this.randomPacket::getCurrentValue)
+            .setDefaultFloatValue(30F)
+            .setFloatStep(5F)
+            .setMinFloatValue(1F)
+            .setMaxFloatValue(450F)
+            .build()
+            .getFloatValue();
+
     public FloatValue maxpacket = ValueBuilder.create(this, "Max Packet number")
+            .setVisibility(() -> !this.randomPacket.getCurrentValue())
             .setDefaultFloatValue(45F)
             .setFloatStep(5F)
             .setMinFloatValue(1F)
@@ -104,7 +128,31 @@ public class BackTrack extends Module {
             .getFloatValue();
 
 
+    public BooleanValue randomDelay = ValueBuilder.create(this, "RandomDelay")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+
+    public FloatValue randomMaxDelay = ValueBuilder.create(this, "RandomMaxDelay")
+            .setVisibility(this.randomDelay::getCurrentValue)
+            .setDefaultFloatValue(30F)
+            .setFloatStep(1F)
+            .setMinFloatValue(1F)
+            .setMaxFloatValue(200F)
+            .build()
+            .getFloatValue();
+
+    public FloatValue randomMinDelay = ValueBuilder.create(this, "RandomMinDelay")
+            .setVisibility(this.randomDelay::getCurrentValue)
+            .setDefaultFloatValue(10F)
+            .setFloatStep(1F)
+            .setMinFloatValue(1F)
+            .setMaxFloatValue(200F)
+            .build()
+            .getFloatValue();
+
     FloatValue delay = ValueBuilder.create(this, "Delay(Tick)")
+            .setVisibility(() -> !this.randomDelay.getCurrentValue())
             .setDefaultFloatValue(20F)
             .setFloatStep(1F)
             .setMinFloatValue(1F)
@@ -156,6 +204,11 @@ public class BackTrack extends Module {
             .build()
             .getBooleanValue();
 
+    public BooleanValue updateMyselfHealth = ValueBuilder.create(this, "UpdateMyselfHealth")
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
+
     private final LinkedBlockingDeque<Packet<?>> airKBQueue = new LinkedBlockingDeque<>();
     private final List<Integer> knockbackPositions = new ArrayList<>();
     private boolean isInterceptingAirKB = false;
@@ -176,7 +229,26 @@ public class BackTrack extends Module {
 
     private final SmoothAnimationTimer navenProgress = new SmoothAnimationTimer(0.0F, 0.2F);
     private static final int navenMainColor = new Color(150, 45, 45, 255).getRGB();
+    private final Random random = new Random();
 
+
+    private float getRandomPacketCount() {
+        if (randomPacket.getCurrentValue()) {
+            float min = randomMinPacket.getCurrentValue();
+            float max = randomMaxPacket.getCurrentValue();
+            return min + random.nextFloat() * (max - min);
+        }
+        return maxpacket.getCurrentValue();
+    }
+
+    private float getRandomDelay() {
+        if (randomDelay.getCurrentValue()) {
+            float min = randomMinDelay.getCurrentValue();
+            float max = randomMaxDelay.getCurrentValue();
+            return min + random.nextFloat() * (max - min);
+        }
+        return delay.getCurrentValue();
+    }
 
     @Override
     public void onEnable() {
@@ -289,7 +361,7 @@ public class BackTrack extends Module {
             }
         }
 
-        if (isInterceptingAirKB && interceptedPacketCount >= maxpacket.getCurrentValue()) {
+        if (isInterceptingAirKB && interceptedPacketCount >= getRandomPacketCount()) {
             if (OnGroundStop.getCurrentValue()) {
                 shouldCheckGround = true;
                 log("Max Packet number reached, waiting to land before releasing packets");
@@ -368,7 +440,7 @@ public class BackTrack extends Module {
     private void resetAfterRelease() {
         isInterceptingAirKB = false;
         shouldCheckGround = false;
-        delayTicks = (int) delay.getCurrentValue();
+        delayTicks = (int) getRandomDelay();
         log("Delay: " + delayTicks + " ticks");
         trackedEnemies.clear();
     }
@@ -392,6 +464,10 @@ public class BackTrack extends Module {
         }
 
         if (!isInterceptingAirKB) {
+            return;
+        }
+
+        if (updateMyselfHealth.getCurrentValue() && packet instanceof ClientboundSetHealthPacket) {
             return;
         }
 
@@ -453,15 +529,15 @@ public class BackTrack extends Module {
             float y = screenHeight / 2.0f + PROGRESS_BAR_Y_OFFSET;
             PoseStack poseStack = guiGraphics.pose();
             poseStack.pushPose();
-            float maxPacketValue = Math.max(1.0f, maxpacket.getCurrentValue());
+            float maxPacketValue = Math.max(1.0f, getRandomPacketCount());
             float progress = Math.min(1.0f, interceptedPacketCount / maxPacketValue);
             float progressWidth = PROGRESS_BAR_WIDTH * progress;
             RenderUtils.drawRoundedRect(poseStack, x, y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, BACKGROUND_COLOR);
             if (progressWidth > 0) {
                 RenderUtils.drawRoundedRect(poseStack, x, y, progressWidth, PROGRESS_BAR_HEIGHT, CORNER_RADIUS, PROGRESS_COLOR);
             }
-            if (OnGroundStop.getCurrentValue() && interceptedPacketCount > maxpacket.getCurrentValue()) {
-                float overflowProgress = (interceptedPacketCount - maxpacket.getCurrentValue()) / maxPacketValue;
+            if (OnGroundStop.getCurrentValue() && interceptedPacketCount > getRandomPacketCount()) {
+                float overflowProgress = (interceptedPacketCount - getRandomPacketCount()) / maxPacketValue;
                 float overflowWidth = Math.min(PROGRESS_BAR_WIDTH * overflowProgress, PROGRESS_BAR_WIDTH);
                 RenderUtils.drawRoundedRect(poseStack,
                         x + PROGRESS_BAR_WIDTH - overflowWidth,
@@ -488,7 +564,7 @@ public class BackTrack extends Module {
             poseStack.popPose();
         }
         else if (btrendermode.isCurrentMode("Naven")) {
-            this.navenProgress.target = Mth.clamp((float) this.getPacketCount() / this.maxpacket.getCurrentValue() * 100.0F, 0.0F, 100.0F);
+            this.navenProgress.target = Mth.clamp((float) this.getPacketCount() / this.getRandomPacketCount() * 100.0F, 0.0F, 100.0F);
             this.navenProgress.update(true);
 
             int barX = mc.getWindow().getGuiScaledWidth() / 2 - 50;

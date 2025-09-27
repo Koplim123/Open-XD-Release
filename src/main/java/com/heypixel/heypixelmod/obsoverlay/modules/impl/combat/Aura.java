@@ -177,7 +177,12 @@ public class Aura extends Module {
             .setMaxFloatValue(360.0F)
             .build()
             .getFloatValue();
-
+    public ModeValue TargetESPStyle = ValueBuilder.create(this, "TargetEsp Style")
+            .setVisibility(this.targetEsp::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Naven", "Nitro")
+            .build()
+            .getModeValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
     RotationUtils.Data lastRotationData;
     RotationUtils.Data rotationData;
@@ -303,6 +308,12 @@ public class Aura extends Module {
             GL11.glDepthMask(true);
             GL11.glDisable(2848);
             stack.popPose();
+            com.heypixel.heypixelmod.obsoverlay.ui.targethud.TargetESP.render(
+                    e,
+                    targets,
+                    target,
+                    this.TargetESPStyle.getCurrentMode()
+            );
         }
     }
 

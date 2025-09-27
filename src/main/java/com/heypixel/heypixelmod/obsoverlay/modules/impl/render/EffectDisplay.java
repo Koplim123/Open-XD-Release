@@ -7,6 +7,8 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
+import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -41,6 +43,26 @@ public class EffectDisplay extends Module {
    private final Color bodyColor = new Color(0, 0, 0, 50);
    private final List<Vector4f> blurMatrices = new ArrayList<>();
    private static final Pattern CJK_CHAR_PATTERN = Pattern.compile("[\\u4e00-\\u9fa5]");
+   
+   // Capsule Mode的总体背景bounds
+   private float totalMinX = Float.MAX_VALUE;
+   private float totalMinY = Float.MAX_VALUE;
+   private float totalMaxX = Float.MIN_VALUE;
+   private float totalMaxY = Float.MIN_VALUE;
+   
+   private final ModeValue displayMode = ValueBuilder.create(this, "Display Mode")
+           .setModes("Normal", "Capsule")
+           .setDefaultModeIndex(0)
+           .build()
+           .getModeValue();
+
+   private String getDisplayName(MobEffect effect, MobEffectInfo info) {
+      String displayName = I18n.get(effect.getDescriptionId());
+      if (info.amplifier > 0) {
+         displayName += " " + I18n.get("enchantment.level." + (info.amplifier + 1));
+      }
+      return displayName;
+   }
 
    @EventTarget(4)
    public void renderIcons(EventRender2D e) {
@@ -49,8 +71,11 @@ public class EffectDisplay extends Module {
 
    @EventTarget
    public void onShader(EventShader e) {
-      for (Vector4f matrix : this.blurMatrices) {
-         RenderUtils.drawRoundedRect(e.getStack(), matrix.x(), matrix.y(), matrix.z(), matrix.w(), 5.0F, 1073741824);
+      for (int i = 0; i < this.blurMatrices.size(); i++) {
+         Vector4f matrix = this.blurMatrices.get(i);
+         // 第一个矩形是Capsule Mode的总体背景，使用更大的圆角
+         float cornerRadius = (i == 0 && displayMode.getCurrentMode().equals("Capsule")) ? 8.0F : 5.0F;
+         RenderUtils.drawRoundedRect(e.getStack(), matrix.x(), matrix.y(), matrix.z(), matrix.w(), cornerRadius, 1073741824);
       }
    }
 
@@ -82,6 +107,14 @@ public class EffectDisplay extends Module {
       int startY = mc.getWindow().getGuiScaledHeight() / 2 - this.infos.size() * 16;
       this.list = Lists.newArrayListWithExpectedSize(this.infos.size());
       this.blurMatrices.clear();
+      
+      // 重置Capsule Mode的总体背景bounds
+      if (displayMode.getCurrentMode().equals("Capsule") && !this.infos.isEmpty()) {
+         this.totalMinX = Float.MAX_VALUE;
+         this.totalMinY = Float.MAX_VALUE;
+         this.totalMaxX = Float.MIN_VALUE;
+         this.totalMaxY = Float.MIN_VALUE;
+      }
 
       for (Entry<MobEffect, EffectDisplay.MobEffectInfo> entry : this.infos.entrySet()) {
          e.getStack().pushPose();
@@ -117,45 +150,120 @@ public class EffectDisplay extends Module {
 
          effectInfo.durationTimer.update(true);
          effectInfo.xTimer.update(true);
-         StencilUtils.write(false);
-         this.blurMatrices.add(new Vector4f(x + 2.0F, y + 2.0F, effectInfo.width - 2.0F, 28.0F));
-         RenderUtils.drawRoundedRect(e.getStack(), x + 2.0F, y + 2.0F, effectInfo.width - 2.0F, 28.0F, 5.0F, -1);
-         StencilUtils.erase(true);
-         RenderUtils.fillBound(e.getStack(), x, y, effectInfo.width, 30.0F, this.bodyColor.getRGB());
-         RenderUtils.fillBound(e.getStack(), x, y, effectInfo.durationTimer.value, 30.0F, this.bodyColor.getRGB());
-         RenderUtils.drawRoundedRect(e.getStack(), x + effectInfo.width - 10.0F, y + 7.0F, 5.0F, 18.0F, 2.0F, this.headerColor.getRGB());
-         harmony.render(e.getStack(), text, (double)(x + 27.0F), (double)(y + 7.0F), this.headerColor, true, 0.3);
-         String duration = StringUtil.formatTickDuration(effectInfo.duration);
-         harmony.render(e.getStack(), duration, (double)(x + 27.0F), (double)(y + 17.0F), Color.WHITE, true, 0.25);
-         MobEffectTextureManager mobeffecttexturemanager = mc.getMobEffectTextures();
-         TextureAtlasSprite textureatlassprite = mobeffecttexturemanager.get(entry.getKey());
-         this.list.add(() -> {
-            RenderSystem.setShaderTexture(0, textureatlassprite.atlasLocation());
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            e.getGuiGraphics().blit((int)(x + 6.0F), (int)(y + 8.0F), 1, 18, 18, textureatlassprite);
-         });
-         StencilUtils.dispose();
+         
+         if (displayMode.getCurrentMode().equals("Capsule")) {
+            renderCapsuleMode(e, entry, effectInfo, x, y, harmony, text);
+         } else {
+            renderNormalMode(e, entry, effectInfo, x, y, harmony, text);
+         }
+         
          startY += 34;
          e.getStack().popPose();
       }
+      
+      // 在Capsule Mode时添加总体背景blur
+      if (displayMode.getCurrentMode().equals("Capsule") && !this.infos.isEmpty() && 
+          this.totalMinX != Float.MAX_VALUE && this.totalMaxX != Float.MIN_VALUE) {
+         float padding = 8.0F;
+         float backgroundX = this.totalMinX - padding;
+         float backgroundY = this.totalMinY - padding;
+         float backgroundWidth = (this.totalMaxX - this.totalMinX) + (padding * 2);
+         float backgroundHeight = (this.totalMaxY - this.totalMinY) + (padding * 2);
+         
+         // 在列表开头添加总体背景blur（这样它会先渲染，在所有effect之下）
+         this.blurMatrices.add(0, new Vector4f(backgroundX, backgroundY, backgroundWidth, backgroundHeight));
+      }
    }
 
-   public String getDisplayName(MobEffect effect, EffectDisplay.MobEffectInfo info) {
-      String effectName = effect.getDisplayName().getString();
-      String amplifierName;
-      if (info.amplifier == 0) {
-         amplifierName = "";
-      } else if (info.amplifier == 1) {
-         amplifierName = " " + I18n.get("enchantment.level.2", new Object[0]);
-      } else if (info.amplifier == 2) {
-         amplifierName = " " + I18n.get("enchantment.level.3", new Object[0]);
-      } else if (info.amplifier == 3) {
-         amplifierName = " " + I18n.get("enchantment.level.4", new Object[0]);
-      } else {
-         amplifierName = " " + info.amplifier;
-      }
+   private void renderNormalMode(EventRender2D e, Entry<MobEffect, EffectDisplay.MobEffectInfo> entry, EffectDisplay.MobEffectInfo effectInfo, float x, float y, CustomTextRenderer harmony, String text) {
+      StencilUtils.write(false);
+      this.blurMatrices.add(new Vector4f(x + 2.0F, y + 2.0F, effectInfo.width - 2.0F, 28.0F));
+      RenderUtils.drawRoundedRect(e.getStack(), x + 2.0F, y + 2.0F, effectInfo.width - 2.0F, 28.0F, 5.0F, -1);
+      StencilUtils.erase(true);
+      RenderUtils.fillBound(e.getStack(), x, y, effectInfo.width, 30.0F, this.bodyColor.getRGB());
+      RenderUtils.fillBound(e.getStack(), x, y, effectInfo.durationTimer.value, 30.0F, this.bodyColor.getRGB());
+      RenderUtils.drawRoundedRect(e.getStack(), x + effectInfo.width - 10.0F, y + 7.0F, 5.0F, 18.0F, 2.0F, this.headerColor.getRGB());
+      harmony.render(e.getStack(), text, (double)(x + 27.0F), (double)(y + 7.0F), this.headerColor, true, 0.3);
+      String duration = StringUtil.formatTickDuration(effectInfo.duration);
+      harmony.render(e.getStack(), duration, (double)(x + 27.0F), (double)(y + 17.0F), Color.WHITE, true, 0.25);
+      MobEffectTextureManager mobeffecttexturemanager = mc.getMobEffectTextures();
+      TextureAtlasSprite textureatlassprite = mobeffecttexturemanager.get(entry.getKey());
+      this.list.add(() -> {
+         RenderSystem.setShaderTexture(0, textureatlassprite.atlasLocation());
+         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+         e.getGuiGraphics().blit((int)(x + 6.0F), (int)(y + 8.0F), 1, 18, 18, textureatlassprite);
+      });
+      StencilUtils.dispose();
+   }
 
-      return effectName + amplifierName;
+   private void renderCapsuleMode(EventRender2D e, Entry<MobEffect, EffectDisplay.MobEffectInfo> entry, EffectDisplay.MobEffectInfo effectInfo, float x, float y, CustomTextRenderer harmony, String text) {
+      // 更新总体边界
+      this.totalMinX = Math.min(this.totalMinX, x);
+      this.totalMinY = Math.min(this.totalMinY, y);
+      this.totalMaxX = Math.max(this.totalMaxX, x + effectInfo.width);
+      this.totalMaxY = Math.max(this.totalMaxY, y + 30.0F);
+      
+      StencilUtils.write(false);
+      RenderUtils.drawRoundedRect(e.getStack(), x + 2.0F, y + 2.0F, effectInfo.width - 2.0F, 28.0F, 5.0F, -1);
+      StencilUtils.erase(true);
+      int effectColor = getEffectThemeColor(entry.getKey(), 95);
+      RenderUtils.fillBound(e.getStack(), x, y, effectInfo.width, 30.0F, effectColor);
+      RenderUtils.fillBound(e.getStack(), x, y, effectInfo.durationTimer.value, 30.0F, effectColor);
+      harmony.render(e.getStack(), text, (double)(x + 27.0F), (double)(y + 7.0F), Color.WHITE, true, 0.3);
+      String duration = StringUtil.formatTickDuration(effectInfo.duration);
+      harmony.render(e.getStack(), duration, (double)(x + 27.0F), (double)(y + 17.0F), Color.WHITE, true, 0.25);
+      MobEffectTextureManager mobeffecttexturemanager = mc.getMobEffectTextures();
+      TextureAtlasSprite textureatlassprite = mobeffecttexturemanager.get(entry.getKey());
+      this.list.add(() -> {
+         RenderSystem.setShaderTexture(0, textureatlassprite.atlasLocation());
+         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+         e.getGuiGraphics().blit((int)(x + 6.0F), (int)(y + 8.0F), 1, 18, 18, textureatlassprite);
+      });
+      // 注释掉单个effect的blur，现在使用总体背景
+      // this.blurMatrices.add(new Vector4f(x, y, effectInfo.width, 30.0F));
+      StencilUtils.dispose();
+   }
+
+   private int getEffectThemeColor(MobEffect effect, int alpha) {
+      String descriptionId = effect.getDescriptionId();
+      if (descriptionId.equals("effect.minecraft.strength")) return createColorWithAlpha(0x932423, alpha);
+      if (descriptionId.equals("effect.minecraft.weakness")) return createColorWithAlpha(0x484D48, alpha);
+      if (descriptionId.equals("effect.minecraft.speed")) return createColorWithAlpha(0x7CAFC6, alpha);
+      if (descriptionId.equals("effect.minecraft.slowness")) return createColorWithAlpha(0x5A6C81, alpha);
+      if (descriptionId.equals("effect.minecraft.jump_boost")) return createColorWithAlpha(0x22FF4C, alpha);
+      if (descriptionId.equals("effect.minecraft.regeneration")) return createColorWithAlpha(0xCD5CAB, alpha);
+      if (descriptionId.equals("effect.minecraft.poison")) return createColorWithAlpha(0x4E9331, alpha);
+      if (descriptionId.equals("effect.minecraft.fire_resistance")) return createColorWithAlpha(0xE49A3A, alpha);
+      if (descriptionId.equals("effect.minecraft.water_breathing")) return createColorWithAlpha(0x2E5299, alpha);
+      if (descriptionId.equals("effect.minecraft.invisibility")) return createColorWithAlpha(0x7F8392, alpha);
+      if (descriptionId.equals("effect.minecraft.night_vision")) return createColorWithAlpha(0x1F1FA1, alpha);
+      if (descriptionId.equals("effect.minecraft.haste")) return createColorWithAlpha(0xD9C043, alpha);
+      if (descriptionId.equals("effect.minecraft.mining_fatigue")) return createColorWithAlpha(0x4A4217, alpha);
+      if (descriptionId.equals("effect.minecraft.resistance")) return createColorWithAlpha(0x99453A, alpha);
+      if (descriptionId.equals("effect.minecraft.absorption")) return createColorWithAlpha(0x2552A5, alpha);
+      if (descriptionId.equals("effect.minecraft.health_boost")) return createColorWithAlpha(0xF87D23, alpha);
+      if (descriptionId.equals("effect.minecraft.saturation")) return createColorWithAlpha(0xF8AD48, alpha);
+      if (descriptionId.equals("effect.minecraft.glowing")) return createColorWithAlpha(0x94A61B, alpha);
+      if (descriptionId.equals("effect.minecraft.levitation")) return createColorWithAlpha(0xCE32ED, alpha);
+      if (descriptionId.equals("effect.minecraft.luck")) return createColorWithAlpha(0x339900, alpha);
+      if (descriptionId.equals("effect.minecraft.unluck")) return createColorWithAlpha(0xBC0000, alpha);
+      if (descriptionId.equals("effect.minecraft.slow_falling")) return createColorWithAlpha(0xF7F8CE, alpha);
+      if (descriptionId.equals("effect.minecraft.conduit_power")) return createColorWithAlpha(0x1BCAD8, alpha);
+      if (descriptionId.equals("effect.minecraft.dolphins_grace")) return createColorWithAlpha(0x86B2CA, alpha);
+      if (descriptionId.equals("effect.minecraft.bad_omen")) return createColorWithAlpha(0x0B6138, alpha);
+      if (descriptionId.equals("effect.minecraft.hero_of_the_village")) return createColorWithAlpha(0xCDD724, alpha);
+      if (descriptionId.equals("effect.minecraft.darkness")) return createColorWithAlpha(0x1E1E23, alpha);
+      
+      // 默认使用黑色背景，alpha为95
+      return createColorWithAlpha(0x000000, alpha);
+   }
+   
+   // 创建带alpha值的颜色
+   private int createColorWithAlpha(int rgb, int alpha) {
+      int r = (rgb >> 16) & 0xFF;
+      int g = (rgb >> 8) & 0xFF;
+      int b = rgb & 0xFF;
+      return (alpha << 24) | (r << 16) | (g << 8) | b;
    }
 
    public static class MobEffectInfo {

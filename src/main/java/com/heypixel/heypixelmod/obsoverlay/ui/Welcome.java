@@ -1,5 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.ui;
 
+import com.heypixel.heypixelmod.obsoverlay.ui.MainUI.MainUI;
+import com.heypixel.heypixelmod.obsoverlay.utils.renderer.BlurInit2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -18,6 +20,7 @@ public class Welcome extends Screen {
     private static final int FADE_OUT_DURATION = 30;
     private static final int MAX_ALPHA = 255;
     private boolean textureLoaded = false;
+    private int blurStrength = 3;
 
     public Welcome() {
         super(Component.literal("Welcome"));
@@ -27,6 +30,7 @@ public class Welcome extends Screen {
     protected void init() {
         super.init();
         textureLoaded = checkTextureLoaded();
+        BlurInit2.init();
     }
 
     private boolean checkTextureLoaded() {
@@ -57,7 +61,8 @@ public class Welcome extends Screen {
                     fadeAlpha = 0;
                     fadeInStage = 3; // Done
                     if (this.minecraft != null) {
-                        this.minecraft.setScreen(null);
+                        // IRC登录完成后直接跳转到MainUI
+                        this.minecraft.setScreen(new MainUI());
                     }
                 }
                 break;
@@ -69,11 +74,20 @@ public class Welcome extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         renderBackground(guiGraphics);
-        renderText(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        renderBlur(guiGraphics);
+        renderText(guiGraphics);
     }
 
-    public void renderBackground(GuiGraphics guiGraphics) {
+    private void renderBlur(GuiGraphics guiGraphics) {
+        if (fadeAlpha > 0 && fadeInStage < 3) {
+            float blurOpacity = fadeAlpha / 255.0f;
+            int dynamicBlurStrength = (int)(blurStrength * blurOpacity);
+            BlurInit2.renderBlur(guiGraphics, dynamicBlurStrength);
+        }
+    }
+
+    public void renderBackground(@Nonnull GuiGraphics guiGraphics) {
         Window window = Minecraft.getInstance().getWindow();
         int width = window.getGuiScaledWidth();
         int height = window.getGuiScaledHeight();

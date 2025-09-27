@@ -40,7 +40,7 @@ import java.util.*;
         description = "Renders prediction and can automatically counter thrown ender pearls.",
         category = Category.MISC
 )
-public class PearlPrediction extends Module {
+public class  PearlPrediction extends Module {
 
     public static Vector2f rotations;
     public static boolean isThrowing;

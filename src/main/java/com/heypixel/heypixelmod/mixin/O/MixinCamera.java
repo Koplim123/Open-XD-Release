@@ -73,7 +73,6 @@ public abstract class MixinCamera {
             cameraModule.lastMotionCamZ = 0.0D;
          }
 
-         // ===== Freecam 支持 =====
          com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam freecamModule =
                  (com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam) Naven.getInstance().getModuleManager().getModule(
                          com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Freecam.class);

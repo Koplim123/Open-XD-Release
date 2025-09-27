@@ -25,7 +25,7 @@ public class PostProcess extends Module {
    private final FloatValue blurFPS = ValueBuilder.create(this, "Blur FPS")
       .setVisibility(this.blur::getCurrentValue)
       .setFloatStep(1.0F)
-      .setDefaultFloatValue(90.0F)
+      .setDefaultFloatValue(30.0F)
       .setMinFloatValue(15.0F)
       .setMaxFloatValue(120.0F)
       .build()

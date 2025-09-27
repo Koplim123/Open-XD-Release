@@ -38,6 +38,9 @@ public class BlurUtils {
             IntDoubleImmutablePair.of(5, 7.25),
             IntDoubleImmutablePair.of(5, 8.5)
     };
+    
+    // 当前模糊强度
+    private static float currentBlurStrength = 0.0F;
 
     public static void onRenderAfterWorld(EventRender2D e, float fps, int strengthIndex) {
         StencilUtils.write(false);
@@ -93,5 +96,29 @@ public class BlurUtils {
         shader.set("uHalfTexelSize", 0.5 / (double)targetFbo.width, 0.5 / (double)targetFbo.height);
         shader.set("uOffset", offset);
         PostProcessRenderer.render(stack);
+    }
+    
+    /**
+     * 简单的模糊方法，设置当前的模糊强度
+     * @param strength 模糊强度 (0.0F = 无模糊, 1.0F+ = 模糊)
+     */
+    public static void blur(float strength) {
+        currentBlurStrength = Math.max(0.0F, strength);
+    }
+    
+    /**
+     * 获取当前模糊强度
+     * @return 当前模糊强度
+     */
+    public static float getCurrentBlurStrength() {
+        return currentBlurStrength;
+    }
+    
+    /**
+     * 检查是否启用了模糊
+     * @return 如果模糊强度大于0则返回true
+     */
+    public static boolean isBlurEnabled() {
+        return currentBlurStrength > 0.0F;
     }
 }

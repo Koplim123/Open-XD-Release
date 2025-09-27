@@ -19,7 +19,7 @@ public class ClientFriend extends Module {
    @Override
    public void onDisable() {
       attackTimer.reset();
-      Notification notification = new Notification("You can attack other players after 15 seconds.", true);
+      Notification notification = Notification.create("You can attack other players after 15 seconds.", true);
       Naven.getInstance().getNotificationManager().addNotification(notification);
    }
 }

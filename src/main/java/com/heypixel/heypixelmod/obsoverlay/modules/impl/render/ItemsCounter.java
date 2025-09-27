@@ -6,6 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShader;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
+import com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor;
 import com.heypixel.heypixelmod.obsoverlay.utils.InventoryUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
@@ -34,8 +35,6 @@ import static com.heypixel.heypixelmod.obsoverlay.modules.impl.render.HUD.header
 public class ItemsCounter extends Module {
 
     public FloatValue counterSize = ValueBuilder.create(this, "Counter Size").setDefaultFloatValue(0.4F).setFloatStep(0.01F).setMinFloatValue(0.1F).setMaxFloatValue(1.0F).build().getFloatValue();
-    public FloatValue posX = ValueBuilder.create(this, "Pos X").setMinFloatValue(-300.0F).setMaxFloatValue(300.0F).setDefaultFloatValue(10.0F).setFloatStep(1.0F).build().getFloatValue();
-    public FloatValue posY = ValueBuilder.create(this, "Pos Y").setMinFloatValue(-300.0F).setMaxFloatValue(300.0F).setDefaultFloatValue(10.0F).setFloatStep(1.0F).build().getFloatValue();
     public BooleanValue showQuantity = ValueBuilder.create(this, "Show Quantity").setDefaultBooleanValue(true).build().getBooleanValue();
 
     private float finalWidth = 0;
@@ -69,8 +68,9 @@ public class ItemsCounter extends Module {
         int kbBallCount = 0;
         int sharpnessAxeCount = 0;
         if (mc.player != null) {
-            for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
-                ItemStack itemStack = mc.player.getInventory().getItem(i);
+            var inventory = mc.player.getInventory();
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                ItemStack itemStack = inventory.getItem(i);
                 if (InventoryUtils.isGodAxe(itemStack)) godAxeCount++;
                 if (InventoryUtils.isKBBall(itemStack)) kbBallCount++;
                 if (InventoryUtils.isSharpnessAxe(itemStack)) sharpnessAxeCount++;
@@ -118,9 +118,28 @@ public class ItemsCounter extends Module {
         if (Math.abs(finalWidth - currentWidth) < 0.01f) currentWidth = finalWidth;
         if (Math.abs(finalHeight - currentHeight) < 0.01f) currentHeight = finalHeight;
 
+        // 更新HUD编辑器中的元素尺寸
+        if (HUDEditor.getInstance() != null && HUDEditor.getInstance().isEditMode()) {
+            HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("itemscounter");
+            if (element != null) {
+                element.width = Math.max(currentWidth, 100); // 设置最小宽度
+                element.height = Math.max(currentHeight, 80); // 设置最小高度
+            }
+        }
+
         if (currentWidth > 0.1f && currentHeight > 0.1f) {
-            float x = this.posX.getCurrentValue();
-            float y = this.posY.getCurrentValue();
+            // 获取在HUD编辑器中的位置
+            float x = 10.0F; // 默认x位置
+            float y = 10.0F; // 默认y位置
+            
+            if (HUDEditor.getInstance() != null) {
+                HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("itemscounter");
+                if (element != null) {
+                    x = (float) element.x;
+                    y = (float) element.y;
+                }
+            }
+            
             RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, 1073741824);
         }
     }
@@ -130,8 +149,18 @@ public class ItemsCounter extends Module {
         if (!this.isEnabled()) return;
 
         if (currentWidth > 0.1f && currentHeight > 0.1f && !textLines.isEmpty()) {
-            float x = this.posX.getCurrentValue();
-            float y = this.posY.getCurrentValue();
+            // 获取在HUD编辑器中的位置
+            float x = 10.0F; // 默认x位置
+            float y = 10.0F; // 默认y位置
+            
+            if (HUDEditor.getInstance() != null) {
+                HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("itemscounter");
+                if (element != null) {
+                    x = (float) element.x;
+                    y = (float) element.y;
+                }
+            }
+            
             CustomTextRenderer font = Fonts.opensans;
 
             e.getStack().pushPose();
@@ -139,9 +168,9 @@ public class ItemsCounter extends Module {
             StencilUtils.write(false);
             RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, Integer.MIN_VALUE);
             StencilUtils.erase(true);
-
-            RenderUtils.fill(e.getStack(), x, y, x + currentWidth, y + 3.0F, headerColor);
-            RenderUtils.fill(e.getStack(), x, y + 3.0F, x + currentWidth, y + currentHeight, bodyColor);
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, bodyColor);
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, 3.0F, 5.0F, headerColor);
+            RenderUtils.fill(e.getStack(), x, y + 2.0F, x + currentWidth, y + 3.0F, headerColor);
 
             float currentTextY = y + 3.0F;
 

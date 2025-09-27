@@ -7,10 +7,10 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.*;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.ClientFriend;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.HackerCheck;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
-import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
@@ -200,11 +200,11 @@ public class NameTags extends Module {
     public void onMouseKey(EventMouseClick e) {
         if (e.getKey() == 2 && !e.isState() && this.mcf.getCurrentValue() && this.aimingPlayer != null) {
             if (FriendManager.isFriend(this.aimingPlayer)) {
-                Notification notification = new Notification("Removed " + this.aimingPlayer.getName().getString() + " from friends!", false);
+                Notification notification = Notification.create("Removed " + this.aimingPlayer.getName().getString() + " from friends!", false);
                 Naven.getInstance().getNotificationManager().addNotification(notification);
                 FriendManager.removeFriend(this.aimingPlayer);
             } else {
-                Notification notification = new Notification("Added " + this.aimingPlayer.getName().getString() + " as friends!", true);
+                Notification notification = Notification.create("Added " + this.aimingPlayer.getName().getString() + " as friends!", true);
                 Naven.getInstance().getNotificationManager().addNotification(notification);
                 FriendManager.addFriend(this.aimingPlayer);
             }
@@ -308,53 +308,122 @@ public class NameTags extends Module {
                     Fonts.harmony.render(e.getStack(), text, (double)(position.x - width / 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
                     Fonts.harmony.setAlpha(1.0F);
                 } else if (this.style.getCurrentMode().equals("Capsule")) {
-                    // 新的胶囊渲染逻辑
+                    // 胶囊渲染逻辑
                     float scale = this.scale.getCurrentValue();
+                    double height = Fonts.harmony.getHeight(true, (double)scale);
+                    float spacing = Math.max(this.capsuleSpacing.getCurrentValue(), 1.0F); // 确保最小间距
+                    
+                    // 检查状态
+                    boolean isTeam = Teams.isSameTeam(living);
+                    boolean isFriend = FriendManager.isFriend(living);
+                    Module clientFriendModule = Naven.getInstance().getModuleManager().getModule(ClientFriend.class);
+                    boolean isClientFriend = clientFriendModule != null && clientFriendModule.isEnabled();
+                    
+                    // 计算各个胶囊的文本和宽度
+                    String teamText = "§aTeam";
+                    float teamWidth = isTeam ? Fonts.harmony.getWidth(teamText, (double)scale) : 0;
+                    
+                    String friendText = "§aFriend";
+                    float friendWidth = (isFriend || isClientFriend) ? Fonts.harmony.getWidth(friendText, (double)scale) : 0;
+                    
                     // 1. 血量
                     String healthText = "§a" + Math.round(hp) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : "") + "HP";
                     float healthWidth = Fonts.harmony.getWidth(healthText, (double)scale);
-                    // 2. 名字（带截断）
-                    String originalName = living.getName().getString();
-                    String nameToRender = originalName;
-                    // 当名字宽度超过80时进行截断
-                    if (Fonts.harmony.getWidth("§c" + nameToRender, (double)scale) > 80) {
-                        while (Fonts.harmony.getWidth("§c" + nameToRender + "...", (double)scale) > 80 && nameToRender.length() > 0) {
-                            nameToRender = nameToRender.substring(0, nameToRender.length() - 1);
-                        }
-                        nameToRender += "...";
-                    }
-                    String nameText = "§c" + nameToRender;
-                    float nameWidth = Fonts.harmony.getWidth(nameText, (double)scale);
-                    // 3. 距离
+                    
+                    // 2. 距离
                     float distance = mc.player.distanceTo(living);
                     String distanceText = "§7" + String.format("%.1f", distance) + "m";
                     float distanceWidth = Fonts.harmony.getWidth(distanceText, (double)scale);
-                    double height = Fonts.harmony.getHeight(true, (double)scale);
-                    float spacing = this.capsuleSpacing.getCurrentValue();
-                    float totalWidth = healthWidth + nameWidth + distanceWidth + 12.0F + (spacing * 2.0F);
+                    
+                    // 3. 名字（改进截断逻辑）
+                    String originalName = living.getName().getString();
+                    String nameToRender = originalName;
+                    float maxNameWidth = 70.0F; // 更保守的最大宽度
+                    
+                    // 先计算基础宽度（不包括名字）
+                    float baseWidth = healthWidth + distanceWidth + 8.0F; // 两个固定胶囊的宽度
+                    if (isTeam) baseWidth += teamWidth + 4.0F;
+                    if (isFriend || isClientFriend) baseWidth += friendWidth + 4.0F;
+                    
+                    // 动态调整名字最大宽度，确保总宽度不会过长
+                    float availableWidth = 200.0F - baseWidth; // 总体最大宽度限制
+                    maxNameWidth = Math.min(maxNameWidth, Math.max(30.0F, availableWidth));
+                    
+                    // 截断名字
+                    String nameText = "§c" + nameToRender;
+                    float currentNameWidth = Fonts.harmony.getWidth(nameText, (double)scale);
+                    
+                    if (currentNameWidth > maxNameWidth) {
+                        while (currentNameWidth > maxNameWidth && nameToRender.length() > 1) {
+                            nameToRender = nameToRender.substring(0, nameToRender.length() - 1);
+                            nameText = "§c" + nameToRender + "...";
+                            currentNameWidth = Fonts.harmony.getWidth(nameText, (double)scale);
+                        }
+                    }
+                    float nameWidth = currentNameWidth;
+                    
+                    // 重新计算总宽度
+                    float totalWidth = healthWidth + nameWidth + distanceWidth + 12.0F;
+                    int capsuleCount = 3;
+                    
+                    if (isTeam) {
+                        totalWidth += teamWidth + 4.0F;
+                        capsuleCount++;
+                    }
+                    if (isFriend || isClientFriend) {
+                        totalWidth += friendWidth + 4.0F;
+                        capsuleCount++;
+                    }
+                    
+                    totalWidth += spacing * (capsuleCount - 1);
                     float startX = position.x - totalWidth / 2.0F;
-                    // 渲染血量胶囊
-                    float healthStartX = startX;
-                    float healthEndX = healthStartX + healthWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(healthStartX, position.y - 2.0F, healthEndX, (float)(position.y + height)));
-                    RenderUtils.drawRoundedRect(e.getStack(), healthStartX, position.y - 2.0F, healthWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
+                    float currentX = startX;
+                    
                     Fonts.harmony.setAlpha(0.8F);
+                    
+                    // 1. 渲染Team胶囊
+                    if (isTeam) {
+                        float teamStartX = currentX;
+                        float teamEndX = teamStartX + teamWidth + 4.0F;
+                        this.blurMatrices.add(new Vector4f(teamStartX, position.y - 2.0F, teamEndX, (float)(position.y + height + 2.0F)));
+                        RenderUtils.drawRoundedRect(e.getStack(), teamStartX, position.y - 2.0F, teamWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
+                        Fonts.harmony.render(e.getStack(), teamText, (double)(teamStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                        currentX = teamEndX + spacing;
+                    }
+                    
+                    // 2. 渲染Friend胶囊
+                    if (isFriend || isClientFriend) {
+                        float friendStartX = currentX;
+                        float friendEndX = friendStartX + friendWidth + 4.0F;
+                        this.blurMatrices.add(new Vector4f(friendStartX, position.y - 2.0F, friendEndX, (float)(position.y + height + 2.0F)));
+                        RenderUtils.drawRoundedRect(e.getStack(), friendStartX, position.y - 2.0F, friendWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
+                        Fonts.harmony.render(e.getStack(), friendText, (double)(friendStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                        currentX = friendEndX + spacing;
+                    }
+                    
+                    // 3. 渲染血量胶囊
+                    float healthStartX = currentX;
+                    float healthEndX = healthStartX + healthWidth + 4.0F;
+                    this.blurMatrices.add(new Vector4f(healthStartX, position.y - 2.0F, healthEndX, (float)(position.y + height + 2.0F)));
+                    RenderUtils.drawRoundedRect(e.getStack(), healthStartX, position.y - 2.0F, healthWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
                     Fonts.harmony.render(e.getStack(), healthText, (double)(healthStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
-                    // 渲染名字胶囊
-                    float nameStartX = healthEndX + spacing;
+                    currentX = healthEndX + spacing;
+                    
+                    // 4. 渲染名字胶囊
+                    float nameStartX = currentX;
                     float nameEndX = nameStartX + nameWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(nameStartX, position.y - 2.0F, nameEndX, (float)(position.y + height)));
+                    this.blurMatrices.add(new Vector4f(nameStartX, position.y - 2.0F, nameEndX, (float)(position.y + height + 2.0F)));
                     RenderUtils.drawRoundedRect(e.getStack(), nameStartX, position.y - 2.0F, nameWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
                     Fonts.harmony.render(e.getStack(), nameText, (double)(nameStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
-                    // 渲染距离胶囊
-                    float distanceStartX = nameEndX + spacing;
+                    currentX = nameEndX + spacing;
+                    
+                    // 5. 渲染距离胶囊
+                    float distanceStartX = currentX;
                     float distanceEndX = distanceStartX + distanceWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(distanceStartX, position.y - 2.0F, distanceEndX, (float)(position.y + height)));
+                    this.blurMatrices.add(new Vector4f(distanceStartX, position.y - 2.0F, distanceEndX, (float)(position.y + height + 2.0F)));
                     RenderUtils.drawRoundedRect(e.getStack(), distanceStartX, position.y - 2.0F, distanceWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
                     Fonts.harmony.render(e.getStack(), distanceText, (double)(distanceStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                    
                     Fonts.harmony.setAlpha(1.0F);
                 }
 

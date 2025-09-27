@@ -10,6 +10,8 @@ import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Glow;
 import com.heypixel.heypixelmod.obsoverlay.utils.AnimationUtils;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.main.GameConfig;
@@ -37,7 +39,7 @@ public abstract class MixinMinecraft {
             cancellable = true
     )
     private void onCreateTitle(CallbackInfoReturnable<String> cir) {
-        cir.setReturnValue("Naven-XD | " + Version.getVersion() +" | 哈基米");
+        cir.setReturnValue("Naven-XD | " + Version.getVersion() + " | 哈基米");
     }
     @Shadow
     public abstract void setScreen(@Nullable Screen p_91153_);

@@ -1,4 +1,3 @@
-//爱来自原作者RN_Random_NameLagBase ❥(^_-)
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.combat;
 
 import com.heypixel.heypixelmod.obsoverlay.Naven;
@@ -32,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @ModuleInfo(
         name = "LagBase",
         category = Category.COMBAT,
-        description = "lagrange/backtrack"
+        description = "from RN_Random_Name"
 )
 public class LagBase extends Module {
     // Modes

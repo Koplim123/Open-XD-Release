@@ -16,6 +16,15 @@ public class NotificationManager {
             this.notifications.add(notification);
         }
     }
+    
+    // 便捷方法 - 使用选择器创建通知
+    public void addNotification(NotificationLevel level, String message, long age) {
+        addNotification(Notification.create(level, message, age));
+    }
+    
+    public void addNotification(String message, boolean enabled) {
+        addNotification(Notification.create(message, enabled));
+    }
 
     public void onRenderShadow(EventShader e) {
         for (Notification notification : this.notifications) {

@@ -20,7 +20,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 )
 public class Speed extends Module {
     final ModeValue mode = ValueBuilder.create(this, "Mode")
-            .setModes("LegitJump", "Simple", "Vanilla")
+            .setModes("LegitJump", "Simple")
             .setDefaultModeIndex(0)
             .build()
             .getModeValue();
@@ -31,14 +31,7 @@ public class Speed extends Module {
             .build()
             .getBooleanValue();
 
-    private final FloatValue vanillaSpeed = ValueBuilder.create(this, "Vanilla Speed")
-            .setDefaultFloatValue(0.2F)
-            .setMinFloatValue(0.01F)
-            .setMaxFloatValue(1.0F)
-            .setFloatStep(0.01F)
-            .setVisibility(() -> mode.isCurrentMode("Vanilla"))
-            .build()
-            .getFloatValue();
+
 
     private final FloatValue simpleSpeed = ValueBuilder.create(this, "Simple Speed")
             .setDefaultFloatValue(0.2F)
@@ -62,9 +55,6 @@ public class Speed extends Module {
                     break;
                 case "Simple":
                     handleSimpleSpeed();
-                    break;
-                case "Vanilla":
-                    handleVanillaSpeed();
                     break;
             }
         }
@@ -98,18 +88,10 @@ public class Speed extends Module {
         }
     }
 
-    private void handleVanillaSpeed() {
-        if (mc.player != null) {
-            float speed = vanillaSpeed.getCurrentValue();
-            mc.player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed);
-        }
-    }
+
 
     @Override
     public void onDisable() {
-        if (mc.player != null) {
-            mc.player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1);
-        }
         isSprinting = false;
     }
 

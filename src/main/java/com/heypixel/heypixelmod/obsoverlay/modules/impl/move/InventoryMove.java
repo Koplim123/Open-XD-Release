@@ -31,7 +31,7 @@ import java.util.List;
 
 @ModuleInfo(
         name = "InventoryMove",
-        description = "Enables movement while GUI is open(if With ACA maybe banned)",
+        description = "Inventory move but with aca maybe banned",
         category = Category.MOVEMENT
 )
 public class InventoryMove extends Module {

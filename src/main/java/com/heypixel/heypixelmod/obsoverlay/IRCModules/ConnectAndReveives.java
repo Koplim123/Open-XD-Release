@@ -11,7 +11,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 public class ConnectAndReveives {
-    private static final String SERVER_HOST = "45.192.105.145";
+    private static final String SERVER_HOST = "154.37.215.66";
     private static final int SERVER_PORT = 8080;
     private static final String SERVER_URL = "ws://" + SERVER_HOST + ":" + SERVER_PORT;
     

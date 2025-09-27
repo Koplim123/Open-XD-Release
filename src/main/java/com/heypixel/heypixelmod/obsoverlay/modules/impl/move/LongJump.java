@@ -140,7 +140,7 @@ public class LongJump extends Module {
       int fireballSlot = this.getFireballSlot();
       if (fireballSlot == -1) {
          Naven.getInstance().getNotificationManager().addNotification(
-                 new Notification("No FireBall Found!", false)
+                 Notification.create("No FireBall Found!", false)
          );
          this.setEnabled(false);
       }
@@ -215,7 +215,7 @@ public class LongJump extends Module {
                mc.player.getInventory().selected = fireballSlot;
                this.rotateTick = 1;
                Naven.getInstance().getNotificationManager().addNotification(
-                       new Notification("§eStarting fireball usage #" + (this.usedFireballCount + 1), true)
+                       Notification.create("§eStarting fireball usage #" + (this.usedFireballCount + 1), true)
                );
             }
          }
@@ -228,7 +228,7 @@ public class LongJump extends Module {
          this.mouse5Pressed = true;
          if (this.delayed && this.releasedKnockbacks < this.receivedKnockbacks) {
             Naven.getInstance().getNotificationManager().addNotification(
-                    new Notification("§aReleasing " + (this.releasedKnockbacks + 1) + "/" + this.receivedKnockbacks, true)
+                    Notification.create("§aReleasing " + (this.releasedKnockbacks + 1) + "/" + this.receivedKnockbacks, true)
             );
             this.releaseToKnockback(this.releasedKnockbacks);
             ++this.releasedKnockbacks;
@@ -239,7 +239,7 @@ public class LongJump extends Module {
             }
          } else if (!this.delayed) {
             Naven.getInstance().getNotificationManager().addNotification(
-                    new Notification("No intercepted packets", false)
+                    Notification.create("No intercepted packets", false)
             );
             this.setEnabled(false);
          } else {

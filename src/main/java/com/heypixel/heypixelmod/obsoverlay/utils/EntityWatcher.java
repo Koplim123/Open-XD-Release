@@ -65,15 +65,15 @@ public class EntityWatcher {
 
                   Set<String> playerTags = tags.get(player);
                   if ((InventoryUtils.isGodAxe(player.getMainHandItem()) || InventoryUtils.isGodAxe(player.getOffhandItem())) && !playerTags.contains("God Axe")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding god axe!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding god axe!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("God Axe");
                   }
 
                   if ((InventoryUtils.isEnchantedGApple(player.getMainHandItem()) || InventoryUtils.isEnchantedGApple(player.getOffhandItem()))
                           && !playerTags.contains("Enchanted Golden Apple")) {
-                     Notification notification = new Notification(
-                             player.getName().getString() + " is holding enchanted golden apple!", true
+                     Notification notification = Notification.create(
+                              player.getName().getString() + " is holding enchanted golden apple!", true
                      );
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("Enchanted Golden Apple");
@@ -81,34 +81,34 @@ public class EntityWatcher {
 
                   if ((InventoryUtils.isEndCrystal(player.getMainHandItem()) || InventoryUtils.isEndCrystal(player.getOffhandItem()))
                           && !playerTags.contains("End Crystal")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding end crystal!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding end crystal!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("End Crystal");
                   }
 
                   if ((InventoryUtils.isKBBall(player.getMainHandItem()) || InventoryUtils.isKBBall(player.getOffhandItem())) && !playerTags.contains("KB Ball")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding KB Ball!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding KB Ball!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("KB Ball");
                   }
 
                   if ((InventoryUtils.isKBStick(player.getMainHandItem()) || InventoryUtils.isKBStick(player.getOffhandItem()))
                           && !playerTags.contains("KB Stick")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding KB Stick!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding KB Stick!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("KB Stick");
                   }
 
                   if ((InventoryUtils.getPunchLevel(player.getMainHandItem()) > 2 || InventoryUtils.getPunchLevel(player.getOffhandItem()) > 2)
                           && !playerTags.contains("Punch Bow")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding Punch Bow!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding Punch Bow!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("Punch Bow");
                   }
 
                   if ((InventoryUtils.getPowerLevel(player.getMainHandItem()) > 3 || InventoryUtils.getPowerLevel(player.getOffhandItem()) > 3)
                           && !playerTags.contains("Power Bow")) {
-                     Notification notification = new Notification(player.getName().getString() + " is holding Power Bow!", true);
+                     Notification notification = Notification.create(player.getName().getString() + " is holding Power Bow!", true);
                      Naven.getInstance().getNotificationManager().addNotification(notification);
                      playerTags.add("Power Bow");
                   }

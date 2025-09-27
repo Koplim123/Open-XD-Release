@@ -23,6 +23,7 @@ public class CommandHelp extends Command {
         ChatUtils.addChatMessage(".proxy .prox Proxy settings");
         ChatUtils.addChatMessage(".toggle .t Toggle a feature");
         ChatUtils.addChatMessage(".irc .irc Chat in IRC!");
+        ChatUtils.addChatMessage(".sethiddenname .shn Set custom hidden name for NameProtect");
 
     }
 

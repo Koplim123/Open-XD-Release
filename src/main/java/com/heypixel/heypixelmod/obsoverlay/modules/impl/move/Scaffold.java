@@ -136,18 +136,11 @@ public class Scaffold extends Module {
             .setDefaultBooleanValue(true)
             .build()
             .getBooleanValue();
-    FloatValue speedFov = ValueBuilder.create(this, "SpeedFov")
+    FloatValue speedFov = ValueBuilder.create(this, "FoV")
             .setDefaultFloatValue(1.0F)
             .setMaxFloatValue(2.0F)
             .setMinFloatValue(0.0F)
             .setFloatStep(0.1F)
-            .build()
-            .getFloatValue();
-    FloatValue fov = ValueBuilder.create(this, "MaxRotationFov")
-            .setDefaultFloatValue(180.0F)
-            .setMaxFloatValue(180.0F)
-            .setMinFloatValue(1.0F)
-            .setFloatStep(1.0F)
             .build()
             .getFloatValue();
     FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
@@ -283,7 +276,7 @@ public class Scaffold extends Module {
             float pitchDelta = Math.abs(this.rots.getY() - this.lastRots.getY());
             float rotationSpeed = (float) Math.sqrt(yawDelta * yawDelta + pitchDelta * pitchDelta);
             float normalized = Math.min(rotationSpeed / 180.0F, 1.0F);
-            float rotationFoV = normalized * this.fov.getCurrentValue() * this.speedFov.getCurrentValue();
+            float rotationFoV = normalized * 180.0F * this.speedFov.getCurrentValue();
             e.setFov(baseFov + moveBonus + rotationFoV);
         }
     }
@@ -501,9 +494,9 @@ public class Scaffold extends Module {
             Vector2f targetRotation = new Vector2f(RotationUtils.getRotations(this.pos.position(), 0.0F).getYaw(), RotationUtils.getRotations(this.pos.position(), 0.0F).getPitch());
             Vector2f currentRotation = new Vector2f(this.rots.getX(), this.rots.getY());
             float yawDifference = Math.abs(RotationUtils.getAngleDifference(targetRotation.getX(), currentRotation.getX()));
-            if (yawDifference > this.fov.getCurrentValue()) {
+            if (yawDifference > 180.0F) {
                 float direction = Math.signum(RotationUtils.getAngleDifference(targetRotation.getX(), currentRotation.getX()));
-                float limitedYaw = currentRotation.getX() + direction * this.fov.getCurrentValue();
+                float limitedYaw = currentRotation.getX() + direction * 180.0F;
                 targetRotation.setX(limitedYaw);
             }
             

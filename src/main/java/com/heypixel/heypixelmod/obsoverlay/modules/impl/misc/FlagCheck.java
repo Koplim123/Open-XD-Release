@@ -98,7 +98,7 @@ public class FlagCheck extends Module {
             }
 
             Naven.getInstance().getNotificationManager().addNotification(
-                    new Notification(message, false)
+                    Notification.create(message, false)
             );
         }
 

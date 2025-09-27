@@ -69,6 +69,11 @@ public class BowAimbot extends Module {
             .build()
             .getBooleanValue();
 
+    private final BooleanValue teamsValue = ValueBuilder.create(this, "Teams")
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+
     private final FloatValue predictSizeValue = ValueBuilder.create(this, "PredictSize")
             .setDefaultFloatValue(2.0F)
             .setMinFloatValue(0.1F)
@@ -156,32 +161,6 @@ public class BowAimbot extends Module {
         }
     }
 
-    private void renderTargetLabel(PoseStack stack, Entity entity) {
-
-        Vec3 entityPos = entity.position();
-        entityPos = entityPos.add(0, entity.getBoundingBox().getYsize() + 0.5, 0);
-        Vector2f screenPos = ProjectionUtils.project(entityPos.x, entityPos.y, entityPos.z, 1.0F);
-        if (screenPos.x != Float.MAX_VALUE && screenPos.y != Float.MAX_VALUE) {
-            String text = "AimTarget";
-            float textWidth = Fonts.harmony.getWidth(text, 0.5);
-            float textHeight = (float) Fonts.harmony.getHeight(false, 0.5);
-            float padding = 4.0F;
-            float cornerRadius = 6.0F;
-
-            float bgX = screenPos.x - textWidth / 2 - padding;
-            float bgY = screenPos.y - padding;
-            float bgWidth = textWidth + padding * 2;
-            float bgHeight = textHeight + padding * 2;
-
-            // 绘制带圆角的背景
-            RenderUtils.drawRoundedRect(stack, bgX, bgY, bgWidth, bgHeight, cornerRadius, new Color(0, 0, 0, 120).getRGB());
-
-            // 绘制文本
-            float textX = screenPos.x - textWidth / 2;
-            float textY = screenPos.y;
-            Fonts.harmony.render(stack, text, textX, textY, Color.WHITE, true, 0.5);
-        }
-    }
 
     private void aimAtEntityWithPrediction(Entity entity) {
         if (mc.player == null) return;
@@ -234,7 +213,6 @@ public class BowAimbot extends Module {
                 Math.pow(targetPos.x - playerPos.x, 2) +
                         Math.pow(targetPos.z - playerPos.z, 2)
         );
-        double verticalDistance = targetPos.y - playerPos.y;
         double time = horizontalDistance / (velocity * 3.0);
         double gravityDrop = 0.5 * gravity * time * time;
         return new Vec3(
@@ -283,6 +261,10 @@ public class BowAimbot extends Module {
     }
 
     private Entity getTarget(boolean throughWalls, String priorityMode) {
+        if (mc.level == null || mc.player == null) {
+            return null;
+        }
+        
         List<Entity> targets = StreamSupport.stream(mc.level.entitiesForRendering().spliterator(), false)
                 .filter(entity -> entity instanceof LivingEntity)
                 .filter(entity -> {
@@ -299,7 +281,8 @@ public class BowAimbot extends Module {
                             livingEntity != mc.player &&
                             livingEntity.isAlive() &&
                             inRange &&
-                            (!throughWalls || canEntityBeSeen(entity));
+                            (!throughWalls || canEntityBeSeen(entity)) &&
+                            !isTeamMate(entity);
                 })
                 .collect(Collectors.toList());
 
@@ -351,6 +334,10 @@ public class BowAimbot extends Module {
     }
 
     private boolean canEntityBeSeen(Entity entity) {
+        if (mc.player == null || mc.level == null) {
+            return false;
+        }
+        
         Vec3 vec3 = new Vec3(mc.player.getX(), mc.player.getY() + mc.player.getEyeHeight(), mc.player.getZ());
         Vec3 vec31 = new Vec3(entity.getX(), entity.getY() + entity.getEyeHeight(), entity.getZ());
         return mc.level.clip(new net.minecraft.world.level.ClipContext(vec3, vec31, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, mc.player)).getType() == net.minecraft.world.phys.HitResult.Type.MISS;
@@ -358,5 +345,28 @@ public class BowAimbot extends Module {
 
     public boolean hasTarget() {
         return target != null && mc.player != null && canEntityBeSeen(target);
+    }
+
+    private boolean isTeamMate(Entity entity) {
+        if (!teamsValue.getCurrentValue()) {
+            return false;
+        }
+        
+        if (!(entity instanceof Player player)) {
+            return false;
+        }
+        
+        if (mc.player == null) {
+            return false;
+        }
+        
+        var playerTeam = mc.player.getTeam();
+        var targetTeam = player.getTeam();
+        
+        if (playerTeam != null && targetTeam != null) {
+            return playerTeam.isAlliedTo(targetTeam);
+        }
+        
+        return false;
     }
 }

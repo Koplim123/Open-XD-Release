@@ -33,6 +33,7 @@ public class CommandManager {
       this.registerCommand(new CommandProxy());
       this.registerCommand(new CommandHide());
       this.registerCommand(new CommandIRC());
+      this.registerCommand(new CommandSetHideName());
    }
 
    private void registerCommand(Command command) {

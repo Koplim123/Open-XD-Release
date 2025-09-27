@@ -167,7 +167,7 @@ public class HackerCheck extends Module {
         if (data.vl >= MAX_VL) {
             if (hackers.add(player.getUUID())) {
                 Naven.getInstance().getNotificationManager().addNotification(
-                        new Notification("Detected " + checkName + " on " + player.getName().getString(), false)
+                        Notification.create("Detected " + checkName + " on " + player.getName().getString(), false)
                 );
                 sendChatMessage(PREFIX + "§c" + player.getName().getString() + " §f is a hacker (§b" + checkName + "§f)");
             }

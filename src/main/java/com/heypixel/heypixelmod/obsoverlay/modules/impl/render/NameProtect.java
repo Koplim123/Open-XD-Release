@@ -15,16 +15,25 @@ import org.apache.commons.lang3.StringUtils;
 )
 public class NameProtect extends Module {
    public static NameProtect instance;
+   private static String customHiddenName = "§dHidden§7";
 
    public NameProtect() {
       instance = this;
+   }
+
+   public static void setCustomHiddenName(String name) {
+      customHiddenName = name;
+   }
+
+   public static String getHiddenName() {
+      return customHiddenName;
    }
 
    public static String getName(String string) {
       if (!instance.isEnabled() || mc.player == null) {
          return string;
       } else {
-         return string.contains(mc.player.getName().getString()) ? StringUtils.replace(string, mc.player.getName().getString(), "§dHidden§7") : string;
+         return string.contains(mc.player.getName().getString()) ? StringUtils.replace(string, mc.player.getName().getString(), customHiddenName) : string;
       }
    }
 

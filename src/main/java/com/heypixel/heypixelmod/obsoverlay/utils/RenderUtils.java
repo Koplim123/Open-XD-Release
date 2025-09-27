@@ -551,12 +551,16 @@ public class RenderUtils {
         BufferUploader.drawWithShader(bufferBuilder.end());
     }
 
-    public static void drawCircle(float centerX, float centerY, float radius, int color, int segments) {
+    public static void drawCircle(PoseStack poseStack, float centerX, float centerY, float radius, int color) {
+        drawCircle(poseStack, centerX, centerY, radius, color, 20);
+    }
+    
+    public static void drawCircle(PoseStack poseStack, float centerX, float centerY, float radius, int color, int segments) {
         if (radius <= 0) return;
         
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder buffer = tessellator.getBuilder();
-        Matrix4f matrix = new Matrix4f();
+        Matrix4f matrix = poseStack.last().pose();
         
         float a = (float)(color >> 24 & 0xFF) / 255.0F;
         float r = (float)(color >> 16 & 0xFF) / 255.0F;

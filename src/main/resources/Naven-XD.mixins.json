@@ -36,6 +36,7 @@
     "MixinPlayerTabOverlay",
     "MixinProjectileUtil",
     "MixinTimer",
+    "MixinTitleScreen",
     "MixinVertexBuffer",
     "accessors.AbstractArrowAccessor",
     "accessors.BufferUploaderAccessor",

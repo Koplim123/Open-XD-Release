@@ -134,6 +134,7 @@ public class Naven {
 
    @SubscribeEvent
    public void onClientTick(ClientTickEvent event) {
+      // 只在TitleScreen时检查IRC登录状态，避免在MainUI上重复检查
       if (!ircScreenDisplayed && Minecraft.getInstance().screen instanceof TitleScreen) {
          if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
             Minecraft.getInstance().setScreen(new IRCLoginScreen());
