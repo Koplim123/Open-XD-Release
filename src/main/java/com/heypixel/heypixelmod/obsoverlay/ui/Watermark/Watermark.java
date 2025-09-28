@@ -12,6 +12,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.lang3.StringUtils;
+import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 
 import java.awt.Color;
 import java.text.SimpleDateFormat;
@@ -25,9 +26,32 @@ public class Watermark {
     private static float width;
     private static float watermarkHeight;
 
-    public static void onShader(EventShader e, String style, float cornerRadius) {
+    public static void onShader(EventShader e, String style, float cornerRadius, float watermarkSize, float vPadding) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        // 在 BLUR 通道写入胶囊蒙版，供后处理模糊使用
+        if ("Capsule".equals(style) && e.getType() == EventType.BLUR) {
+            CustomTextRenderer font = Fonts.opensans;
+            Minecraft mc = Minecraft.getInstance();
+            String clientName = "Naven-XD";
+            String otherInfo = Version.getVersion() + " | " + IRCLoginManager.getUsername() + " | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
+
+            float clientNameWidth = font.getWidth(clientName, (double)watermarkSize);
+            float otherInfoWidth = font.getWidth(otherInfo, (double)watermarkSize);
+            float height = (float)font.getHeight(true, (double)watermarkSize);
+
+            float x = 5.0f, y = 5.0f;
+            float hPadding = 7.0f;
+            float spacing = 5.0f;
+            float capsule_height = height + vPadding * 2;
+
+            float capsule1_width = clientNameWidth + hPadding * 2;
+            float capsule2_x = x + capsule1_width + spacing;
+            float capsule2_width = otherInfoWidth + hPadding * 2;
+
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
+            RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
+        }
     }
 
     public static void onRender(EventRender2D e, float watermarkSize, String style, boolean rainbow, float rainbowSpeed, float rainbowOffset, float cornerRadius, float vPadding) {
@@ -178,13 +202,12 @@ public class Watermark {
         RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
         StencilUtils.erase(true);
 
-        // 第一个胶囊: Naven-XD
-        RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, Color.WHITE.getRGB());
-        font.render(e.getStack(), clientName, x + hPadding, y + vPadding, Color.BLACK, true, (double)watermarkSize);
+        // 使用半透明背景色而不是纯白色，以便呈现 blur 背景
+        RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, backgroundColor);
+        font.render(e.getStack(), clientName, x + hPadding, y + vPadding, Color.WHITE, true, (double)watermarkSize);
 
-        // 第二个胶囊: 其他信息
-        RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, Color.WHITE.getRGB());
-        font.render(e.getStack(), otherInfo, capsule2_x + hPadding, y + vPadding, Color.BLACK, true, (double)watermarkSize);
+        RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, backgroundColor);
+        font.render(e.getStack(), otherInfo, capsule2_x + hPadding, y + vPadding, Color.WHITE, true, (double)watermarkSize);
 
         StencilUtils.dispose();
         e.getStack().popPose();

@@ -97,7 +97,6 @@ public class ModuleManager {
          new BackTrack(),
          new AutoThrowable(),
          new SuperKB(),
-         new NotificationSelect(),
          new ItemTags(),
          new ResetOpenGL(),
          new SafeWalk(),

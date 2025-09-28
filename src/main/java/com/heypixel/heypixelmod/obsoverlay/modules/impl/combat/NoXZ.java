@@ -39,7 +39,7 @@ public class NoXZ extends Module {
             .getModeValue();
 
     private final FloatValue attacks = ValueBuilder.create(this, "Attack Count")
-            .setDefaultFloatValue(2.0F)
+            .setDefaultFloatValue(3.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(5.0F)
             .setFloatStep(1.0F)

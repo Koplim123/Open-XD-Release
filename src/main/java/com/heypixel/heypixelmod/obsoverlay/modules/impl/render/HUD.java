@@ -12,7 +12,6 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.ui.Watermark.Watermark;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
-import com.heypixel.heypixelmod.obsoverlay.utils.StencilUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
@@ -167,13 +166,13 @@ public class HUD extends Module {
         }
 
         if (this.waterMark.getCurrentValue()) {
-            Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue());
+            Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkSize.getCurrentValue(), this.watermarkVPadding.getCurrentValue());
         }
 
-        // 始终为ArrayList的背景板添加模糊/阴影效果
-        if (this.arrayList.getCurrentValue()) {
+        // 仅在 BLUR 通道为ArrayList背景板写入模糊蒙版
+        if (this.arrayList.getCurrentValue() && e.getType() == EventType.BLUR) {
             for (Vector4f blurMatrix : this.blurMatrices) {
-                RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, 1073741824);
+                RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, Integer.MIN_VALUE);
             }
         }
     }
@@ -182,13 +181,19 @@ public class HUD extends Module {
      * 绘制一个垂直的、颜色渐变的动态彩虹条，用于模块列表的装饰胶囊。
      * 颜色基于其Y坐标，以实现模块间的平滑过渡。
      */
-    private void drawVerticalAnimatedRainbowBar(PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
-        for (float i = 0; i < height; i++) {
+    private void drawVerticalAnimatedRainbowBar(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
+        // 分段绘制，降低 draw call 与循环次数
+        int segments = Math.max(4, Math.min(12, (int)(height / 2.0F)));
+        float segmentHeight = height / (float)segments;
+        for (int s = 0; s < segments; s++) {
+            float segY0 = y + s * segmentHeight;
+            float segY1 = (s == segments - 1) ? (y + height) : (segY0 + segmentHeight);
+            float sampleY = (segY0 + segY1) * 0.5F;
             int color = RenderUtils.getRainbowOpaque(
-                    (int)(-(y + i) * rainbowOffset), // 使用实际的Y坐标来计算颜色
+                    (int)(-sampleY * rainbowOffset),
                     1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
             );
-            RenderUtils.fill(stack, x, y + i, x + width, y + i + 1, color);
+            RenderUtils.fill(stack, x, segY0, x + width, segY1, color);
         }
     }
 
@@ -307,27 +312,18 @@ public class HUD extends Module {
                             (double)this.arrayListSize.getCurrentValue()
                     );
 
-                    // 步骤 3: 如果彩虹效果开启，根据 ArrayListDirection 在模块名称的左侧或右侧绘制一个彩虹胶囊作为装饰
+                    // 步骤 3: 彩虹装饰条（低开销版本，避免频繁模板切换与逐像素填充）
                     if (this.rainbow.getCurrentValue()) {
                         float capsuleWidth = 2.0f;
-                        float capsulePadding = 1.5f; // 胶囊与模块背景之间的间距
-                        float capsuleX;
-
-                        if (this.arrayListDirection.isCurrentMode("Left")) {
-                            // 在左侧模式下，胶囊位于模块背景的左边 ("前面")
-                            capsuleX = moduleX - capsuleWidth - capsulePadding;
-                        } else { // "Right"
-                            // 在右侧模式下，胶囊位于模块背景的右边 ("后面")
-                            capsuleX = moduleX + moduleWidth + capsulePadding;
-                        }
-
-                        // 使用模板缓冲绘制带圆角的彩虹胶囊
-                        StencilUtils.write(false);
-                        RenderUtils.drawRoundedRect(e.getStack(), capsuleX, moduleY, capsuleWidth, moduleHeight, 1.0F, Integer.MIN_VALUE);
-                        StencilUtils.erase(true);
-                        // 调用新的方法绘制垂直同步的彩虹渐变
-                        drawVerticalAnimatedRainbowBar(e.getStack(), capsuleX, moduleY, capsuleWidth, moduleHeight, this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue());
-                        StencilUtils.dispose();
+                        float capsulePadding = 1.5f;
+                        float capsuleX = this.arrayListDirection.isCurrentMode("Left")
+                                ? (moduleX - capsuleWidth - capsulePadding)
+                                : (moduleX + moduleWidth + capsulePadding);
+                        int barColor = RenderUtils.getRainbowOpaque(
+                                (int)(-moduleY * this.rainbowOffset.getCurrentValue()),
+                                1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
+                        );
+                        RenderUtils.fill(e.getStack(), capsuleX, moduleY, capsuleX + capsuleWidth, moduleY + moduleHeight, barColor);
                     }
 
                     // 使用 arrayListSpacing 调整模块之间的垂直间距

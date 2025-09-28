@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @ModuleInfo(
         name = "LagBase",
         category = Category.COMBAT,
-        description = "from RN_Random_Name"
+        description = "skid from RN_Random_Name"
 )
 public class LagBase extends Module {
     // Modes
