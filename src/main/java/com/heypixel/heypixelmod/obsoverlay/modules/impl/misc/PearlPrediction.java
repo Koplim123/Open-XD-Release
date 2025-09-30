@@ -50,6 +50,9 @@ public class  PearlPrediction extends Module {
             .setVisibility(renderHud::getCurrentValue)
             .setDefaultFloatValue(0.4f).setFloatStep(0.01f).setMinFloatValue(0.1f).setMaxFloatValue(1.0f).build().getFloatValue();
     private final BooleanValue hideMyOwnPearls = ValueBuilder.create(this, "Hide My Own Pearls").setVisibility(renderHud::getCurrentValue).setDefaultBooleanValue(true).build().getBooleanValue();
+    private final BooleanValue renderBackGround = ValueBuilder.create(this, "RenderBackGround").setVisibility(renderHud::getCurrentValue).setDefaultBooleanValue(true).build().getBooleanValue();
+    private final BooleanValue renderBlur = ValueBuilder.create(this, "RenderBlur").setVisibility(renderHud::getCurrentValue).setDefaultBooleanValue(false).build().getBooleanValue();
+    private final BooleanValue renderHeaderBar = ValueBuilder.create(this, "RenderHeaderBar").setVisibility(renderHud::getCurrentValue).setDefaultBooleanValue(true).build().getBooleanValue();
     private final BooleanValue pearlCounter = ValueBuilder.create(this, "Pearl Counter").setDefaultBooleanValue(false).build().getBooleanValue();
 
     private final BooleanValue entityCheck = ValueBuilder.create(this, "Entity Check").setVisibility(pearlCounter::getCurrentValue).setDefaultBooleanValue(true).build().getBooleanValue();
@@ -88,6 +91,7 @@ public class  PearlPrediction extends Module {
     @EventTarget
     public void onShader(EventShader e) {
         if (!renderHud.getCurrentValue() || predictedPearls.isEmpty()) return;
+        if (!renderBlur.getCurrentValue()) return;
         for(PredictedPearlInfo info : predictedPearls.values()) {
             if (info.currentWidth > 0.1F && info.currentHeight > 0.1F) {
                 RenderUtils.drawRoundedRect(e.getStack(), info.animX, info.animY, info.currentWidth, info.currentHeight, 5.0F, Integer.MIN_VALUE);
@@ -292,14 +296,22 @@ public class  PearlPrediction extends Module {
         if (info.projectedPos == null) return;
 
         matrix.pushPose();
-        StencilUtils.write(false);
-        RenderUtils.drawRoundedRect(matrix, info.animX, info.animY, info.currentWidth, info.currentHeight, 5.0F, -1);
-        StencilUtils.erase(true);
+        
+        if (renderBackGround.getCurrentValue()) {
+            StencilUtils.write(false);
+            RenderUtils.drawRoundedRect(matrix, info.animX, info.animY, info.currentWidth, info.currentHeight, 5.0F, -1);
+            StencilUtils.erase(true);
+        }
 
-        RenderUtils.fill(matrix, info.finalX, info.finalY, info.finalX + info.finalWidth, info.finalY + info.headerHeight, HUD.headerColor);
-        RenderUtils.fill(matrix, info.finalX, info.finalY + info.headerHeight, info.finalX + info.finalWidth, info.finalY + info.finalHeight, HUD.bodyColor);
+        if (renderHeaderBar.getCurrentValue()) {
+            RenderUtils.fill(matrix, info.finalX, info.finalY, info.finalX + info.finalWidth, info.finalY + info.headerHeight, HUD.headerColor);
+        }
+        
+        if (renderBackGround.getCurrentValue()) {
+            RenderUtils.fill(matrix, info.finalX, info.finalY + info.headerHeight, info.finalX + info.finalWidth, info.finalY + info.finalHeight, HUD.bodyColor);
+        }
 
-        float tY = info.finalY + info.headerHeight + 2.0f;
+        float tY = info.finalY + (renderHeaderBar.getCurrentValue() ? info.headerHeight : 0.0f) + 2.0f;
         float textRowHeight = (float)Fonts.harmony.getHeight(true, hudSize.getCurrentValue());
 
         for (String l : info.lines) {
@@ -308,7 +320,9 @@ public class  PearlPrediction extends Module {
             tY += textRowHeight * 0.875F;
         }
 
-        StencilUtils.dispose();
+        if (renderBackGround.getCurrentValue()) {
+            StencilUtils.dispose();
+        }
         matrix.popPose();
     }
 

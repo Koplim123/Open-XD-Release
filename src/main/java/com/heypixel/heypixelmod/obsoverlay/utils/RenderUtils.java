@@ -621,26 +621,75 @@ public class RenderUtils {
      * @param bottomRightRadius 右下角圆角半径
      * @param color 颜色
      */
-    public static void drawRoundedRectCustom(PoseStack poseStack, float x, float y, float width, float height, 
+    public static void drawRoundedRectCustom(PoseStack poseStack, float x, float y, float width, float height,
                                            float topLeftRadius, float topRightRadius, float bottomLeftRadius, float bottomRightRadius, int color) {
         if (color == 16777215) {
             color = ARGB32.color(255, 255, 255, 255);
         }
-        
+
+        // 规范化半径，避免超过宽高一半
+        topLeftRadius = Math.max(0.0F, Math.min(topLeftRadius, Math.min(width, height) / 2.0F));
+        topRightRadius = Math.max(0.0F, Math.min(topRightRadius, Math.min(width, height) / 2.0F));
+        bottomLeftRadius = Math.max(0.0F, Math.min(bottomLeftRadius, Math.min(width, height) / 2.0F));
+        bottomRightRadius = Math.max(0.0F, Math.min(bottomRightRadius, Math.min(width, height) / 2.0F));
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        
-        // 绘制主体矩形
-        float maxRadius = Math.max(Math.max(topLeftRadius, topRightRadius), Math.max(bottomLeftRadius, bottomRightRadius));
-        if (maxRadius > 0) {
-            drawRectBound(poseStack, x + maxRadius, y + maxRadius, width - maxRadius * 2.0F, height - maxRadius * 2.0F, color);
-        } else {
-            drawRectBound(poseStack, x, y, width, height, color);
+
+        // 计算各边需要保留的最大半径，用于填充中间与边带区域
+        float leftInset = Math.max(topLeftRadius, bottomLeftRadius);
+        float rightInset = Math.max(topRightRadius, bottomRightRadius);
+        float topInset = Math.max(topLeftRadius, topRightRadius);
+        float bottomInset = Math.max(bottomLeftRadius, bottomRightRadius);
+
+        // 中心矩形
+        float centerX = x + leftInset;
+        float centerY = y + topInset;
+        float centerW = Math.max(0.0F, width - leftInset - rightInset);
+        float centerH = Math.max(0.0F, height - topInset - bottomInset);
+        if (centerW > 0.0F && centerH > 0.0F) {
+            drawRectBound(poseStack, centerX, centerY, centerW, centerH, color);
         }
-        
-        // 绘制圆角部分
+
+        // 顶部带（不包含圆角区域）
+        if (topInset > 0.0F) {
+            float topBandX = x + topLeftRadius;
+            float topBandW = Math.max(0.0F, width - topLeftRadius - topRightRadius);
+            if (topBandW > 0.0F) {
+                drawRectBound(poseStack, topBandX, y, topBandW, topInset, color);
+            }
+        }
+
+        // 底部带（不包含圆角区域）
+        if (bottomInset > 0.0F) {
+            float bottomBandX = x + bottomLeftRadius;
+            float bottomBandW = Math.max(0.0F, width - bottomLeftRadius - bottomRightRadius);
+            if (bottomBandW > 0.0F) {
+                drawRectBound(poseStack, bottomBandX, y + height - bottomInset, bottomBandW, bottomInset, color);
+            }
+        }
+
+        // 左侧带（不包含圆角区域）
+        if (leftInset > 0.0F) {
+            float leftBandY = y + topLeftRadius;
+            float leftBandH = Math.max(0.0F, height - topLeftRadius - bottomLeftRadius);
+            if (leftBandH > 0.0F) {
+                drawRectBound(poseStack, x, leftBandY, leftInset, leftBandH, color);
+            }
+        }
+
+        // 右侧带（不包含圆角区域）
+        if (rightInset > 0.0F) {
+            float rightBandY = y + topRightRadius;
+            float rightBandH = Math.max(0.0F, height - topRightRadius - bottomRightRadius);
+            if (rightBandH > 0.0F) {
+                drawRectBound(poseStack, x + width - rightInset, rightBandY, rightInset, rightBandH, color);
+            }
+        }
+
+        // 四个圆角
         if (topLeftRadius > 0) {
             drawCornerArc(poseStack, x + topLeftRadius, y + topLeftRadius, topLeftRadius, 180, 270, color);
         }

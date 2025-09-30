@@ -26,7 +26,7 @@ public class Watermark {
     private static float width;
     private static float watermarkHeight;
 
-    public static void onShader(EventShader e, String style, float cornerRadius, float watermarkSize, float vPadding) {
+    public static void onShader(EventShader e, String style, float cornerRadius, float watermarkSize, float vPadding, boolean renderBlackBackground, boolean blackFont) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         // 在 BLUR 通道写入胶囊蒙版，供后处理模糊使用
@@ -54,11 +54,11 @@ public class Watermark {
         }
     }
 
-    public static void onRender(EventRender2D e, float watermarkSize, String style, boolean rainbow, float rainbowSpeed, float rainbowOffset, float cornerRadius, float vPadding) {
+    public static void onRender(EventRender2D e, float watermarkSize, String style, boolean rainbow, float rainbowSpeed, float rainbowOffset, float cornerRadius, float vPadding, boolean renderBlackBackground, boolean blackFont) {
         if ("Classic".equals(style)) {
             renderClassic(e, watermarkSize, cornerRadius, vPadding);
         } else if ("Capsule".equals(style)) {
-            renderCapsule(e, watermarkSize, cornerRadius, vPadding);
+            renderCapsule(e, watermarkSize, cornerRadius, vPadding, renderBlackBackground, blackFont);
         } else {
             renderRainbow(e, watermarkSize, rainbow, rainbowSpeed, rainbowOffset, cornerRadius, vPadding);
         }
@@ -175,7 +175,7 @@ public class Watermark {
     /**
      * 渲染 "Capsule" 样式的Watermark
      */
-    private static void renderCapsule(EventRender2D e, float watermarkSize, float cornerRadius, float vPadding) {
+    private static void renderCapsule(EventRender2D e, float watermarkSize, float cornerRadius, float vPadding, boolean renderBlackBackground, boolean blackFont) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
         e.getStack().pushPose();
@@ -202,12 +202,17 @@ public class Watermark {
         RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
         StencilUtils.erase(true);
 
-        // 使用半透明背景色而不是纯白色，以便呈现 blur 背景
-        RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, backgroundColor);
-        font.render(e.getStack(), clientName, x + hPadding, y + vPadding, Color.WHITE, true, (double)watermarkSize);
-
-        RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, backgroundColor);
-        font.render(e.getStack(), otherInfo, capsule2_x + hPadding, y + vPadding, Color.WHITE, true, (double)watermarkSize);
+        // 根据 renderBlackBackground 参数决定是否渲染黑色背景
+        if (renderBlackBackground) {
+            // 使用半透明背景色而不是纯白色，以便呈现 blur 背景
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, backgroundColor);
+            RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, backgroundColor);
+        }
+        
+        // 渲染文本 - 根据 blackFont 参数选择颜色
+        Color textColor = blackFont ? Color.BLACK : Color.WHITE;
+        font.render(e.getStack(), clientName, x + hPadding, y + vPadding, textColor, true, (double)watermarkSize);
+        font.render(e.getStack(), otherInfo, capsule2_x + hPadding, y + vPadding, textColor, true, (double)watermarkSize);
 
         StencilUtils.dispose();
         e.getStack().popPose();

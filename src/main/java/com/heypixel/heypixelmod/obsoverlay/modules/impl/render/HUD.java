@@ -60,7 +60,6 @@ public class HUD extends Module {
             .setMaxFloatValue(20.0F)
             .build()
             .getFloatValue();
-    // 新增：水印垂直内边距调整
     public FloatValue watermarkVPadding = ValueBuilder.create(this, "Watermark V-Padding")
             .setVisibility(this.waterMark::getCurrentValue)
             .setDefaultFloatValue(4.0F)
@@ -69,6 +68,16 @@ public class HUD extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
+    public BooleanValue renderBlackBackground = ValueBuilder.create(this, "RenderBlackBackGround")
+            .setVisibility(() -> this.waterMark.getCurrentValue() && this.watermarkStyle.isCurrentMode("Capsule"))
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
+    public BooleanValue blackFont = ValueBuilder.create(this, "BlackFont")
+            .setVisibility(() -> this.waterMark.getCurrentValue() && this.watermarkStyle.isCurrentMode("Capsule"))
+            .setDefaultBooleanValue(false)
+            .build()
+            .getBooleanValue();
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -166,7 +175,7 @@ public class HUD extends Module {
         }
 
         if (this.waterMark.getCurrentValue()) {
-            Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkSize.getCurrentValue(), this.watermarkVPadding.getCurrentValue());
+            Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkSize.getCurrentValue(), this.watermarkVPadding.getCurrentValue(), this.renderBlackBackground.getCurrentValue(), this.blackFont.getCurrentValue());
         }
 
         // 仅在 BLUR 通道为ArrayList背景板写入模糊蒙版
@@ -201,7 +210,7 @@ public class HUD extends Module {
     public void onRender(EventRender2D e) {
         if (this.waterMark.getCurrentValue()) {
             // 传递彩虹效果和新的padding相关参数到Watermark
-            Watermark.onRender(e, this.watermarkSize.getCurrentValue(), this.watermarkStyle.getCurrentMode(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkVPadding.getCurrentValue());
+            Watermark.onRender(e, this.watermarkSize.getCurrentValue(), this.watermarkStyle.getCurrentMode(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkVPadding.getCurrentValue(), this.renderBlackBackground.getCurrentValue(), this.blackFont.getCurrentValue());
         }
 
         this.blurMatrices.clear();
