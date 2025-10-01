@@ -6,10 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 
-/**
- * IRC指令处理类
- * 支持.irc <message>收发消息和.irc reconnect重连服务器
- */
+
 @CommandInfo(
     name = "irc",
     description = "Chat in IRC!",
@@ -44,16 +41,13 @@ public class CommandIRC extends Command {
                 break;
                 
             default:
-                // 默认情况下，将第一个参数之后的所有内容作为消息发送喵~
                 String message = String.join(" ", args);
                 handleMessage(message);
                 break;
         }
     }
     
-    /**
-     * 处理重连指令
-     */
+
     private void handleReconnect() {
         ConnectAndReveivesExample ircClient = getIrcClient();
         if (ircClient == null) {
@@ -63,12 +57,12 @@ public class CommandIRC extends Command {
         
         ChatUtils.addChatMessage("§e[IRC] 正在重连服务器...");
         
-        // 如果已经连接，先断开喵~
+
         if (ircClient.isConnected()) {
             ircClient.disconnect();
         }
         
-        // 等待一小段时间再重新连接喵~
+
         new Thread(() -> {
             try {
                 Thread.sleep(1000);
@@ -90,12 +84,12 @@ public class CommandIRC extends Command {
         }
         
         if (!ircClient.isConnected()) {
-            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接");
             return;
         }
         
         if (!ircClient.isAuthenticated()) {
-            ChatUtils.addChatMessage("§c[IRC] 未认证，无法获取用户列表喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未认证，无法获取用户列表");
             return;
         }
         
@@ -112,15 +106,14 @@ public class CommandIRC extends Command {
             return;
         }
         
-        // 检查是否是私聊消息喵~
+
         if (message.startsWith("/msg ") || message.startsWith("/tell ") || message.startsWith("/w ")) {
             handlePrivateMessage(message);
         } 
-        // 检查是否是命令喵~
+
         else if (message.startsWith("/")) {
             handleCommand(message);
         }
-        // 普通消息喵~
         else {
             handlePublicMessage(message);
         }
@@ -137,12 +130,12 @@ public class CommandIRC extends Command {
         }
         
         if (!ircClient.isConnected()) {
-            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接");
             return;
         }
         
         if (!ircClient.isAuthenticated()) {
-            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送消息喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送消息");
             return;
         }
         
@@ -160,12 +153,12 @@ public class CommandIRC extends Command {
         }
         
         if (!ircClient.isConnected()) {
-            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接");
             return;
         }
         
         if (!ircClient.isAuthenticated()) {
-            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送私聊消息喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送私聊消息");
             return;
         }
         
@@ -192,12 +185,12 @@ public class CommandIRC extends Command {
         }
         
         if (!ircClient.isConnected()) {
-            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未连接到服务器，请先使用 .irc reconnect 连接");
             return;
         }
         
         if (!ircClient.isAuthenticated()) {
-            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送命令喵~");
+            ChatUtils.addChatMessage("§c[IRC] 未认证，无法发送命令");
             return;
         }
         

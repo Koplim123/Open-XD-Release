@@ -5,9 +5,6 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 
-/**
- * WebSocket客户端封装类喵~
- */
 public abstract class WebSocketClientWrapper extends WebSocketClient {
     
     public WebSocketClientWrapper(URI serverUri) {
@@ -25,10 +22,7 @@ public abstract class WebSocketClientWrapper extends WebSocketClient {
     
     @Override
     public abstract void onError(Exception ex);
-    
-    /**
-     * 连接到服务器喵~
-     */
+
     public void connect() {
         try {
             super.connect();
@@ -37,25 +31,18 @@ public abstract class WebSocketClientWrapper extends WebSocketClient {
         }
     }
     
-    /**
-     * 发送消息喵~
-     */
+
     public void send(String message) {
         if (isOpen()) {
             super.send(message);
         }
     }
     
-    /**
-     * 关闭连接喵~
-     */
+
     public void close() {
         super.close();
     }
-    
-    /**
-     * 检查连接是否打开喵~
-     */
+
     public boolean isOpen() {
         return super.isOpen();
     }

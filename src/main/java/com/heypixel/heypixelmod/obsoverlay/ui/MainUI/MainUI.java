@@ -103,7 +103,7 @@ public class MainUI extends Screen {
 		float textWidth = font.getWidth(title, scale);
 		float x = (this.width - textWidth) / 2.0F;
 		float y = 16.0F;
-		
+
 		// 直接渲染文本，不使用任何模糊效果（第5个参数设为false）
 		font.render(stack, title, x, y, java.awt.Color.WHITE, false, scale);
 	}
@@ -189,16 +189,6 @@ public class MainUI extends Screen {
 		return false;
 	}
 
-	/**
-	 
-	 * @param stack
-	 * @param x
-	 * @param y 
-	 * @param width 
-	 * @param height 
-	 * @param radius 
-	 * @param color 
-	 */
 	private void drawPureRoundedRect(PoseStack stack, float x, float y, float width, float height, float radius, int color) {
 		if (radius <= 0) {
 			RenderUtils.fill(stack, x, y, x + width, y + height, color);
@@ -275,12 +265,9 @@ public class MainUI extends Screen {
 		RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
-	/**
-	 * 绘制圆角
-	 */
-	private void drawCorner(Matrix4f matrix, float centerX, float centerY, float radius, 
-	                        int startAngle, int endAngle, int segments, 
-	                        float red, float green, float blue, float alpha) {
+	private void drawCorner(Matrix4f matrix, float centerX, float centerY, float radius,
+							int startAngle, int endAngle, int segments,
+							float red, float green, float blue, float alpha) {
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuilder();
 

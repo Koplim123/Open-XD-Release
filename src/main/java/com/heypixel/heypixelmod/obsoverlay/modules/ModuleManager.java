@@ -115,7 +115,6 @@ public class ModuleManager {
          new LongJump(),
          new GhostHand(),
          new PreferWeapon(),
-         new Speed(),
          new TNTWarning(),
          new BowAimbot(),
          new CrystalOptimizer(),
