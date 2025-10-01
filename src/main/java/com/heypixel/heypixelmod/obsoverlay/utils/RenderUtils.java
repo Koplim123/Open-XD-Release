@@ -516,7 +516,7 @@ public class RenderUtils {
         }
     }
 
-    public static void 装女人(BufferBuilder bufferBuilder, Matrix4f matrix, AABB box) {
+    public static void drawSolidBox(BufferBuilder bufferBuilder, Matrix4f matrix, AABB box) {
         float minX = (float)(box.minX - mc.getEntityRenderDispatcher().camera.getPosition().x());
         float minY = (float)(box.minY - mc.getEntityRenderDispatcher().camera.getPosition().y());
         float minZ = (float)(box.minZ - mc.getEntityRenderDispatcher().camera.getPosition().z());

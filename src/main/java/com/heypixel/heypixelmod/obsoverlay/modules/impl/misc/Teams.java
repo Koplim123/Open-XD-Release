@@ -21,7 +21,7 @@ import java.util.Objects;
 public class Teams extends Module {
     public static Teams instance;
 
-    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(0).setModes("Scoreboard", "Color", "Beta").build().getModeValue();
+    public ModeValue mode = ValueBuilder.create(this, "Mode").setDefaultModeIndex(3).setModes("Scoreboard", "Color", "Beta").build().getModeValue();
 
     
     public Teams() {

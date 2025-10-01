@@ -101,6 +101,10 @@ minecraft {
         client {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
+            
+            jvmArgs '--add-opens', 'javafx.graphics/com.sun.javafx.application=ALL-UNNAMED'
+            jvmArgs '--add-exports', 'javafx.graphics/com.sun.glass.ui=ALL-UNNAMED'
+            jvmArgs '--add-exports', 'javafx.base/com.sun.javafx.event=ALL-UNNAMED'
         }
 
         server {
@@ -160,6 +164,27 @@ dependencies {
 
     // Gson for JSON parsing
     implementation 'com.google.code.gson:gson:2.13.1'
+    
+    // JavaFX for WebView
+    implementation 'org.openjfx:javafx-base:17.0.2'
+    implementation 'org.openjfx:javafx-base:17.0.2:win'
+    implementation 'org.openjfx:javafx-controls:17.0.2'
+    implementation 'org.openjfx:javafx-controls:17.0.2:win'
+    implementation 'org.openjfx:javafx-graphics:17.0.2'
+    implementation 'org.openjfx:javafx-graphics:17.0.2:win'
+    implementation 'org.openjfx:javafx-web:17.0.2'
+    implementation 'org.openjfx:javafx-web:17.0.2:win'
+    implementation 'org.openjfx:javafx-swing:17.0.2'
+    implementation 'org.openjfx:javafx-swing:17.0.2:win'
+    implementation 'org.openjfx:javafx-media:17.0.2'
+    implementation 'org.openjfx:javafx-media:17.0.2:win'
+    
+    jarJar(group: 'org.openjfx', name: 'javafx-base', version: '[17.0.2,18)')
+    jarJar(group: 'org.openjfx', name: 'javafx-controls', version: '[17.0.2,18)')
+    jarJar(group: 'org.openjfx', name: 'javafx-graphics', version: '[17.0.2,18)')
+    jarJar(group: 'org.openjfx', name: 'javafx-web', version: '[17.0.2,18)')
+    jarJar(group: 'org.openjfx', name: 'javafx-swing', version: '[17.0.2,18)')
+    jarJar(group: 'org.openjfx', name: 'javafx-media', version: '[17.0.2,18)')
     // Ensure WebSocket support for mod functionality
     // Note: Java-WebSocket library is already included above for IRC functionality
     // If you need a different version or additional WebSocket libraries, add them here

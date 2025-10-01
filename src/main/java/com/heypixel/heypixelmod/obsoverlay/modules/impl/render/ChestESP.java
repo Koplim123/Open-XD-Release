@@ -197,7 +197,7 @@ public class ChestESP extends Module {
          }
          
          RenderSystem.setShaderColor(red, green, blue, 0.25F);
-         RenderUtils.装女人(bufferBuilder, stack.last().pose(), box);
+         RenderUtils.drawSolidBox(bufferBuilder, stack.last().pose(), box);
       }
 
       RenderSystem.disableBlend();

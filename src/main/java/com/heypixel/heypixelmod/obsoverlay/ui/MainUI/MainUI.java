@@ -1,172 +1,181 @@
 package com.heypixel.heypixelmod.obsoverlay.ui.MainUI;
 
+import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.GameRenderer;
-import org.joml.Matrix4f;
-
-import com.heypixel.heypixelmod.obsoverlay.utils.*;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
-import com.heypixel.heypixelmod.obsoverlay.utils.renderer.BlurInit2;
-
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.Nonnull;
 
 public class MainUI extends Screen {
 	private static final Minecraft mc = Minecraft.getInstance();
 	private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("heypixel", "textures/images/background.png");
-
+	
 	private static final int BUTTON_WIDTH = 240;
-	private static final int BUTTON_HEIGHT = 32;
-	private static final int BUTTON_GAP = 10;
-	private static final float BUTTON_RADIUS = 10.0F;
-	private static final float PANEL_RADIUS = 12.0F;
-	private static final int PANEL_PADDING_X = 16;
-	private static final int PANEL_PADDING_Y = 16;
-	private static final int BLUR_STRENGTH = 8;
-
-	private final List<MenuButton> buttons = new ArrayList<>();
-	private int hoveredIndex = -1;
-
+	private static final int BUTTON_HEIGHT = 40;
+	private static final int BUTTON_SPACING = 12;
+	private static final float CORNER_RADIUS = 10.0f;
+	
+	private boolean textureLoaded = false;
+	private Button[] buttons;
+	
 	public MainUI() {
 		super(Component.literal("Naven-XD"));
 	}
 
 	@Override
 	protected void init() {
-		buttons.clear();
-		BlurInit2.init();
+		super.init();
+		textureLoaded = checkTextureLoaded();
+		
+		int centerX = this.width / 2;
+		int startY = this.height / 2 - 80;
+		
+		buttons = new Button[] {
+			new Button(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT, "SinglePlayer", this::openSingleplayer),
+			new Button(centerX - BUTTON_WIDTH / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Multiplayer", this::openMultiplayer),
+			new Button(centerX - BUTTON_WIDTH / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH, BUTTON_HEIGHT, "Settings", this::openSettings),
+			new Button(centerX - BUTTON_WIDTH / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH, BUTTON_HEIGHT, "Exit", this::quit, true)
+		};
+	}
 
-		int buttonCount = 4;
-		int totalHeight = buttonCount * BUTTON_HEIGHT + (buttonCount - 1) * BUTTON_GAP;
-		int startY = (this.height - totalHeight) / 2;
-		int x = (this.width - BUTTON_WIDTH) / 2;
-
-		buttons.add(new MenuButton(0, "Singleplayer", x, startY + (BUTTON_HEIGHT + BUTTON_GAP) * 0));
-		buttons.add(new MenuButton(1, "Multiplayer", x, startY + (BUTTON_HEIGHT + BUTTON_GAP) * 1));
-		buttons.add(new MenuButton(2, "Settings", x, startY + (BUTTON_HEIGHT + BUTTON_GAP) * 2));
-		buttons.add(new MenuButton(3, "Quit", x, startY + (BUTTON_HEIGHT + BUTTON_GAP) * 3));
+	private boolean checkTextureLoaded() {
+		try {
+			mc.getResourceManager().getResourceOrThrow(BACKGROUND_TEXTURE);
+			return true;
+		} catch (Exception e) {
+			System.err.println("Failed to load background texture: " + e.getMessage());
+			return false;
+		}
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-		PoseStack stack = guiGraphics.pose();
-
-		renderBackgroundTexture(guiGraphics);
-		renderBlur(guiGraphics);
-		renderTitle(stack);
-		renderButtonsPanel(stack);
-
-		hoveredIndex = -1;
-		for (int i = 0; i < buttons.size(); i++) {
-			MenuButton button = buttons.get(i);
-			boolean hovered = isInside(mouseX, mouseY, button.x, button.y, BUTTON_WIDTH, BUTTON_HEIGHT);
-			if (hovered) hoveredIndex = i;
-			renderButton(stack, button, hovered);
+	public void render(@Nonnull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+		drawBackground(guiGraphics);
+		renderTitle(guiGraphics);
+		renderButtonBackground(guiGraphics);
+		
+		for (Button button : buttons) {
+			button.render(guiGraphics, mouseX, mouseY, partialTick);
 		}
-
+		
 		super.render(guiGraphics, mouseX, mouseY, partialTick);
 	}
-
-	private void renderBackgroundTexture(GuiGraphics g) {
-		// 渲染原始背景
-		g.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, this.width, this.height, this.width, this.height);
-	}
-
-	private void renderBlur(GuiGraphics guiGraphics) {
-		// 应用真正的模糊效果
-		BlurInit2.renderBlur(guiGraphics, BLUR_STRENGTH);
-	}
-
-	private void renderTitle(PoseStack stack) {
-		CustomTextRenderer font = Fonts.opensans;
-		if (font == null) return;
-
-		font.setAlpha(1.0F);
-		String title = "Naven-XD";
-		// 使用更大的缩放比例，在更高分辨率下渲染后再缩小，以获得更锐利的边缘
-		double scale = 2.0;
-		float textWidth = font.getWidth(title, scale);
-		float x = (this.width - textWidth) / 2.0F;
-		float y = 16.0F;
+	
+	private void renderButtonBackground(GuiGraphics guiGraphics) {
+		if (buttons == null || buttons.length == 0) return;
 		
-		// 直接渲染文本，不使用任何模糊效果（第5个参数设为false）
-		font.render(stack, title, x, y, java.awt.Color.WHITE, false, scale);
+		int padding = 20;
+		int minY = buttons[0].y - padding;
+		int maxY = buttons[buttons.length - 1].y + buttons[buttons.length - 1].height + padding;
+		int centerX = this.width / 2;
+		int panelWidth = BUTTON_WIDTH + padding * 2;
+		int panelHeight = maxY - minY;
+		
+		float panelX = centerX - panelWidth / 2.0f;
+		float panelY = minY;
+		
+		drawSmoothRoundedRect(guiGraphics, panelX, panelY, panelWidth, panelHeight, 12.0f, rgba(0, 0, 0, 120));
 	}
-
-	private void renderButtonsPanel(PoseStack stack) {
-		if (buttons.isEmpty()) return;
-		float top = buttons.get(0).y;
-		float bottom = buttons.get(buttons.size() - 1).y + BUTTON_HEIGHT;
-		float height = bottom - top;
-		float width = BUTTON_WIDTH + PANEL_PADDING_X * 2.0F;
-		float x = (this.width - BUTTON_WIDTH) / 2.0F - PANEL_PADDING_X;
-		float y = top - PANEL_PADDING_Y;
-		float h = height + PANEL_PADDING_Y * 2.0F;
-
-		int panelColor = Colors.getColor(255, 255, 255, 60); // 半透明白色
-		drawPureRoundedRect(stack, x, y, width, h, PANEL_RADIUS, panelColor);
+	
+	private void drawSmoothRoundedRect(GuiGraphics guiGraphics, float x, float y, float width, float height, float radius, int color) {
+		radius = Math.min(radius, Math.min(width, height) / 2.0f);
+		int xi = (int)x;
+		int yi = (int)y;
+		int ri = (int)radius;
+		int wi = (int)width;
+		int hi = (int)height;
+		
+		guiGraphics.fill(xi + ri, yi, xi + wi - ri, yi + hi, color);
+		guiGraphics.fill(xi, yi + ri, xi + ri, yi + hi - ri, color);
+		guiGraphics.fill(xi + wi - ri, yi + ri, xi + wi, yi + hi - ri, color);
+		
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
+		
+		com.mojang.blaze3d.vertex.Tesselator tesselator = com.mojang.blaze3d.vertex.Tesselator.getInstance();
+		com.mojang.blaze3d.vertex.BufferBuilder buffer = tesselator.getBuilder();
+		org.joml.Matrix4f matrix = guiGraphics.pose().last().pose();
+		
+		float a = ((color >> 24) & 0xFF) / 255.0f;
+		float r = ((color >> 16) & 0xFF) / 255.0f;
+		float g = ((color >> 8) & 0xFF) / 255.0f;
+		float b = (color & 0xFF) / 255.0f;
+		
+		int segments = 16;
+		
+		drawCircleCorner(buffer, tesselator, matrix, x + radius, y + radius, radius, 180, 270, segments, r, g, b, a);
+		drawCircleCorner(buffer, tesselator, matrix, x + width - radius, y + radius, radius, 270, 360, segments, r, g, b, a);
+		drawCircleCorner(buffer, tesselator, matrix, x + width - radius, y + height - radius, radius, 0, 90, segments, r, g, b, a);
+		drawCircleCorner(buffer, tesselator, matrix, x + radius, y + height - radius, radius, 90, 180, segments, r, g, b, a);
+		
+		RenderSystem.disableBlend();
 	}
-
-	private void renderButton(PoseStack stack, MenuButton button, boolean hovered) {
-		int baseAlpha = hovered ? 90 : 45; // 透明度在悬停时增强
-		int bg = Colors.getColor(255, 255, 255, baseAlpha);
-		drawPureRoundedRect(stack, button.x, button.y, BUTTON_WIDTH, BUTTON_HEIGHT, BUTTON_RADIUS, bg);
-
-		CustomTextRenderer font = Fonts.opensans;
-		if (font != null) {
-			font.setAlpha(1.0F);
-			java.awt.Color color = hovered ? new java.awt.Color(20, 24, 30) : new java.awt.Color(230, 236, 245);
-			double scale = 0.7;
-			float tw = font.getWidth(button.label, scale);
-			float th = (float) font.getHeight(false, scale);
-			float tx = button.x + (BUTTON_WIDTH - tw) / 2.0F;
-			float ty = button.y + (BUTTON_HEIGHT - th) / 2.0F;
-			font.render(stack, button.label, tx, ty, color, false, scale);
+	
+	private void drawCircleCorner(com.mojang.blaze3d.vertex.BufferBuilder buffer, com.mojang.blaze3d.vertex.Tesselator tesselator,
+								   org.joml.Matrix4f matrix, float cx, float cy, float radius, 
+								   float startAngle, float endAngle, int segments, float r, float g, float b, float a) {
+		buffer.begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.TRIANGLE_FAN, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR);
+		buffer.vertex(matrix, cx, cy, 0).color(r, g, b, a).endVertex();
+		
+		for (int i = 0; i <= segments; i++) {
+			double angle = Math.toRadians(startAngle + (endAngle - startAngle) * i / (double)segments);
+			float px = cx + (float)Math.cos(angle) * radius;
+			float py = cy + (float)Math.sin(angle) * radius;
+			buffer.vertex(matrix, px, py, 0).color(r, g, b, a).endVertex();
 		}
+		
+		tesselator.end();
+	}
+	
+	private int rgba(int r, int g, int b, int a) {
+		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
-	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button == 0) {
-			for (MenuButton b : buttons) {
-				if (isInside((int) mouseX, (int) mouseY, b.x, b.y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-					handleClick(b.id);
-					return true;
-				}
-			}
+	private void drawBackground(@Nonnull GuiGraphics guiGraphics) {
+		guiGraphics.fill(0, 0, this.width, this.height, 0xFF000000);
+		
+		if (textureLoaded) {
+			RenderSystem.enableBlend();
+			RenderSystem.defaultBlendFunc();
+			RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+			guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, this.width, this.height, this.width, this.height);
+			RenderSystem.disableBlend();
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
+		
+		guiGraphics.fill(0, 0, this.width, this.height, 0x50000000);
 	}
 
-	private boolean isInside(int mx, int my, int x, int y, int w, int h) {
-		return mx >= x && mx < x + w && my >= y && my < y + h;
+	private void renderTitle(GuiGraphics guiGraphics) {
+		String title = "Naven-XD";
+		int titleWidth = this.font.width(title) * 2;
+		int titleX = this.width / 2 - titleWidth / 2;
+		int titleY = this.height / 2 - 160;
+		
+		guiGraphics.pose().pushPose();
+		guiGraphics.pose().scale(2.0f, 2.0f, 1.0f);
+		guiGraphics.drawString(this.font, title, titleX / 2 + 2, titleY / 2 + 2, 0x40000000, false);
+		guiGraphics.drawString(this.font, title, titleX / 2, titleY / 2, 0xFFFFFFFF, false);
+		guiGraphics.pose().popPose();
 	}
 
-	private void handleClick(int id) {
-		switch (id) {
-			case 0 -> mc.setScreen(new SelectWorldScreen(this));
-			case 1 -> mc.setScreen(new JoinMultiplayerScreen(this));
-			case 2 -> openVanillaOptions();
-			case 3 -> mc.stop();
-		}
+	private void openSingleplayer() {
+		mc.setScreen(new SelectWorldScreen(this));
 	}
 
-	private void openVanillaOptions() {
+	private void openMultiplayer() {
+		mc.setScreen(new JoinMultiplayerScreen(this));
+	}
+
+	private void openSettings() {
 		try {
 			Options options = mc.options;
 			Class<?> clazz = Class.forName("net.minecraft.client.gui.screens.options.OptionsScreen");
@@ -180,8 +189,13 @@ public class MainUI extends Screen {
 				Screen screen = (Screen) ctor.newInstance(this, mc.options);
 				mc.setScreen(screen);
 			} catch (Throwable ignored) {
+				System.err.println("Failed to open options screen");
 			}
 		}
+	}
+
+	private void quit() {
+		mc.stop();
 	}
 
 	@Override
@@ -189,133 +203,111 @@ public class MainUI extends Screen {
 		return false;
 	}
 
-	/**
-	 
-	 * @param stack
-	 * @param x
-	 * @param y 
-	 * @param width 
-	 * @param height 
-	 * @param radius 
-	 * @param color 
-	 */
-	private void drawPureRoundedRect(PoseStack stack, float x, float y, float width, float height, float radius, int color) {
-		if (radius <= 0) {
-			RenderUtils.fill(stack, x, y, x + width, y + height, color);
-			return;
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (button == 0) {
+			for (Button btn : buttons) {
+				if (btn.isHovered((int)mouseX, (int)mouseY)) {
+					btn.onClick();
+					return true;
+				}
+			}
 		}
-
-		radius = Math.min(radius, Math.min(width, height) / 2.0F);
-
-		Matrix4f matrix = stack.last().pose();
-		Tesselator tesselator = Tesselator.getInstance();
-		BufferBuilder buffer = tesselator.getBuilder();
-
-		float alpha = (float)(color >> 24 & 0xFF) / 255.0F;
-		float red = (float)(color >> 16 & 0xFF) / 255.0F;
-		float green = (float)(color >> 8 & 0xFF) / 255.0F;
-		float blue = (float)(color & 0xFF) / 255.0F;
-
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-		buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		buffer.vertex(matrix, x + radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		tesselator.end();
-
-		buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		buffer.vertex(matrix, x + radius, y, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y, 0.0F).color(red, green, blue, alpha).endVertex();
-		tesselator.end();
-
-		buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		buffer.vertex(matrix, x + radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + radius, y + height, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + height, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		tesselator.end();
-
-		buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		buffer.vertex(matrix, x, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		tesselator.end();
-
-		buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		buffer.vertex(matrix, x + width - radius, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width - radius, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width, y + height - radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		buffer.vertex(matrix, x + width, y + radius, 0.0F).color(red, green, blue, alpha).endVertex();
-		tesselator.end();
-
-		// 计算圆角的顶点数量（根据半径调整精度）
-		int segments = (int)Math.min(Math.max(radius, 8.0F), 32.0F);
-
-		// 绘制左上角圆角
-		drawCorner(matrix, x + radius, y + radius, radius, 180, 270, segments, red, green, blue, alpha);
-
-		// 绘制右上角圆角
-		drawCorner(matrix, x + width - radius, y + radius, radius, 270, 360, segments, red, green, blue, alpha);
-
-		// 绘制左下角圆角
-		drawCorner(matrix, x + radius, y + height - radius, radius, 90, 180, segments, red, green, blue, alpha);
-
-		// 绘制右下角圆角
-		drawCorner(matrix, x + width - radius, y + height - radius, radius, 0, 90, segments, red, green, blue, alpha);
-
-		RenderSystem.disableBlend();
-		RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+		return super.mouseClicked(mouseX, mouseY, button);
 	}
 
-	/**
-	 * 绘制圆角
-	 */
-	private void drawCorner(Matrix4f matrix, float centerX, float centerY, float radius, 
-	                        int startAngle, int endAngle, int segments, 
-	                        float red, float green, float blue, float alpha) {
-		Tesselator tesselator = Tesselator.getInstance();
-		BufferBuilder buffer = tesselator.getBuilder();
-
-		buffer.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-		// 中心点
-		buffer.vertex(matrix, centerX, centerY, 0.0F).color(red, green, blue, alpha).endVertex();
-
-		// 圆弧上的点
-		for (int i = startAngle; i <= endAngle; i += (endAngle - startAngle) / segments) {
-			double angle = Math.toRadians(i);
-			float px = centerX + (float)(Math.cos(angle) * radius);
-			float py = centerY + (float)(Math.sin(angle) * radius);
-			buffer.vertex(matrix, px, py, 0.0F).color(red, green, blue, alpha).endVertex();
+	private static class Button {
+		private final int x, y, width, height;
+		private final String text;
+		private final Runnable action;
+		private final boolean isDanger;
+		private float hoverProgress = 0.0f;
+		
+		public Button(int x, int y, int width, int height, String text, Runnable action) {
+			this(x, y, width, height, text, action, false);
 		}
-
-		// 确保闭合
-		double endAngleRad = Math.toRadians(endAngle);
-		float endX = centerX + (float)(Math.cos(endAngleRad) * radius);
-		float endY = centerY + (float)(Math.sin(endAngleRad) * radius);
-		buffer.vertex(matrix, endX, endY, 0.0F).color(red, green, blue, alpha).endVertex();
-
-		tesselator.end();
-	}
-
-	private static final class MenuButton {
-		final int id;
-		final String label;
-		final int x;
-		final int y;
-
-		MenuButton(int id, String label, int x, int y) {
-			this.id = id;
-			this.label = label;
+		
+		public Button(int x, int y, int width, int height, String text, Runnable action, boolean isDanger) {
 			this.x = x;
 			this.y = y;
+			this.width = width;
+			this.height = height;
+			this.text = text;
+			this.action = action;
+			this.isDanger = isDanger;
+		}
+		
+		public boolean isHovered(int mouseX, int mouseY) {
+			return RenderUtils.isHoveringBound(mouseX, mouseY, x, y, width, height);
+		}
+		
+		public void onClick() {
+			action.run();
+		}
+		
+		public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+			boolean hovered = isHovered(mouseX, mouseY);
+			
+			hoverProgress += (hovered ? 0.15f : -0.15f);
+			hoverProgress = Math.max(0.0f, Math.min(1.0f, hoverProgress));
+			
+			int baseColor;
+			int hoverColor;
+			int textColor;
+			
+			if (isDanger) {
+				baseColor = rgba(220, 38, 38, 100);
+				hoverColor = rgba(220, 38, 38, 150);
+				textColor = 0xFFFFFFFF;
+			} else {
+				baseColor = rgba(255, 255, 255, 60);
+				hoverColor = rgba(255, 255, 255, 100);
+				textColor = hovered ? 0xFF000000 : rgba(230, 236, 245, 240);
+			}
+			
+			int color = interpolateColor(baseColor, hoverColor, hoverProgress);
+			
+			RenderSystem.enableBlend();
+			RenderSystem.defaultBlendFunc();
+			
+			RenderUtils.drawRoundedRect(guiGraphics.pose(), x, y, width, height, CORNER_RADIUS, color);
+			
+			if (hoverProgress > 0.01f) {
+				int overlayColor = rgba(255, 255, 255, (int)(30 * hoverProgress));
+				RenderUtils.drawRoundedRect(guiGraphics.pose(), x, y, width, height, CORNER_RADIUS, overlayColor);
+			}
+			
+			Minecraft mc = Minecraft.getInstance();
+			int textWidth = mc.font.width(text);
+			int textX = x + (width - textWidth) / 2;
+			int textY = y + (height - 8) / 2;
+			
+			guiGraphics.drawString(mc.font, text, textX, textY, textColor, false);
+			
+			RenderSystem.disableBlend();
+		}
+		
+		private int rgba(int r, int g, int b, int a) {
+			return (a << 24) | (r << 16) | (g << 8) | b;
+		}
+		
+		private int interpolateColor(int color1, int color2, float progress) {
+			int a1 = (color1 >> 24) & 0xFF;
+			int r1 = (color1 >> 16) & 0xFF;
+			int g1 = (color1 >> 8) & 0xFF;
+			int b1 = color1 & 0xFF;
+			
+			int a2 = (color2 >> 24) & 0xFF;
+			int r2 = (color2 >> 16) & 0xFF;
+			int g2 = (color2 >> 8) & 0xFF;
+			int b2 = color2 & 0xFF;
+			
+			int a = (int)(a1 + (a2 - a1) * progress);
+			int r = (int)(r1 + (r2 - r1) * progress);
+			int g = (int)(g1 + (g2 - g1) * progress);
+			int b = (int)(b1 + (b2 - b1) * progress);
+			
+			return rgba(r, g, b, a);
 		}
 	}
 }
