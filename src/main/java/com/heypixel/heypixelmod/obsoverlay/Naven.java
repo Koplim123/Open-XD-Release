@@ -146,13 +146,10 @@ public class Naven {
          }
       }
    }
-   
-   /**
-    * 连接到IRC服务器喵~
-    */
+
    private static void connectToIRC() {
       try {
-         System.out.println("正在自动连接到IRC服务器... 喵~");
+         System.out.println("正在自动连接到IRC服务器...");
          ircClient = new ConnectAndReveives();
          
          // 设置消息处理器
@@ -160,25 +157,25 @@ public class Naven {
             @Override
             public void onMessage(String type, JsonObject data) {
                // 处理接收到的消息
-               System.out.println("收到IRC消息: " + type + " - " + data + " 喵~");
+               System.out.println("收到IRC消息: " + type + " - " + data);
             }
             
             @Override
             public void onConnected() {
-               System.out.println("IRC连接成功喵~");
+               System.out.println("IRC连接成功");
                // 连接成功后进行认证
                ircClient.authenticate();
             }
             
             @Override
             public void onDisconnected() {
-               System.out.println("IRC连接断开喵~");
+               System.out.println("IRC连接断开");
                ircConnected = false;
             }
             
             @Override
             public void onError(String error) {
-               System.err.println("IRC连接错误: " + error + " 喵~");
+               System.err.println("IRC连接错误: " + error);
                ircConnected = false;
             }
          });
@@ -187,21 +184,17 @@ public class Naven {
          ircClient.connect();
          
       } catch (Exception e) {
-         System.err.println("连接IRC服务器时出错: " + e.getMessage() + " 喵~");
+         System.err.println("连接IRC服务器时出错: " + e.getMessage());
          ircConnected = false;
       }
    }
    
-   /**
-    * 获取IRC客户端实例喵~
-    */
+
    public static ConnectAndReveives getIrcClient() {
       return ircClient;
    }
    
-   /**
-    * 检查IRC是否已连接喵~
-    */
+
    public static boolean isIrcConnected() {
       return ircConnected && ircClient != null;
    }
@@ -211,7 +204,7 @@ public class Naven {
       // 关闭时断开IRC连接
       if (ircClient != null) {
          ircClient.disconnect();
-         System.out.println("IRC连接已关闭喵~");
+         System.out.println("IRC连接已关闭");
       }
       this.fileManager.save();
       LogUtils.close();
