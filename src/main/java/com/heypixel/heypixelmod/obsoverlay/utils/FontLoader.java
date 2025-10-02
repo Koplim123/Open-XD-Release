@@ -18,6 +18,28 @@ public class FontLoader {
     public static String[] getAvailableFonts() {
         return getAvailableFonts(false);
     }
+
+    
+    public static String[] getCJKFonts() {
+        String[] allFonts = getAvailableFonts();
+        List<String> cjkFonts = new ArrayList<>();
+        
+        for (String font : allFonts) {
+            if (isCJKFont(font)) {
+                cjkFonts.add(font);
+            }
+        }
+        
+        return cjkFonts.toArray(new String[0]);
+    }
+
+    
+    private static boolean isCJKFont(String fontName) {
+        return "HYWenHei 85W".equals(fontName) || 
+               "harmony".equals(fontName) || 
+               fontName.contains("中") || 
+               fontName.contains("汉");
+    }
     
     
     public static String[] getAvailableFonts(boolean refresh) {

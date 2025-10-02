@@ -78,10 +78,23 @@ public class IRCLoginManager {
 
                     // 登录成功后验证HWID
                     return verifyHWID(user);
+                } else {
+                    // 账号密码验证失败
+                    lastError = "USERNAME_PASSWORD_ERROR";
+                    return false;
                 }
+            } else {
+                // HTTP错误码 (400, 500系列等)
+                if (responseCode >= 400) {
+                    lastError = "FATAL_ERROR";
+                } else {
+                    lastError = "USERNAME_PASSWORD_ERROR";
+                }
+                return false;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            lastError = "FATAL_ERROR";
         }
         return false;
     }
@@ -126,13 +139,25 @@ public class IRCLoginManager {
                     if (serverHWID.equals(localHWID)) {
                         return true;
                     } else {
-                        lastError = "HWID Verify Wrong!Please Check your HWID bind!";
+                        lastError = "HWID_ERROR";
                         return false;
                     }
+                } else {
+                    lastError = "HWID_ERROR";
+                    return false;
                 }
+            } else {
+                // HTTP错误码 (400, 500系列等)
+                if (responseCode >= 400) {
+                    lastError = "FATAL_ERROR";
+                } else {
+                    lastError = "HWID_ERROR";
+                }
+                return false;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            lastError = "FATAL_ERROR";
         }
         return false;
     }

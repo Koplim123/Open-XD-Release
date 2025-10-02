@@ -41,10 +41,10 @@ public class MainUI extends Screen {
         int startY = this.height / 2 - (4 * BUTTON_HEIGHT + 3 * BUTTON_SPACING) / 2 + 30;
 
         buttons = new Button[] {
-                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT, "单人游戏", this::openSingleplayer),
-                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "多人游戏", this::openMultiplayer),
-                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH, BUTTON_HEIGHT, "选项", this::openSettings),
-                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH, BUTTON_HEIGHT, "退出", this::quit, true)
+                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT, "Singleplayer", this::openSingleplayer),
+                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Multiplayer", this::openMultiplayer),
+                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH, BUTTON_HEIGHT, "Settings", this::openSettings),
+                new Button(panelX + (panelWidth - BUTTON_WIDTH) / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH, BUTTON_HEIGHT, "Exit", this::quit, true)
         };
     }
 

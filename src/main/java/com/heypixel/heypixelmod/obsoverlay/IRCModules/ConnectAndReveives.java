@@ -18,8 +18,10 @@ public class ConnectAndReveives {
     private WebSocketClientWrapper webSocketClient;
     private boolean isConnected = false;
     private boolean isAuthenticated = false;
-    private boolean isAuthenticating = false; // 新增状态：正在认证中
+    private boolean isAuthenticating = false;
     private final Gson gson = new Gson();
+    private String lastMcName = "";
+    private boolean autoReconnectEnabled = true;
     
     // 消息处理器接口
     public interface MessageHandler {
@@ -141,7 +143,7 @@ public class ConnectAndReveives {
             return;
         }
         
-        // 设置认证中状态
+        lastMcName = mcName;
         isAuthenticating = true;
         
         JsonObject authMessage = new JsonObject();
@@ -153,6 +155,38 @@ public class ConnectAndReveives {
         System.out.println("准备发送认证消息: " + authMessageStr);
         sendRawMessage(authMessageStr);
         System.out.println("发送认证消息完成: IRC=" + ircNick + ", MC=" + mcName);
+    }
+    
+    /**
+     * 检查IGN是否变化，如果变化则重新连接
+     */
+    public void checkAndReconnectIfNeeded() {
+        if (!autoReconnectEnabled || !isConnected) {
+            return;
+        }
+        
+        String currentMcName = Minecraft.getInstance().getUser().getName();
+        if (!currentMcName.equals(lastMcName) && !lastMcName.isEmpty()) {
+            System.out.println("检测到IGN变化: " + lastMcName + " -> " + currentMcName + ", 正在重新连接...");
+            reconnect();
+        }
+    }
+    
+    /**
+     * 重新连接并重新认证
+     */
+    public void reconnect() {
+        System.out.println("正在重新连接IRC服务器...");
+        if (isConnected) {
+            disconnect();
+        }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        initializeWebSocket();
+        connect();
     }
     
     /**
@@ -239,6 +273,22 @@ public class ConnectAndReveives {
     }
     
     /**
+     * 请求所有IRC玩家的详细信息
+     */
+    public void requestAllPlayers() {
+        if (!isAuthenticated) {
+            System.err.println("未认证，无法请求所有玩家信息");
+            return;
+        }
+        
+        JsonObject requestMessage = new JsonObject();
+        requestMessage.addProperty("type", "request_all_players");
+        
+        sendRawMessage(requestMessage.toString());
+        System.out.println("请求所有玩家信息");
+    }
+    
+    /**
      * 发送原始消息
      */
     private void sendRawMessage(String message) {
@@ -276,11 +326,11 @@ public class ConnectAndReveives {
                     break;
                     
                 case "auth_success":
-                    // 只有收到服务器确认后才设置为认证成功
                     isAuthenticated = true;
                     isAuthenticating = false;
                     System.out.println("认证成功");
-                    join(); // 认证成功后自动加入
+                    join();
+                    requestAllPlayers();
                     break;
                     
                 case "auth_failed":
@@ -296,12 +346,24 @@ public class ConnectAndReveives {
                     break;
                     
                 case "user_joined":
-                    String joinedUser = jsonMessage.get("username").getAsString();
+                    String joinedUser = jsonMessage.has("username") ? jsonMessage.get("username").getAsString() : "";
+                    String joinedIrcNick = jsonMessage.has("irc_nick") ? jsonMessage.get("irc_nick").getAsString() : joinedUser;
+                    String joinedMcName = jsonMessage.has("mc_name") ? jsonMessage.get("mc_name").getAsString() : "";
+                    String joinedRank = jsonMessage.has("rank") ? jsonMessage.get("rank").getAsString() : "User";
+                    
+                    if (!joinedMcName.isEmpty()) {
+                        IRCPlayerManager.getInstance().addPlayer(joinedIrcNick, joinedMcName, joinedRank);
+                    }
                     System.out.println("用户 " + joinedUser + " 加入了聊天");
                     break;
                     
                 case "user_left":
-                    String leftUser = jsonMessage.get("username").getAsString();
+                    String leftUser = jsonMessage.has("username") ? jsonMessage.get("username").getAsString() : "";
+                    String leftMcName = jsonMessage.has("mc_name") ? jsonMessage.get("mc_name").getAsString() : "";
+                    
+                    if (!leftMcName.isEmpty()) {
+                        IRCPlayerManager.getInstance().removePlayer(leftMcName);
+                    }
                     System.out.println("用户 " + leftUser + " 离开了聊天");
                     break;
                     
@@ -333,6 +395,16 @@ public class ConnectAndReveives {
                     System.out.println("收到用户列表响应");
                     if (jsonMessage.has("users")) {
                         System.out.println("在线用户: " + jsonMessage.get("users").toString());
+                    }
+                    break;
+                    
+                case "all_players":
+                    System.out.println("收到所有玩家列表");
+                    if (jsonMessage.has("players")) {
+                        com.google.gson.JsonArray playersArray = jsonMessage.getAsJsonArray("players");
+                        IRCPlayerManager.getInstance().clear();
+                        IRCPlayerManager.getInstance().loadPlayersFromJson(playersArray);
+                        System.out.println("已加载 " + IRCPlayerManager.getInstance().getPlayerCount() + " 名IRC玩家");
                     }
                     break;
                     

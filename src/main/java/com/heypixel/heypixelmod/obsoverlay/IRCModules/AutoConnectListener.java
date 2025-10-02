@@ -3,14 +3,16 @@ package com.heypixel.heypixelmod.obsoverlay.IRCModules;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventJoinWorld;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventLeaveWorld;
+import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
 
 public class AutoConnectListener {
     private static ConnectAndReveivesExample ircClient;
+    private static int tickCounter = 0;
+    private static final int CHECK_INTERVAL = 100;
 
     public AutoConnectListener() {
-        // 初始化IRC客户端
         if (ircClient == null) {
             ircClient = new ConnectAndReveivesExample();
         }
@@ -44,15 +46,22 @@ public class AutoConnectListener {
     
     @EventTarget
     public void onPlayerLeaveWorld(EventLeaveWorld event) {
-        // 当玩家离开世界时断开IRC连接
         if (ircClient != null && ircClient.isConnected()) {
             ircClient.disconnect();
         }
     }
     
-    /**
-     * 获取IRC客户端实例
-     */
+    @EventTarget
+    public void onTick(EventRunTicks event) {
+        tickCounter++;
+        if (tickCounter >= CHECK_INTERVAL) {
+            tickCounter = 0;
+            if (ircClient != null) {
+                ircClient.checkAndReconnectIfNeeded();
+            }
+        }
+    }
+    
     public static ConnectAndReveivesExample getIrcClient() {
         return ircClient;
     }

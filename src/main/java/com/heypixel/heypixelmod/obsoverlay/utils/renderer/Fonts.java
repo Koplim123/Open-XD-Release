@@ -12,6 +12,7 @@ public class Fonts {
     public static CustomTextRenderer icons;
 
     public static CustomTextRenderer chinese;
+    public static CustomTextRenderer googleSansBold;
 
     public static void loadFonts() throws IOException, FontFormatException {
 
@@ -51,6 +52,14 @@ public class Fonts {
             chinese = harmony;
         }
 
+        try {
+            googleSansBold = new CustomTextRenderer("GoogleSans-Bold", 32, 0, 255, 512);
+        } catch (Exception e) {
+            System.err.println("Failed to load GoogleSans-Bold font, using opensans as fallback");
+            e.printStackTrace();
+            googleSansBold = opensans;
+        }
+
 
         if (opensans == null) {
             System.err.println("opensans font is null, this should not happen");
@@ -68,6 +77,11 @@ public class Fonts {
         if (chinese == null) {
             System.err.println("chinese font is null, falling back to harmony");
             chinese = harmony;
+        }
+
+        if (googleSansBold == null) {
+            System.err.println("googleSansBold font is null, falling back to opensans");
+            googleSansBold = opensans;
         }
 
 

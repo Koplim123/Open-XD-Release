@@ -115,7 +115,8 @@ public class Naven {
       this.eventManager.register(this.eventWrapper);
       this.eventManager.register(new RotationManager());
       this.eventManager.register(new NetworkUtils());
-      this.eventManager.register(new AutoConnectListener()); // 注册IRC自动连接监听器
+      this.eventManager.register(new AutoConnectListener());
+      this.eventManager.register(com.heypixel.heypixelmod.obsoverlay.IRCModules.IRCTabDecorator.getInstance());
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       this.eventManager.register(this.notificationManager);

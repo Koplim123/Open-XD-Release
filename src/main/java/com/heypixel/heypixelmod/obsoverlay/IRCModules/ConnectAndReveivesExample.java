@@ -192,4 +192,11 @@ public class ConnectAndReveivesExample {
     public String getServerAddress() {
         return ircClient.getServerAddress();
     }
+    
+    /**
+     * 检查IGN是否变化，如果变化则重新连接
+     */
+    public void checkAndReconnectIfNeeded() {
+        ircClient.checkAndReconnectIfNeeded();
+    }
 }
