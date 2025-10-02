@@ -66,7 +66,7 @@ public class Aura extends Module {
     public static Vector2f rotation;
     BooleanValue targetHud = ValueBuilder.create(this, "Target HUD").setDefaultBooleanValue(true).build().getBooleanValue();
     ModeValue targetHudStyle = ValueBuilder.create(this, "Target HUD Style")
-            .setModes("Naven", "New", "MoonLight", "Rise")
+            .setModes("Naven", "New", "MoonLight", "Rise", "Exhibition")
             .setDefaultModeIndex(0)
             .setVisibility(() -> Aura.this.targetHud.getCurrentValue())
             .build()

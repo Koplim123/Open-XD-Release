@@ -59,6 +59,10 @@ public class Watermark {
             renderClassic(e, watermarkSize, cornerRadius, vPadding);
         } else if ("Capsule".equals(style)) {
             renderCapsule(e, watermarkSize, cornerRadius, vPadding, renderBlackBackground, blackFont);
+        } else if ("exhibition".equals(style)) {
+            renderExhibition(e, watermarkSize, rainbow, rainbowSpeed, rainbowOffset);
+        } else if ("skeet".equals(style)) {
+            renderSkeet(e, watermarkSize, rainbow, rainbowSpeed, rainbowOffset, vPadding);
         } else {
             renderRainbow(e, watermarkSize, rainbow, rainbowSpeed, rainbowOffset, cornerRadius, vPadding);
         }
@@ -145,6 +149,99 @@ public class Watermark {
     }
 
     /**
+     * 渲染 "exhibition" 样式的Watermark
+     */
+    private static void renderExhibition(EventRender2D e, float watermarkSize, boolean rainbow, float rainbowSpeed, float rainbowOffset) {
+        CustomTextRenderer font = Fonts.opensans;
+        Minecraft mc = Minecraft.getInstance();
+        e.getStack().pushPose();
+
+        String clientName = "Naven-XD";
+        String separator = " [";
+        String otherInfo = Version.getVersion() + "] [" + IRCLoginManager.getUsername() + "] [" + StringUtils.split(mc.fpsString, " ")[0] + " FPS] [" + format.format(new Date()) + "]";
+
+        float x = 5.0f;
+        float y = 5.0f;
+
+        float currentX = x;
+
+        String firstChar = String.valueOf(clientName.charAt(0));
+        String restOfClientName = clientName.substring(1);
+
+        // 渲染 'N'
+        if (rainbow) {
+            // 动态彩虹 'N'
+            int color = RenderUtils.getRainbowOpaque(
+                    (int)(currentX * -rainbowOffset / 5), 1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
+            );
+            font.render(e.getStack(), firstChar, currentX, y, new Color(color), true, (double)watermarkSize);
+        } else {
+            // 静态彩虹 'N' (使用色相环的第一个颜色，红色)
+            font.render(e.getStack(), firstChar, currentX, y, new Color(Color.HSBtoRGB(0f, 0.8f, 1f)), true, (double)watermarkSize);
+        }
+
+        currentX += font.getWidth(firstChar, (double)watermarkSize);
+
+        // 渲染其余白色文本
+        String restOfText = restOfClientName + separator + otherInfo;
+        font.render(e.getStack(), restOfText, currentX, y, Color.WHITE, true, (double)watermarkSize);
+
+        e.getStack().popPose();
+    }
+
+    /**
+     * 渲染 "skeet" 样式的Watermark
+     */
+    private static void renderSkeet(EventRender2D e, float watermarkSize, boolean rainbow, float rainbowSpeed, float rainbowOffset, float vPadding) {
+        CustomTextRenderer font = Fonts.opensans;
+        Minecraft mc = Minecraft.getInstance();
+        e.getStack().pushPose();
+
+        String text = "Naven-XD | " + Version.getVersion() + " | " + IRCLoginManager.getUsername() + " | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
+
+        float textWidth = font.getWidth(text, (double)watermarkSize);
+        width = textWidth + 14.0F; // 7px padding on each side
+        watermarkHeight = (float)font.getHeight(true, (double)watermarkSize);
+        float borderWidth = 2.0f;
+        float rainbowHeight = 1.0f;
+        float topSectionHeight = borderWidth + rainbowHeight; // 顶部边框 + 彩虹条
+        float totalHeight = topSectionHeight + watermarkHeight + vPadding * 2 + borderWidth; // 顶部区域 + 内容 + 底部边框
+
+        float x = 5.0f;
+        float y = 5.0f;
+
+        int skeetBorderColor = new Color(45, 45, 45).getRGB();
+        int skeetBackgroundColor = new Color(35, 35, 35).getRGB();
+
+        // 绘制背景
+        RenderUtils.fill(e.getStack(), x + borderWidth, y + topSectionHeight, x + width - borderWidth, y + totalHeight - borderWidth, skeetBackgroundColor);
+
+        // 绘制边框
+        // 顶部边框
+        RenderUtils.fill(e.getStack(), x, y, x + width, y + borderWidth, skeetBorderColor);
+        // 彩虹条
+        if (rainbow) {
+            drawAnimatedRainbowBar(e.getStack(), x, y + borderWidth, width, rainbowHeight, rainbowSpeed, rainbowOffset);
+        } else {
+            drawRainbowBar(e.getStack(), x, y + borderWidth, width, rainbowHeight);
+        }
+        // 左边框
+        RenderUtils.fill(e.getStack(), x, y + borderWidth, x + borderWidth, y + totalHeight, skeetBorderColor);
+        // 右边框
+        RenderUtils.fill(e.getStack(), x + width - borderWidth, y + borderWidth, x + width, y + totalHeight, skeetBorderColor);
+        // 底边框
+        RenderUtils.fill(e.getStack(), x, y + totalHeight - borderWidth, x + width, y + totalHeight, skeetBorderColor);
+
+
+        // 渲染文本
+        float textX = x + 7.0f;
+        float textY = y + topSectionHeight + vPadding;
+        font.render(e.getStack(), text, textX, textY, Color.WHITE, true, (double)watermarkSize);
+
+        e.getStack().popPose();
+    }
+
+    /**
      * 渲染 "Classic" 样式的Watermark
      */
     private static void renderClassic(EventRender2D e, float watermarkSize, float cornerRadius, float vPadding) {
@@ -208,7 +305,7 @@ public class Watermark {
             RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, backgroundColor);
             RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, backgroundColor);
         }
-        
+
         // 渲染文本 - 根据 blackFont 参数选择颜色
         Color textColor = blackFont ? Color.BLACK : Color.WHITE;
         font.render(e.getStack(), clientName, x + hPadding, y + vPadding, textColor, true, (double)watermarkSize);

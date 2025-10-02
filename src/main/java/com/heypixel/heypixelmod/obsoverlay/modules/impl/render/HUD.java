@@ -18,13 +18,8 @@ import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
-import org.joml.Vector4f;
 
 @ModuleInfo(
         name = "HUD",
@@ -40,7 +35,7 @@ public class HUD extends Module {
     public ModeValue watermarkStyle = ValueBuilder.create(this, "Watermark Style")
             .setVisibility(this.waterMark::getCurrentValue)
             .setDefaultModeIndex(0)
-            .setModes("Rainbow", "Classic", "Capsule")
+            .setModes("Rainbow", "Classic", "Capsule", "exhibition", "skeet")
             .build()
             .getModeValue();
 
@@ -80,7 +75,26 @@ public class HUD extends Module {
             .getBooleanValue();
     public BooleanValue moduleToggleSound = ValueBuilder.create(this, "Module Toggle Sound").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
+    public ModeValue notificationStyle = ValueBuilder.create(this, "Notification Style")
+            .setVisibility(this.notification::getCurrentValue)
+            .setModes("SouthSide", "Naven")
+            .setDefaultModeIndex(0)
+            .setOnUpdate(this::onNotificationStyleChange)
+            .build()
+            .getModeValue();
     public BooleanValue arrayList = ValueBuilder.create(this, "Array List").setDefaultBooleanValue(true).build().getBooleanValue();
+    public ModeValue arrayListMode = ValueBuilder.create(this, "ArrayList Mode")
+            .setVisibility(this.arrayList::getCurrentValue)
+            .setDefaultModeIndex(0)
+            .setModes("Normal", "Exhibition")
+            .build()
+            .getModeValue();
+
+    public BooleanValue arrayListCapsule = ValueBuilder.create(this, "ArrayList Capsule")
+            .setVisibility(this.arrayList::getCurrentValue)
+            .setDefaultBooleanValue(true)
+            .build()
+            .getBooleanValue();
     public BooleanValue prettyModuleName = ValueBuilder.create(this, "Pretty Module Name")
             .setOnUpdate(value -> Module.update = true)
             .setVisibility(this.arrayList::getCurrentValue)
@@ -153,18 +167,30 @@ public class HUD extends Module {
             .setMaxFloatValue(10.0F)
             .build()
             .getFloatValue();
-    List<Module> renderModules;
-    List<Vector4f> blurMatrices = new ArrayList<>();
-
-    public String getModuleDisplayName(Module module) {
-        String name = this.prettyModuleName.getCurrentValue() ? module.getPrettyName() : module.getName();
-        return name + (module.getSuffix() == null ? "" : " §7" + module.getSuffix());
-    }
 
     @EventTarget
     public void notification(EventRender2D e) {
         if (this.notification.getCurrentValue()) {
             Naven.getInstance().getNotificationManager().onRender(e);
+        }
+    }
+
+    private void onNotificationStyleChange(com.heypixel.heypixelmod.obsoverlay.values.Value value) {
+        updateNotificationMode();
+    }
+
+    private void updateNotificationMode() {
+        String currentMode = notificationStyle.getCurrentMode();
+        switch (currentMode) {
+            case "Naven":
+                com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.setCurrentMode(
+                        com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.NAVEN);
+                break;
+            case "SouthSide":
+            default:
+                com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.setCurrentMode(
+                        com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.SOUTHSIDE);
+                break;
         }
     }
 
@@ -180,29 +206,7 @@ public class HUD extends Module {
 
         // 仅在 BLUR 通道为ArrayList背景板写入模糊蒙版
         if (this.arrayList.getCurrentValue() && e.getType() == EventType.BLUR) {
-            for (Vector4f blurMatrix : this.blurMatrices) {
-                RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, Integer.MIN_VALUE);
-            }
-        }
-    }
-
-    /**
-     * 绘制一个垂直的、颜色渐变的动态彩虹条，用于模块列表的装饰胶囊。
-     * 颜色基于其Y坐标，以实现模块间的平滑过渡。
-     */
-    private void drawVerticalAnimatedRainbowBar(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
-        // 分段绘制，降低 draw call 与循环次数
-        int segments = Math.max(4, Math.min(12, (int)(height / 2.0F)));
-        float segmentHeight = height / (float)segments;
-        for (int s = 0; s < segments; s++) {
-            float segY0 = y + s * segmentHeight;
-            float segY1 = (s == segments - 1) ? (y + height) : (segY0 + segmentHeight);
-            float sampleY = (segY0 + segY1) * 0.5F;
-            int color = RenderUtils.getRainbowOpaque(
-                    (int)(-sampleY * rainbowOffset),
-                    1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
-            );
-            RenderUtils.fill(stack, x, segY0, x + width, segY1, color);
+            com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.onShader(e);
         }
     }
 
@@ -213,140 +217,14 @@ public class HUD extends Module {
             Watermark.onRender(e, this.watermarkSize.getCurrentValue(), this.watermarkStyle.getCurrentMode(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkVPadding.getCurrentValue(), this.renderBlackBackground.getCurrentValue(), this.blackFont.getCurrentValue());
         }
 
-        this.blurMatrices.clear();
         if (this.arrayList.getCurrentValue()) {
-            CustomTextRenderer font = Fonts.opensans;
-            e.getStack().pushPose();
-            ModuleManager moduleManager = Naven.getInstance().getModuleManager();
-            if (update || this.renderModules == null) {
-                this.renderModules = new ArrayList<>(moduleManager.getModules());
-                if (this.hideRenderModules.getCurrentValue()) {
-                    this.renderModules.removeIf(modulex -> modulex.getCategory() == Category.RENDER);
-                }
-
-                this.renderModules.sort((o1, o2) -> {
-                    float o1Width = font.getWidth(this.getModuleDisplayName(o1), (double)this.arrayListSize.getCurrentValue());
-                    float o2Width = font.getWidth(this.getModuleDisplayName(o2), (double)this.arrayListSize.getCurrentValue());
-                    return Float.compare(o2Width, o1Width);
-                });
-            }
-
-            // 计算最大可能的宽度（包括所有模块，无论是否启用）
-            float maxWidth = 0.0F;
-            for (Module module : this.renderModules) {
-                float moduleWidth = font.getWidth(this.getModuleDisplayName(module), (double)this.arrayListSize.getCurrentValue());
-                if (moduleWidth > maxWidth) {
-                    maxWidth = moduleWidth;
-                }
-            }
-
-            if (maxWidth < 50.0F) {
-                maxWidth = 100.0F;
-            }
-
-            com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement arrayListElement =
-                    com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("arraylist");
-
-            float arrayListX, arrayListY;
-            if (arrayListElement != null) {
-                if (this.arrayListDirection.isCurrentMode("Right")) {
-                    arrayListX = (float)arrayListElement.x;
-                } else {
-                    arrayListX = (float)arrayListElement.x;
-                }
-                arrayListY = (float)arrayListElement.y;
-            } else {
-                arrayListX = this.arrayListDirection.isCurrentMode("Right")
-                        ? (float)mc.getWindow().getGuiScaledWidth() - maxWidth - 6.0F + this.xOffset.getCurrentValue()
-                        : 3.0F + this.xOffset.getCurrentValue();
-                arrayListY = this.yOffset.getCurrentValue();
-            }
-            float height = 0.0F;
-            double fontHeight = font.getHeight(true, (double)this.arrayListSize.getCurrentValue());
-
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.disableCull();
-
-            for (Module module : this.renderModules) {
-                SmoothAnimationTimer animation = module.getAnimation();
-                if (module.isEnabled()) {
-                    animation.target = 100.0F;
-                } else {
-                    animation.target = 0.0F;
-                }
-
-                animation.update(true);
-                if (animation.value > 0.0F) {
-                    String displayName = this.getModuleDisplayName(module);
-                    float stringWidth = font.getWidth(displayName, (double)this.arrayListSize.getCurrentValue());
-                    float left = -stringWidth * (1.0F - animation.value / 100.0F);
-                    float right = maxWidth - stringWidth * (animation.value / 100.0F);
-                    float innerX = this.arrayListDirection.isCurrentMode("Left") ? left : right;
-                    float moduleHeight = (float)((double)(animation.value / 100.0F) * fontHeight);
-                    float moduleX = arrayListX + innerX;
-                    float moduleY = arrayListY + height + 2.0F;
-                    float moduleWidth = stringWidth + 3.0F;
-
-                    // 步骤 1: 绘制模块的深色背景
-                    RenderUtils.drawRoundedRect(
-                            e.getStack(),
-                            moduleX,
-                            moduleY,
-                            moduleWidth,
-                            moduleHeight,
-                            3.0F,
-                            backgroundColor
-                    );
-                    this.blurMatrices.add(new Vector4f(moduleX, moduleY, moduleWidth, moduleHeight));
-
-                    // 步骤 2: 绘制模块名称文本
-                    int color = -1; // 默认白色
-                    if (this.rainbow.getCurrentValue()) {
-                        // 如果彩虹效果开启，文本也使用彩虹色
-                        color = RenderUtils.getRainbowOpaque(
-                                (int)(-height * this.rainbowOffset.getCurrentValue()), 1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
-                        );
-                    }
-
-                    float alpha = animation.value / 100.0F;
-                    font.setAlpha(alpha);
-                    font.render(
-                            e.getStack(),
-                            displayName,
-                            (double)(moduleX + 1.5F),
-                            (double)(arrayListY + height + 1.0F),
-                            new Color(color),
-                            true,
-                            (double)this.arrayListSize.getCurrentValue()
-                    );
-
-                    // 步骤 3: 彩虹装饰条（低开销版本，避免频繁模板切换与逐像素填充）
-                    if (this.rainbow.getCurrentValue()) {
-                        float capsuleWidth = 2.0f;
-                        float capsulePadding = 1.5f;
-                        float capsuleX = this.arrayListDirection.isCurrentMode("Left")
-                                ? (moduleX - capsuleWidth - capsulePadding)
-                                : (moduleX + moduleWidth + capsulePadding);
-                        int barColor = RenderUtils.getRainbowOpaque(
-                                (int)(-moduleY * this.rainbowOffset.getCurrentValue()),
-                                1.0F, 1.0F, (21.0F - this.rainbowSpeed.getCurrentValue()) * 1000.0F
-                        );
-                        RenderUtils.fill(e.getStack(), capsuleX, moduleY, capsuleX + capsuleWidth, moduleY + moduleHeight, barColor);
-                    }
-
-                    // 使用 arrayListSpacing 调整模块之间的垂直间距
-                    height += (float)((double)(animation.value / 100.0F) * (fontHeight + this.arrayListSpacing.getCurrentValue()));
-                }
-            }
-
-            if (arrayListElement != null) {
-                arrayListElement.width = Math.max(maxWidth, 100.0F);
-                arrayListElement.height = Math.max(height, 50.0F);
-            }
-
-            font.setAlpha(1.0F);
-            e.getStack().popPose();
+            com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.onRender(e,this.arrayListMode.isCurrentMode("Exhibition") ? com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.Mode.Exhibition : com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.Mode.Normal, this.arrayListCapsule.getCurrentValue(), this.prettyModuleName.getCurrentValue(), this.hideRenderModules.getCurrentValue(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.arrayListDirection.getCurrentMode(), this.xOffset.getCurrentValue(), this.yOffset.getCurrentValue(), this.arrayListSize.getCurrentValue(), this.arrayListSpacing.getCurrentValue());
         }
+    }
+
+    @Override
+    public void onEnable() {
+        super.onEnable();
+        updateNotificationMode();
     }
 }
