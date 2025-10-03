@@ -1,7 +1,7 @@
 package com.heypixel.heypixelmod.obsoverlay.commands.impl;
 
-import com.heypixel.heypixelmod.obsoverlay.IRCModules.AutoConnectListener;
-import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveivesExample;
+import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveives;
+import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
@@ -15,11 +15,11 @@ import com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils;
 public class CommandIRC extends Command {
     
     public CommandIRC() {
-        // 使用AutoConnectListener的IRC客户端实例
+        // 使用Naven中统一的IRC客户端实例
     }
     
-    private ConnectAndReveivesExample getIrcClient() {
-        return AutoConnectListener.getIrcClient();
+    private ConnectAndReveives getIrcClient() {
+        return Naven.getIrcClient();
     }
     
     @Override
@@ -49,35 +49,25 @@ public class CommandIRC extends Command {
     
 
     private void handleReconnect() {
-        ConnectAndReveivesExample ircClient = getIrcClient();
+        ConnectAndReveives ircClient = getIrcClient();
         if (ircClient == null) {
-            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
+            ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化，请先登录");
+            ChatUtils.addChatMessage("§e[IRC] 尝试重新连接...");
+            Naven.connectToIRCAfterLogin();
             return;
         }
         
         ChatUtils.addChatMessage("§e[IRC] 正在重连服务器...");
         
-
-        if (ircClient.isConnected()) {
-            ircClient.disconnect();
-        }
-        
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-                ircClient.connect();
-            } catch (InterruptedException e) {
-                ChatUtils.addChatMessage("§c[IRC] 重连失败: " + e.getMessage() + "");
-            }
-        }).start();
+        // 使用ConnectAndReveives的reconnect方法
+        ircClient.reconnect();
     }
     
     /**
      * 处理用户列表指令
      */
     private void handleUserList() {
-        ConnectAndReveivesExample ircClient = getIrcClient();
+        ConnectAndReveives ircClient = getIrcClient();
         if (ircClient == null) {
             ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
             return;
@@ -123,7 +113,7 @@ public class CommandIRC extends Command {
      * 处理公共消息
      */
     private void handlePublicMessage(String message) {
-        ConnectAndReveivesExample ircClient = getIrcClient();
+        ConnectAndReveives ircClient = getIrcClient();
         if (ircClient == null) {
             ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
             return;
@@ -139,14 +129,14 @@ public class CommandIRC extends Command {
             return;
         }
         
-        ircClient.sendPublicMessage(message);
+        ircClient.sendMessage(message);
     }
     
     /**
      * 处理私聊消息
      */
     private void handlePrivateMessage(String message) {
-        ConnectAndReveivesExample ircClient = getIrcClient();
+        ConnectAndReveives ircClient = getIrcClient();
         if (ircClient == null) {
             ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
             return;
@@ -178,7 +168,7 @@ public class CommandIRC extends Command {
      * 处理命令
      */
     private void handleCommand(String command) {
-        ConnectAndReveivesExample ircClient = getIrcClient();
+        ConnectAndReveives ircClient = getIrcClient();
         if (ircClient == null) {
             ChatUtils.addChatMessage("§c[IRC] IRC客户端未初始化");
             return;
@@ -194,7 +184,7 @@ public class CommandIRC extends Command {
             return;
         }
         
-        ircClient.sendCommand(command.substring(1)); // 去掉开头的/
+        ircClient.sendMinecraftCommand(command.substring(1)); // 去掉开头的/
     }
     
     /**

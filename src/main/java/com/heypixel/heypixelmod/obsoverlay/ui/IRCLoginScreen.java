@@ -112,6 +112,8 @@ public class IRCLoginScreen extends Screen {
                                 new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
                                 SetTitle.apply();
                                 loginSuccessful = true;
+                                // 登录成功后立即连接IRC
+                                com.heypixel.heypixelmod.obsoverlay.Naven.connectToIRCAfterLogin();
                                 this.minecraft.setScreen(new Welcome());
                             } else {
                                 if ("HWID_ERROR".equals(IRCLoginManager.lastError)) {

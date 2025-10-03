@@ -140,17 +140,32 @@ public class Naven {
          if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
             Minecraft.getInstance().setScreen(new IRCLoginScreen());
             ircScreenDisplayed = true;
-         } else if (!ircConnected) {
-            // 玩家已登录IRC但未连接IRC服务器，自动连接
-            connectToIRC();
-            ircConnected = true;
          }
+         // 移除了自动连接逻辑，现在在登录成功后立即连接
+      }
+   }
+
+   /**
+    * 登录后连接到IRC服务器
+    * 这个方法应该在登录成功后调用
+    */
+   public static void connectToIRCAfterLogin() {
+      if (!ircConnected && ircClient == null) {
+         new Thread(() -> {
+            try {
+               Thread.sleep(1000); // 等待1秒，确保登录状态已保存
+               connectToIRC();
+            } catch (InterruptedException e) {
+               e.printStackTrace();
+            }
+         }).start();
       }
    }
 
    private static void connectToIRC() {
       try {
          System.out.println("正在自动连接到IRC服务器...");
+         com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§e[IRC] 正在连接到服务器...");
          ircClient = new ConnectAndReveives();
          
          // 设置消息处理器
@@ -158,26 +173,25 @@ public class Naven {
             @Override
             public void onMessage(String type, JsonObject data) {
                // 处理接收到的消息
-               System.out.println("收到IRC消息: " + type + " - " + data);
+               handleIRCMessage(type, data);
             }
             
             @Override
             public void onConnected() {
-               System.out.println("IRC连接成功");
-               // 连接成功后进行认证
-               ircClient.authenticate();
+               ircConnected = true;
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§a[IRC] 连接成功");
             }
             
             @Override
             public void onDisconnected() {
-               System.out.println("IRC连接断开");
                ircConnected = false;
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§c[IRC] 连接断开");
             }
             
             @Override
             public void onError(String error) {
-               System.err.println("IRC连接错误: " + error);
                ircConnected = false;
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§c[IRC] 错误: " + error);
             }
          });
          
@@ -186,10 +200,83 @@ public class Naven {
          
       } catch (Exception e) {
          System.err.println("连接IRC服务器时出错: " + e.getMessage());
+         com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§c[IRC] 连接失败: " + e.getMessage());
          ircConnected = false;
       }
    }
    
+   private static void handleIRCMessage(String type, JsonObject data) {
+      try {
+         switch (type) {
+            case "auth_success":
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§a[IRC] 认证成功");
+               break;
+               
+            case "auth_failed":
+               String errorMsg = data.has("message") ? data.get("message").getAsString() : "认证失败";
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§c[IRC] 认证失败: " + errorMsg);
+               break;
+               
+            case "welcome":
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§a[IRC] 欢迎来到IRC服务器");
+               break;
+               
+            case "user_joined":
+               String username = data.get("username").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§e[IRC] 用户 " + username + " 加入了聊天");
+               break;
+               
+            case "user_left":
+               String leftUser = data.get("username").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§e[IRC] 用户 " + leftUser + " 离开了聊天");
+               break;
+               
+            case "message":
+               String sender = data.get("username").getAsString();
+               String message = data.get("message").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§7[IRC] §b" + sender + "§7: §f" + message);
+               break;
+               
+            case "private_message":
+               String fromUser = data.get("from").getAsString();
+               String privateMsg = data.get("message").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§d[IRC-私聊] §b" + fromUser + "§d: §f" + privateMsg);
+               break;
+               
+            case "private_message_sent":
+               String toUser = data.get("to").getAsString();
+               String sentMsg = data.get("message").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§d[IRC] 私聊消息已发送给 " + toUser + ": " + sentMsg);
+               break;
+               
+            case "minecraft_command":
+               String commandUser = data.get("username").getAsString();
+               String command = data.get("command").getAsString();
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§6[IRC-命令] §b" + commandUser + "§6: §f" + command);
+               break;
+               
+            case "user_list":
+               if (data.has("users")) {
+                  com.google.gson.JsonArray users = data.getAsJsonArray("users");
+                  com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§a[IRC] 在线用户列表:");
+                  for (int i = 0; i < users.size(); i++) {
+                     String user = users.get(i).getAsString();
+                     com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§7  - §b" + user);
+                  }
+                  com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§a[IRC] 总计 " + users.size() + " 名用户在线");
+               }
+               break;
+               
+            case "error":
+               String error = data.has("message") ? data.get("message").getAsString() : "未知错误";
+               com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§c[IRC] 服务器错误: " + error);
+               break;
+         }
+      } catch (Exception e) {
+         System.err.println("处理IRC消息时出错: " + e.getMessage());
+         e.printStackTrace();
+      }
+   }
 
    public static ConnectAndReveives getIrcClient() {
       return ircClient;
