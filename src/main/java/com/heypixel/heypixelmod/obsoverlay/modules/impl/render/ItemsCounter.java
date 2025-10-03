@@ -149,7 +149,6 @@ public class ItemsCounter extends Module {
         if (!this.isEnabled()) return;
 
         if (currentWidth > 0.1f && currentHeight > 0.1f && !textLines.isEmpty()) {
-            // 获取在HUD编辑器中的位置
             float x = 10.0F; // 默认x位置
             float y = 10.0F; // 默认y位置
             

@@ -50,6 +50,7 @@ public class FlagCheck extends Module {
         if (mc.player == null || mc.player.tickCount <= 25) {
             return;
         }
+        
 
         if (event.getPacket() instanceof ClientboundPlayerPositionPacket packet) {
             flagCount++;

@@ -207,10 +207,6 @@ public class HUDEditor {
                         element.x + 2, element.y - 12, Color.WHITE, true, 0.3);
             }
         }
-
-        // 在屏幕左下角渲染提示文本
-        font.render(event.getStack(), "HUD Edit Mode - Drag elements to reposition",
-                10, mc.getWindow().getGuiScaledHeight() - 20, Color.YELLOW, true, 0.3);
     }
 
     /**

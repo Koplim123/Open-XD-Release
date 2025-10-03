@@ -22,7 +22,7 @@ public class NameProtect extends Module {
    }
 
    public static void setCustomHiddenName(String name) {
-      customHiddenName = name;
+      customHiddenName = "§d" + name + "§7";
    }
 
    public static String getHiddenName() {

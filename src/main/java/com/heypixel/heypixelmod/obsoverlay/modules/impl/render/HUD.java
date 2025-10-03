@@ -77,7 +77,7 @@ public class HUD extends Module {
     public BooleanValue notification = ValueBuilder.create(this, "Notification").setDefaultBooleanValue(true).build().getBooleanValue();
     public ModeValue notificationStyle = ValueBuilder.create(this, "Notification Style")
             .setVisibility(this.notification::getCurrentValue)
-            .setModes("SouthSide", "Naven")
+            .setModes("SouthSide", "Naven", "Capsule")
             .setDefaultModeIndex(0)
             .setOnUpdate(this::onNotificationStyleChange)
             .build()
@@ -186,6 +186,10 @@ public class HUD extends Module {
                 com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.setCurrentMode(
                         com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.NAVEN);
                 break;
+            case "Capsule":
+                com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.setCurrentMode(
+                        com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.CAPSULE);
+                break;
             case "SouthSide":
             default:
                 com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationMode.setCurrentMode(
@@ -196,8 +200,13 @@ public class HUD extends Module {
 
     @EventTarget
     public void onShader(EventShader e) {
-        if (this.notification.getCurrentValue() && e.getType() == EventType.SHADOW) {
-            Naven.getInstance().getNotificationManager().onRenderShadow(e);
+        
+        if (this.notification.getCurrentValue()) {
+            if (e.getType() == EventType.SHADOW) {
+                Naven.getInstance().getNotificationManager().onRenderShadow(e);
+            } else if (e.getType() == EventType.BLUR) {
+                Naven.getInstance().getNotificationManager().onRenderBlur(e);
+            }
         }
 
         if (this.waterMark.getCurrentValue()) {

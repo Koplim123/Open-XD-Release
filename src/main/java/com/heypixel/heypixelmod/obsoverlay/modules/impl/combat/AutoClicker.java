@@ -52,6 +52,7 @@ public class AutoClicker extends Module {
    @EventTarget
    public void onMotion(EventMotion e) {
       if (e.getType() == EventType.PRE) {
+         
          if (mc.player == null || mc.hitResult == null) {
             return;
          }

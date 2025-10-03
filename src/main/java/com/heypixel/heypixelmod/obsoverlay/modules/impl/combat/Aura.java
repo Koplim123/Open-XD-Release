@@ -357,6 +357,7 @@ public class Aura extends Module {
     @EventTarget
     public void onMotion(EventRunTicks event) {
         if (event.getType() == EventType.PRE && mc.player != null) {
+            
             if (mc.screen instanceof AbstractContainerScreen
                     || Naven.getInstance().getModuleManager().getModule(Stuck.class).isEnabled()
                     || InventoryUtils.shouldDisableFeatures()) {

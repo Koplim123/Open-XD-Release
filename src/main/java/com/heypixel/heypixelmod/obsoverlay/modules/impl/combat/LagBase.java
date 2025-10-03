@@ -129,6 +129,7 @@ public class LagBase extends Module {
     @EventTarget
     public void onMotion(EventMotion e) {
         if (e.getType() != EventType.PRE || mc.player == null) return;
+        
 
         // 可选：基于受击窗口做 comboLag 标记
         if (comboLag.getCurrentValue()) {

@@ -2,7 +2,8 @@ package com.heypixel.heypixelmod.obsoverlay.ui.notification;
 
 public enum NotificationMode {
     NAVEN("Naven"),
-    SOUTHSIDE("SouthSide");
+    SOUTHSIDE("SouthSide"),
+    CAPSULE("Capsule");
     
     private final String displayName;
     private static NotificationMode currentMode = SOUTHSIDE; // 默认为SouthSide
@@ -29,5 +30,9 @@ public enum NotificationMode {
     
     public static boolean isSouthSideMode() {
         return currentMode == SOUTHSIDE;
+    }
+    
+    public static boolean isCapsuleMode() {
+        return currentMode == CAPSULE;
     }
 }

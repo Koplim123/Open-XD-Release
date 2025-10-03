@@ -36,6 +36,17 @@ public class NotificationManager {
             );
         }
     }
+    
+    public void onRenderBlur(EventShader e) {
+        for (Notification notification : this.notifications) {
+            SmoothAnimationTimer widthTimer = notification.getWidthTimer();
+            SmoothAnimationTimer heightTimer = notification.getHeightTimer();
+            Window window = Minecraft.getInstance().getWindow();
+            notification.renderShader(
+                    e.getStack(), (float)window.getGuiScaledWidth() - widthTimer.value + 2.0F, (float)window.getGuiScaledHeight() - heightTimer.value
+            );
+        }
+    }
 
     public void onRender(EventRender2D e) {
         float height = 5.0F;

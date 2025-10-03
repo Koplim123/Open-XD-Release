@@ -295,6 +295,124 @@ public class RenderUtils {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
+    public static void drawRoundedRectGradient(PoseStack poseStack, float x, float y, float width, float height, float edgeRadius, int colorFrom, int colorTo) {
+        if (edgeRadius < 0.0F) {
+            edgeRadius = 0.0F;
+        }
+
+        if (edgeRadius > width / 2.0F) {
+            edgeRadius = width / 2.0F;
+        }
+
+        if (edgeRadius > height / 2.0F) {
+            edgeRadius = height / 2.0F;
+        }
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+        Matrix4f matrix = poseStack.last().pose();
+        
+        float alphaFrom = (float)(colorFrom >> 24 & 0xFF) / 255.0F;
+        float redFrom = (float)(colorFrom >> 16 & 0xFF) / 255.0F;
+        float greenFrom = (float)(colorFrom >> 8 & 0xFF) / 255.0F;
+        float blueFrom = (float)(colorFrom & 0xFF) / 255.0F;
+        
+        float alphaTo = (float)(colorTo >> 24 & 0xFF) / 255.0F;
+        float redTo = (float)(colorTo >> 16 & 0xFF) / 255.0F;
+        float greenTo = (float)(colorTo >> 8 & 0xFF) / 255.0F;
+        float blueTo = (float)(colorTo & 0xFF) / 255.0F;
+        
+        buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x + edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        tesselator.end();
+        
+
+        buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x + edgeRadius, y, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        tesselator.end();
+        
+        buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + edgeRadius, y + height, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + height, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        tesselator.end();
+        
+        buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        tesselator.end();
+        
+        buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + width - edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        buffer.vertex(matrix, x + width, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        buffer.vertex(matrix, x + width - edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        tesselator.end();
+        
+        int vertices = (int)Math.min(Math.max(edgeRadius, 10.0F), 90.0F);
+        
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        for (int i = 0; i <= vertices; i++) {
+            double angleRadians = (Math.PI * 2) * (double)(i + 180) / (double)(vertices * 4);
+            buffer.vertex(matrix, 
+                (float)((double)(x + edgeRadius) + Math.sin(angleRadians) * (double)edgeRadius),
+                (float)((double)(y + edgeRadius) + Math.cos(angleRadians) * (double)edgeRadius), 
+                0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        }
+        tesselator.end();
+        
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + width - edgeRadius, y + edgeRadius, 0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        for (int i = 0; i <= vertices; i++) {
+            double angleRadians = (Math.PI * 2) * (double)(i + 90) / (double)(vertices * 4);
+            buffer.vertex(matrix, 
+                (float)((double)(x + width - edgeRadius) + Math.sin(angleRadians) * (double)edgeRadius),
+                (float)((double)(y + edgeRadius) + Math.cos(angleRadians) * (double)edgeRadius), 
+                0.0F).color(redFrom, greenFrom, blueFrom, alphaFrom).endVertex();
+        }
+        tesselator.end();
+        
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        for (int i = 0; i <= vertices; i++) {
+            double angleRadians = (Math.PI * 2) * (double)(i + 270) / (double)(vertices * 4);
+            buffer.vertex(matrix, 
+                (float)((double)(x + edgeRadius) + Math.sin(angleRadians) * (double)edgeRadius),
+                (float)((double)(y + height - edgeRadius) + Math.cos(angleRadians) * (double)edgeRadius), 
+                0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        }
+        tesselator.end();
+    
+        buffer.begin(Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        buffer.vertex(matrix, x + width - edgeRadius, y + height - edgeRadius, 0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        for (int i = 0; i <= vertices; i++) {
+            double angleRadians = (Math.PI * 2) * (double)i / (double)(vertices * 4);
+            buffer.vertex(matrix, 
+                (float)((double)(x + width - edgeRadius) + Math.sin(angleRadians) * (double)edgeRadius),
+                (float)((double)(y + height - edgeRadius) + Math.cos(angleRadians) * (double)edgeRadius), 
+                0.0F).color(redTo, greenTo, blueTo, alphaTo).endVertex();
+        }
+        tesselator.end();
+
+        RenderSystem.disableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
     public static void drawSolidBox(PoseStack matrixStack) {
         drawSolidBox(DEFAULT_BOX, matrixStack);
     }

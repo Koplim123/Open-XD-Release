@@ -11,7 +11,8 @@ import com.heypixel.heypixelmod.obsoverlay.utils.AnimationUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager;
+import com.heypixel.heypixelmod.obsoverlay.ui.IRCLoginScreen;
+import com.heypixel.heypixelmod.obsoverlay.ui.Welcome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.main.GameConfig;
@@ -161,6 +162,25 @@ public abstract class MixinMinecraft {
          Naven.getInstance().getEventManager().call(event);
          if (event.isCancelled()) {
             ci.cancel();
+         }
+      }
+   }
+
+   @Inject(
+      method = {"setScreen"},
+      at = {@At("HEAD")},
+      cancellable = true
+   )
+   private void onSetScreen(Screen newScreen, CallbackInfo ci) {
+      // If login is not successful and trying to open a screen that's not IRC login or Welcome screen
+      if (!IRCLoginScreen.isLoginSuccessful()) {
+         if (newScreen != null && !(newScreen instanceof IRCLoginScreen) && !(newScreen instanceof Welcome)) {
+            // Cancel the screen change and force login screen
+            ci.cancel();
+            // Reopen login screen
+            ((Minecraft)(Object)this).execute(() -> {
+               this.setScreen(new IRCLoginScreen());
+            });
          }
       }
    }

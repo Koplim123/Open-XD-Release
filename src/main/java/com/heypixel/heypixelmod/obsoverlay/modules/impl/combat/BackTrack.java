@@ -323,6 +323,7 @@ public class BackTrack extends Module {
     @EventTarget
     public void onTick(EventRunTicks event) {
         if (mc.player == null || mc.level == null) return;
+        
 
         if (isInterceptingAirKB) {
             for (Map.Entry<Integer, TrackedPlayer> entry : trackedEnemies.entrySet()) {

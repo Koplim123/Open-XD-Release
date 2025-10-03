@@ -109,6 +109,7 @@ public class  PearlPrediction extends Module {
     @EventTarget
     public void onMotion(EventRunTicks event) {
         if (event.getType() != EventType.PRE || mc.player == null || mc.level == null) return;
+        
         updatePearlLogicStates();
         if (pearlCounter.getCurrentValue()) {
             handleCounterLogic();

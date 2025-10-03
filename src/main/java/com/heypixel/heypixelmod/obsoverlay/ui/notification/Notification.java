@@ -124,6 +124,8 @@ public class Notification {
     public static Notification create(NotificationLevel level, String message, long age) {
         if (NotificationMode.isNavenMode()) {
             return new NavenNotification(level, message, age);
+        } else if (NotificationMode.isCapsuleMode()) {
+            return new CapsuleNotification(level, message, age);
         } else {
             return new NewNotification(level, message, age);
         }
@@ -132,6 +134,8 @@ public class Notification {
     public static Notification create(NotificationLevel level, String title, String description, long age) {
         if (NotificationMode.isNavenMode()) {
             return new NavenNotification(level, description, age);
+        } else if (NotificationMode.isCapsuleMode()) {
+            return new CapsuleNotification(level, description, age);
         } else {
             return new NewNotification(level, description, age);
         }
@@ -140,6 +144,8 @@ public class Notification {
     public static Notification create(String message, boolean enabled) {
         if (NotificationMode.isNavenMode()) {
             return new NavenNotification(message, enabled);
+        } else if (NotificationMode.isCapsuleMode()) {
+            return new CapsuleNotification(enabled ? NotificationLevel.SUCCESS : NotificationLevel.ERROR, message, 2000L);
         } else {
             return new NewNotification(enabled ? NotificationLevel.SUCCESS : NotificationLevel.ERROR, message, 2000L);
         }

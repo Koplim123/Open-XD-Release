@@ -110,6 +110,7 @@ public class BowAimbot extends Module {
     @EventTarget
     public void onUpdate(com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks event) {
         target = null;
+        
 
         if (mc.player != null && mc.player.isUsingItem() && mc.player.getUseItem().getItem() instanceof BowItem) {
             Entity entity = getTarget(throughWallsValue.getCurrentValue(), priorityValue.getCurrentMode());

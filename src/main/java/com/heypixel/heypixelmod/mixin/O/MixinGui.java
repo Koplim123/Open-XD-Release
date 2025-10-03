@@ -42,25 +42,26 @@ public class MixinGui {
    @Nullable
    protected Component subtitle;
 
-   @Inject(
-      method = {"displayScoreboardSidebar"},
-      at = {@At("HEAD")}
-   )
-   public void hookScoreboardHead(GuiGraphics pPoseStack, Objective pObjective, CallbackInfo ci) {
-      pPoseStack.pose().pushPose();
-      Scoreboard module = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
-      if (module.isEnabled()) {
-         pPoseStack.pose().translate(0.0F, module.down.getCurrentValue(), 0.0F);
-      }
+@Inject(
+   method = {"displayScoreboardSidebar"},
+   at = {@At("HEAD")}
+)
+public void hookScoreboardHead(GuiGraphics pPoseStack, Objective pObjective, CallbackInfo ci) {
+   pPoseStack.pose().pushPose();
+   Scoreboard module = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
+   if (module.isEnabled()) {
+      pPoseStack.pose().translate(0.0F, module.down.getCurrentValue(), 0.0F);
+      module.clearScoreboardData();
    }
+}
 
-   @Inject(
-      method = {"displayScoreboardSidebar"},
-      at = {@At("RETURN")}
-   )
-   public void hookScoreboardReturn(GuiGraphics pPoseStack, Objective pObjective, CallbackInfo ci) {
-      pPoseStack.pose().popPose();
-   }
+@Inject(
+   method = {"displayScoreboardSidebar"},
+   at = {@At("RETURN")}
+)
+public void hookScoreboardReturn(GuiGraphics pPoseStack, Objective pObjective, CallbackInfo ci) {
+   pPoseStack.pose().popPose();
+}
 
    @Redirect(
       method = {"displayScoreboardSidebar"},
@@ -131,15 +132,44 @@ public class MixinGui {
       }
    }
 
-   @Inject(
-      method = {"renderEffects"},
-      at = {@At("HEAD")},
-      cancellable = true
+@Inject(
+   method = {"renderEffects"},
+   at = {@At("HEAD")},
+   cancellable = true
+)
+public void hookRenderEffects(GuiGraphics pPoseStack, CallbackInfo ci) {
+   NoRender noRender = (NoRender)Naven.getInstance().getModuleManager().getModule(NoRender.class);
+   if (noRender.isEnabled()) {
+      ci.cancel();
+   }
+}
+
+// 拦截 fill 方法以捕获 scoreboard 背景的位置和大小
+// 在 1.20.1 中，scoreboard 使用 fill 而不是 fillGradient
+@Redirect(
+   method = {"displayScoreboardSidebar"},
+   at = @At(
+      value = "INVOKE",
+      target = "Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V"
    )
-   public void hookRenderEffects(GuiGraphics pPoseStack, CallbackInfo ci) {
-      NoRender noRender = (NoRender)Naven.getInstance().getModuleManager().getModule(NoRender.class);
-      if (noRender.isEnabled()) {
-         ci.cancel();
+)
+public void hookScoreboardFill(GuiGraphics instance, int pX1, int pY1, int pX2, int pY2, int pColor) {
+   Scoreboard module = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
+   if (module.isEnabled()) {
+      // 保存 scoreboard 的边界信息
+      float x = Math.min(pX1, pX2);
+      float y = Math.min(pY1, pY2);
+      float width = Math.abs(pX2 - pX1);
+      float height = Math.abs(pY2 - pY1);
+      module.setScoreboardBounds(x, y, width, height, pColor, pColor);
+      
+      // 如果启用圆角，则渲染圆角背景并跳过原版渲染
+      if (module.shouldRenderRoundedBackground()) {
+         module.renderRoundedBackground(instance.pose());
+         return;
       }
    }
+   // 继续正常渲染直角背景
+   instance.fill(pX1, pY1, pX2, pY2, pColor);
+}
 }

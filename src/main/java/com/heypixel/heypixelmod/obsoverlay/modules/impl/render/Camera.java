@@ -56,6 +56,7 @@ public class Camera extends Module {
 
     @EventTarget
     public void onRender(EventRender2D e) {
+        
         if (this.viewClipEnabled.getCurrentValue() && this.animation.getCurrentValue()) {
             boolean isThirdPerson = mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK || mc.options.getCameraType() == CameraType.THIRD_PERSON_FRONT;
             this.personViewAnimation.target = isThirdPerson ? 100.0F : 0.0F;

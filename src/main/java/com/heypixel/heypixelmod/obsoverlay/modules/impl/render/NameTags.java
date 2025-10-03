@@ -47,7 +47,7 @@ public class NameTags extends Module {
     public ModeValue style = ValueBuilder.create(this, "Style").setModes("Normal", "Capsule").setDefaultModeIndex(0).build().getModeValue();
     // 添加圆角半径值
     public FloatValue cornerRadius = ValueBuilder.create(this, "Corner Radius")
-            .setDefaultFloatValue(2.0F)
+            .setDefaultFloatValue(4.0F)
             .setFloatStep(0.1F)
             .setMinFloatValue(0.0F)
             .setMaxFloatValue(10.0F)
@@ -310,51 +310,80 @@ public class NameTags extends Module {
                 } else if (this.style.getCurrentMode().equals("Capsule")) {
                     // 新的胶囊渲染逻辑
                     float scale = this.scale.getCurrentValue();
-                    // 1. 血量
+                    double height = Fonts.harmony.getHeight(true, (double)scale);
+                    float spacing = this.capsuleSpacing.getCurrentValue();
+                    
+                    // 准备所有胶囊数据
+                    List<CapsuleData> capsules = new ArrayList<>();
+                    
+                    // 0. Team状态（如果是队友）
+                    if (Teams.isSameTeam(living)) {
+                        String teamText = "§aTeam";
+                        float teamWidth = Fonts.harmony.getWidth(teamText, (double)scale);
+                        capsules.add(new CapsuleData(teamText, teamWidth));
+                    }
+                    
+                    // 1. Friend状态（如果是好友）
+                    if (FriendManager.isFriend(living)) {
+                        String friendText = "§aFriend";
+                        float friendWidth = Fonts.harmony.getWidth(friendText, (double)scale);
+                        capsules.add(new CapsuleData(friendText, friendWidth));
+                    }
+                    
+                    // 2. 血量
                     String healthText = "§a" + Math.round(hp) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : "") + "HP";
                     float healthWidth = Fonts.harmony.getWidth(healthText, (double)scale);
-                    // 2. 名字（带截断）
+                    capsules.add(new CapsuleData(healthText, healthWidth));
+                    
+                    // 3. 名字（带截断，固定最大宽度80）
                     String originalName = living.getName().getString();
                     String nameToRender = originalName;
-                    // 当名字宽度超过80时进行截断
-                    if (Fonts.harmony.getWidth("§c" + nameToRender, (double)scale) > 80) {
-                        while (Fonts.harmony.getWidth("§c" + nameToRender + "...", (double)scale) > 80 && nameToRender.length() > 0) {
+                    float maxNameWidth = 80.0F;
+                    // 当名字宽度超过最大宽度时进行截断
+                    if (Fonts.harmony.getWidth("§c" + nameToRender, (double)scale) > maxNameWidth) {
+                        while (nameToRender.length() > 0 && Fonts.harmony.getWidth("§c" + nameToRender + "...", (double)scale) > maxNameWidth) {
                             nameToRender = nameToRender.substring(0, nameToRender.length() - 1);
                         }
                         nameToRender += "...";
                     }
                     String nameText = "§c" + nameToRender;
+                    // 重新计算实际宽度，确保准确
                     float nameWidth = Fonts.harmony.getWidth(nameText, (double)scale);
-                    // 3. 距离
+                    capsules.add(new CapsuleData(nameText, nameWidth));
+                    
+                    // 4. 距离
                     float distance = mc.player.distanceTo(living);
                     String distanceText = "§7" + String.format("%.1f", distance) + "m";
                     float distanceWidth = Fonts.harmony.getWidth(distanceText, (double)scale);
-                    double height = Fonts.harmony.getHeight(true, (double)scale);
-                    float spacing = this.capsuleSpacing.getCurrentValue();
-                    float totalWidth = healthWidth + nameWidth + distanceWidth + 12.0F + (spacing * 2.0F);
+                    capsules.add(new CapsuleData(distanceText, distanceWidth));
+                    
+                    // 计算总宽度
+                    float totalWidth = capsules.stream()
+                            .map(c -> c.width + 4.0F)
+                            .reduce(0.0F, Float::sum)
+                            + spacing * (capsules.size() - 1);
+                    
+                    // 从左到右渲染所有胶囊
                     float startX = position.x - totalWidth / 2.0F;
-                    // 渲染血量胶囊
-                    float healthStartX = startX;
-                    float healthEndX = healthStartX + healthWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(healthStartX, position.y - 2.0F, healthEndX, (float)(position.y + height)));
-                    RenderUtils.drawRoundedRect(e.getStack(), healthStartX, position.y - 2.0F, healthWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
+                    float currentX = startX;
+                    
                     Fonts.harmony.setAlpha(0.8F);
-                    Fonts.harmony.render(e.getStack(), healthText, (double)(healthStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
-                    // 渲染名字胶囊
-                    float nameStartX = healthEndX + spacing;
-                    float nameEndX = nameStartX + nameWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(nameStartX, position.y - 2.0F, nameEndX, (float)(position.y + height)));
-                    RenderUtils.drawRoundedRect(e.getStack(), nameStartX, position.y - 2.0F, nameWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
-                    Fonts.harmony.render(e.getStack(), nameText, (double)(nameStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
-                    // 渲染距离胶囊
-                    float distanceStartX = nameEndX + spacing;
-                    float distanceEndX = distanceStartX + distanceWidth + 4.0F;
-                    // 修复模糊不对称问题，调整模糊区域高度以匹配背景
-                    this.blurMatrices.add(new Vector4f(distanceStartX, position.y - 2.0F, distanceEndX, (float)(position.y + height)));
-                    RenderUtils.drawRoundedRect(e.getStack(), distanceStartX, position.y - 2.0F, distanceWidth + 4.0F, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
-                    Fonts.harmony.render(e.getStack(), distanceText, (double)(distanceStartX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                    for (CapsuleData capsule : capsules) {
+                        float capsuleWidth = capsule.width + 4.0F;
+                        float capsuleEndX = currentX + capsuleWidth;
+                        
+                        // 渲染模糊
+                        this.blurMatrices.add(new Vector4f(currentX, position.y - 2.0F, capsuleEndX, (float)(position.y + height)));
+                        
+                        // 渲染背景
+                        RenderUtils.drawRoundedRect(e.getStack(), currentX, position.y - 2.0F, capsuleWidth, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
+                        
+                        // 渲染文字
+                        Fonts.harmony.render(e.getStack(), capsule.text, (double)(currentX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                        
+                        // 移动到下一个胶囊位置
+                        currentX = capsuleEndX + spacing;
+                    }
                     Fonts.harmony.setAlpha(1.0F);
                 }
 
@@ -434,6 +463,16 @@ public class NameTags extends Module {
                 this.sharedPositions
                         .add(new NameTags.NameTagData(displayName, value.getHealth(), value.getMaxHealth(), value.getAbsorption(), new Vec3(x, y, z), vector));
             }
+        }
+    }
+
+    private static class CapsuleData {
+        private final String text;
+        private final float width;
+
+        public CapsuleData(String text, float width) {
+            this.text = text;
+            this.width = width;
         }
     }
 

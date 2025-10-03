@@ -95,6 +95,7 @@ public class AntiBots extends Module {
    @EventTarget
    public void onMotion(EventMotion e) {
       if (e.getType() == EventType.PRE) {
+         
          for (Entry<UUID, Long> entry : uuids.entrySet()) {
             if (System.currentTimeMillis() - entry.getValue() > 500L) {
                ChatUtils.addChatMessage("Fake Staff Detected! (" + uuidDisplayNames.get(entry.getKey()) + ")");

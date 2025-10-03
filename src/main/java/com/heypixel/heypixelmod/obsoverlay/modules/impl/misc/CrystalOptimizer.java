@@ -26,6 +26,7 @@ public class CrystalOptimizer extends Module {
         if (e.getType() != EventType.PRE) {
             return;
         }
+        
 
         Packet<?> packet = e.getPacket();
         if (packet instanceof ServerboundInteractPacket interactPacket) {

@@ -26,9 +26,18 @@ public class IRCLoginScreen extends Screen {
     private Component hwidErrorText = Component.empty();
     private boolean loggingIn = false;
     private String hwid;
+    private static boolean loginSuccessful = false;
 
     public IRCLoginScreen() {
         super(Component.literal("IRC Login"));
+    }
+    
+    public static void setLoginSuccessful(boolean successful) {
+        loginSuccessful = successful;
+    }
+    
+    public static boolean isLoginSuccessful() {
+        return loginSuccessful;
     }
 
     @Override
@@ -102,6 +111,7 @@ public class IRCLoginScreen extends Screen {
                             if (success) {
                                 new Thread(() -> IRCCredentialManager.saveCredentials(username, password)).start();
                                 SetTitle.apply();
+                                loginSuccessful = true;
                                 this.minecraft.setScreen(new Welcome());
                             } else {
                                 if ("HWID_ERROR".equals(IRCLoginManager.lastError)) {
@@ -254,8 +264,11 @@ public class IRCLoginScreen extends Screen {
                 }
             }
 
+            // Block ESC key if not logged in
             if (keyCode == 256) { 
-                return true;
+                if (!loginSuccessful) {
+                    return true; // Block closing the screen
+                }
             }
 
             if (this.usernameField.isFocused()) {
@@ -275,11 +288,26 @@ public class IRCLoginScreen extends Screen {
     @Override
     public void onClose() {
         try {
-            super.onClose();
+            // Prevent closing if not logged in - reopen the login screen
+            if (!loginSuccessful) {
+                if (this.minecraft != null) {
+                    this.minecraft.execute(() -> {
+                        this.minecraft.setScreen(new IRCLoginScreen());
+                    });
+                }
+            } else {
+                super.onClose();
+            }
         } catch (Exception e) {
             System.err.println("Error closing IRC login screen: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    @Override
+    public boolean shouldCloseOnEsc() {
+        // Don't allow closing with ESC if not logged in
+        return loginSuccessful;
     }
 
     private void loadSavedCredentialsAsync() {

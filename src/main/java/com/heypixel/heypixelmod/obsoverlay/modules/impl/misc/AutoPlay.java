@@ -49,6 +49,7 @@ public class AutoPlay extends Module {
         if (event.getType() != EventType.PRE) {
             return;
         }
+        
 
         if (mc.player == null) {
             return;

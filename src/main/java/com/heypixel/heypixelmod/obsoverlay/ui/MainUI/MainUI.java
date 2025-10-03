@@ -17,7 +17,7 @@ import java.awt.Color;
 
 public class MainUI extends Screen {
     private static final Minecraft mc = Minecraft.getInstance();
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("heypixel", "textures/images/background.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation("heypixel", "textures/images/background.png");
 
     private static final int BUTTON_WIDTH = 200;
     private static final int BUTTON_HEIGHT = 35;

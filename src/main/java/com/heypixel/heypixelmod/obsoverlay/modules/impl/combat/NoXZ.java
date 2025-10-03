@@ -111,6 +111,7 @@ public class NoXZ extends Module {
     @EventTarget
     public void onUpdate(EventUpdate event) {
         if (mc.player == null) return;
+        
 
         if (mc.player.hurtTime == 0) {
             this.velocityInput = false;

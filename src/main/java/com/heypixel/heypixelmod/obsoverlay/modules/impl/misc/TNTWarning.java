@@ -30,6 +30,7 @@ public class TNTWarning extends Module {
             return;
         }
         
+        
         boolean tntNearby = false;
         Vec3 playerPos = mc.player.position();
         
@@ -73,8 +74,8 @@ public class TNTWarning extends Module {
     }
     
     private void drawScreenEdgeWarning(EventRender2D event) {
-        int screenWidth = mc.getWindow().getScreenWidth();
-        int screenHeight = mc.getWindow().getScreenHeight();
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
         
         // 渐变宽度
         int gradientWidth = 30;

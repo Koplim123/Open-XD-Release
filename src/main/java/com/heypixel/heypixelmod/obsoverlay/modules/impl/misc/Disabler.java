@@ -227,6 +227,7 @@ public class Disabler extends Module {
 
    @EventTarget(3)
    public void duplicateRotPlaceDisabler(EventPacket e) {
+      
       if (this.grimDuplicateRotPlace.currentValue && e.getType() == EventType.SEND && !e.isCancelled() && mc.player != null) {
          if (e.getPacket() instanceof ServerboundMovePlayerPacket) {
             ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) e.getPacket();

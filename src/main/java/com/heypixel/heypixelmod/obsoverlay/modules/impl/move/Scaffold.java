@@ -39,6 +39,13 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 import org.apache.commons.lang3.RandomUtils;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.renderer.GameRenderer;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import org.joml.Matrix4f;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -119,6 +126,12 @@ public class Scaffold extends Module {
             .build()
             .getBooleanValue();
     public BooleanValue renderBlockCounter = ValueBuilder.create(this, "Render Block Counter").setDefaultBooleanValue(false).build().getBooleanValue();
+    public ModeValue blockCounterMode = ValueBuilder.create(this, "Block Counter Mode")
+            .setVisibility(this.renderBlockCounter::getCurrentValue)
+            .setModes("Normal", "Capsule")
+            .setDefaultModeIndex(0)
+            .build()
+            .getModeValue();
     public BooleanValue sneak = ValueBuilder.create(this, "Sneak").setDefaultBooleanValue(true).build().getBooleanValue();
     public BooleanValue snap = ValueBuilder.create(this, "Snap")
             .setDefaultBooleanValue(true)
@@ -226,6 +239,21 @@ public class Scaffold extends Module {
     private float blockCounterWidth;
     private float blockCounterHeight;
     private long lastPlaceTime = 0;
+    private int initialBlockCount = 0; // 记录开启Scaffold时的方块数量
+
+    /**
+     * 获取玩家背包中所有方块的数量
+     */
+    private int getBlockCount() {
+        if (mc.player == null) return 0;
+        int count = 0;
+        for (ItemStack itemStack : mc.player.getInventory().items) {
+            if (itemStack.getItem() instanceof BlockItem) {
+                count += itemStack.getCount();
+            }
+        }
+        return count;
+    }
 
     public static boolean isValidStack(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -300,6 +328,9 @@ public class Scaffold extends Module {
             this.fallDetectionTicks = 0;
             this.lastVelocity = mc.player.getDeltaMovement();
             this.lastAcceleration = Vec3.ZERO;
+            
+            // 记录初始方块数量
+            this.initialBlockCount = getBlockCount();
         }
     }
 
@@ -602,75 +633,269 @@ public class Scaffold extends Module {
         if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float y = screenHeight / 2.0F + 15.0F;
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            
+            if (this.blockCounterMode.isCurrentMode("Capsule")) {
+                // Capsule模式：渲染blur蒙版
+                String text = "Blocks: " + getBlockCount();
+                double textScale = 0.35;
+                this.blockCounterWidth = Fonts.opensans.getWidth(text, textScale) + 20.0F;
+                this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, textScale) + 10.0F;
+                
+                float x = (screenWidth - this.blockCounterWidth) / 2.0F;
+                float y = screenHeight / 2.0F + 15.0F;
+                
+                // 渲染blur蒙版（圆角矩形）
+                RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, 6.0F, Integer.MIN_VALUE);
+            } else {
+                // Normal模式：原有的shader渲染
+                float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+                float y = screenHeight / 2.0F + 15.0F;
+                RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+            }
         }
     }
 
     @EventTarget
     public void onRender(EventRender2D e) {
         if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
-            int blockCount = 0;
-            // 遍历玩家物品栏，计算所有方块的总数
-            for (ItemStack itemStack : mc.player.getInventory().items) {
-                if (itemStack.getItem() instanceof BlockItem) {
-                    blockCount += itemStack.getCount();
-                }
+            if (this.blockCounterMode.isCurrentMode("Capsule")) {
+                renderCapsuleBlockCounter(e);
+            } else {
+                renderNormalBlockCounter(e);
             }
-
-            // 获取玩家当前主手拿的物品
-            ItemStack itemToRender = mc.player.getMainHandItem();
-            // 检查手持的物品是否是有效的方块，如果不是，则不显示图标
-            if (!isValidStack(itemToRender)) {
-                itemToRender = null;
-            }
-
-            String text = "Blocks: " + blockCount;
-            double backgroundScale = 0.4;
-            double textScale = 0.35;
-
-            // 如果有图标要渲染，为图标增加额外的宽度
-            float iconWidth = itemToRender != null ? 18.0f : 0;
-            this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale) + iconWidth;
-            this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
-
-            float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
-            float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-
-            float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
-            float backgroundY = screenHeight / 2.0F + 15.0F;
-
-            float textWidth = Fonts.opensans.getWidth(text, textScale);
-            float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
-
-            // 调整文本的X坐标，为图标留出空间
-            float textX = backgroundX + iconWidth + (this.blockCounterWidth - iconWidth + 6.0F - textWidth) / 2.0F;
-            float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
-
-            e.getStack().pushPose();
-
-            StencilUtils.write(false);
-            RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
-            StencilUtils.erase(true);
-            int headerColor = new Color(150, 45, 45, 255).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
-
-            int bodyColor = new Color(0, 0, 0, 120).getRGB();
-            RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
-
-            // 如果有有效的方块物品，就渲染它的图标
-            if (itemToRender != null) {
-                float itemX = backgroundX + 4;
-                float itemY = backgroundY + 4.0F + (this.blockCounterHeight / 2.0F) - 8.0F;
-                e.getGuiGraphics().renderFakeItem(itemToRender, (int)itemX, (int)itemY);
-            }
-
-            // 渲染方块数量文本
-            Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
-            StencilUtils.dispose();
-            e.getStack().popPose();
         }
+    }
+
+    /**
+     * 渲染Normal模式的Block Counter（原有实现）
+     */
+    private void renderNormalBlockCounter(EventRender2D e) {
+        int blockCount = getBlockCount();
+
+        // 获取玩家当前主手拿的物品
+        ItemStack itemToRender = mc.player.getMainHandItem();
+        // 检查手持的物品是否是有效的方块，如果不是，则不显示图标
+        if (!isValidStack(itemToRender)) {
+            itemToRender = null;
+        }
+
+        String text = "Blocks: " + blockCount;
+        double backgroundScale = 0.4;
+        double textScale = 0.35;
+
+        // 如果有图标要渲染，为图标增加额外的宽度
+        float iconWidth = itemToRender != null ? 18.0f : 0;
+        this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale) + iconWidth;
+        this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
+
+        float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+        float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+
+        float backgroundX = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
+        float backgroundY = screenHeight / 2.0F + 15.0F;
+
+        float textWidth = Fonts.opensans.getWidth(text, textScale);
+        float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
+
+        // 调整文本的X坐标，为图标留出空间
+        float textX = backgroundX + iconWidth + (this.blockCounterWidth - iconWidth + 6.0F - textWidth) / 2.0F;
+        float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
+
+        e.getStack().pushPose();
+
+        StencilUtils.write(false);
+        RenderUtils.drawRoundedRect(e.getStack(), backgroundX, backgroundY, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
+        StencilUtils.erase(true);
+        int headerColor = new Color(150, 45, 45, 255).getRGB();
+        RenderUtils.fill(e.getStack(), backgroundX, backgroundY, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + 3.0F, headerColor);
+
+        int bodyColor = new Color(0, 0, 0, 120).getRGB();
+        RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
+
+        // 如果有有效的方块物品，就渲染它的图标
+        if (itemToRender != null) {
+            float itemX = backgroundX + 4;
+            float itemY = backgroundY + 4.0F + (this.blockCounterHeight / 2.0F) - 8.0F;
+            e.getGuiGraphics().renderFakeItem(itemToRender, (int)itemX, (int)itemY);
+        }
+
+        // 渲染方块数量文本
+        Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
+        StencilUtils.dispose();
+        e.getStack().popPose();
+    }
+
+    /**
+     * 渲染Capsule模式的Block Counter（blur背景 + 进度条边框）
+     */
+    private void renderCapsuleBlockCounter(EventRender2D e) {
+        int blockCount = getBlockCount();
+        String text = "Blocks: " + blockCount;
+        double textScale = 0.35;
+        
+        this.blockCounterWidth = Fonts.opensans.getWidth(text, textScale) + 20.0F;
+        this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, textScale) + 10.0F;
+
+        float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
+        float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
+        
+        float x = (screenWidth - this.blockCounterWidth) / 2.0F;
+        float y = screenHeight / 2.0F + 15.0F;
+        
+        float cornerRadius = 6.0F;
+        float borderWidth = 1.5F; // 进度条宽度
+        
+        // 计算进度比例
+        float ratio = this.initialBlockCount > 0 ? (float) blockCount / (float) this.initialBlockCount : 0.0F;
+        
+        // 根据比例确定进度条颜色
+        Color progressColor;
+        if (ratio >= 0.6F) { // 超过3/5
+            progressColor = new Color(50, 200, 50, 255); // 绿色
+        } else if (ratio >= 0.4F) { // 2/5到3/5之间
+            progressColor = new Color(255, 200, 50, 255); // 黄色
+        } else { // 低于2/5
+            progressColor = new Color(200, 50, 50, 255); // 红色
+        }
+        
+        e.getStack().pushPose();
+        
+        // 渲染进度条边框（在blur背景的边缘）
+        // 计算进度条的长度（沿着边框的周长）
+        float perimeter = 2 * (this.blockCounterWidth + this.blockCounterHeight) - 8 * cornerRadius + 2 * (float) Math.PI * cornerRadius;
+        float progressLength = perimeter * ratio;
+        
+        // 使用模板裁剪，确保进度边框不会超出圆角背景
+        StencilUtils.write(false);
+        RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, Integer.MIN_VALUE);
+        StencilUtils.erase(true);
+        // 绘制进度条（从顶部中心开始，顺时针绘制），被裁剪在圆角形状内
+        drawProgressBorder(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, borderWidth, progressLength, progressColor.getRGB());
+        StencilUtils.dispose();
+        
+        // 渲染文本
+        float textWidth = Fonts.opensans.getWidth(text, textScale);
+        float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
+        float textX = x + (this.blockCounterWidth - textWidth) / 2.0F;
+        float textY = y + (this.blockCounterHeight - textHeight) / 2.0F;
+        
+        Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
+        
+        e.getStack().popPose();
+    }
+
+    /**
+     * 绘制进度条边框（包含圆角，优化避免突起）
+     * 从顶部中心开始，顺时针绘制指定长度的进度条
+     */
+    private void drawProgressBorder(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float radius, float borderWidth, float length, int color) {
+        float currentLength = 0.0F;
+        
+        // 顶部边（从中心向右）
+        float topLength = (width - 2 * radius) / 2.0F;
+        if (currentLength < length) {
+            float drawLength = Math.min(topLength, length - currentLength);
+            RenderUtils.fill(stack, x + width / 2.0F, y, x + width / 2.0F + drawLength, y + borderWidth, color);
+            currentLength += drawLength;
+        }
+        
+        // 右上角 - 使用精细的圆弧绘制
+        float cornerArcLength = (float) (Math.PI * radius / 2.0F);
+        if (currentLength < length) {
+            float drawLength = Math.min(cornerArcLength, length - currentLength);
+            int segments = (int)(drawLength / cornerArcLength * 90); // 根据进度计算segment数量
+            drawPartialCornerArc(stack, x + width - radius, y + radius, radius, 270, 270 + segments, borderWidth, color);
+            currentLength += drawLength;
+        }
+        
+        // 右边
+        float rightLength = height - 2 * radius;
+        if (currentLength < length) {
+            float drawLength = Math.min(rightLength, length - currentLength);
+            RenderUtils.fill(stack, x + width - borderWidth, y + radius, x + width, y + radius + drawLength, color);
+            currentLength += drawLength;
+        }
+        
+        // 右下角
+        if (currentLength < length) {
+            float drawLength = Math.min(cornerArcLength, length - currentLength);
+            int segments = (int)(drawLength / cornerArcLength * 90);
+            drawPartialCornerArc(stack, x + width - radius, y + height - radius, radius, 0, segments, borderWidth, color);
+            currentLength += drawLength;
+        }
+        
+        // 底部边
+        float bottomLength = width - 2 * radius;
+        if (currentLength < length) {
+            float drawLength = Math.min(bottomLength, length - currentLength);
+            RenderUtils.fill(stack, x + width - radius - drawLength, y + height - borderWidth, x + width - radius, y + height, color);
+            currentLength += drawLength;
+        }
+        
+        // 左下角
+        if (currentLength < length) {
+            float drawLength = Math.min(cornerArcLength, length - currentLength);
+            int segments = (int)(drawLength / cornerArcLength * 90);
+            drawPartialCornerArc(stack, x + radius, y + height - radius, radius, 90, 90 + segments, borderWidth, color);
+            currentLength += drawLength;
+        }
+        
+        // 左边
+        float leftLength = height - 2 * radius;
+        if (currentLength < length) {
+            float drawLength = Math.min(leftLength, length - currentLength);
+            RenderUtils.fill(stack, x, y + height - radius - drawLength, x + borderWidth, y + height - radius, color);
+            currentLength += drawLength;
+        }
+        
+        // 左上角
+        if (currentLength < length) {
+            float drawLength = Math.min(cornerArcLength, length - currentLength);
+            int segments = (int)(drawLength / cornerArcLength * 90);
+            drawPartialCornerArc(stack, x + radius, y + radius, radius, 180, 180 + segments, borderWidth, color);
+            currentLength += drawLength;
+        }
+        
+        // 顶部边（从左到中心）
+        float topLeftLength = (width - 2 * radius) / 2.0F;
+        if (currentLength < length) {
+            float drawLength = Math.min(topLeftLength, length - currentLength);
+            RenderUtils.fill(stack, x + width / 2.0F - drawLength, y, x + width / 2.0F, y + borderWidth, color);
+        }
+    }
+    
+    /**
+     * 绘制部分圆角弧线（使用更窄的宽度避免突起）
+     */
+    private void drawPartialCornerArc(com.mojang.blaze3d.vertex.PoseStack stack, float centerX, float centerY, float radius, int startAngle, int endAngle, float width, int color) {
+        int degSegments = Math.abs(endAngle - startAngle);
+        if (degSegments <= 0) return;
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        Matrix4f matrix = stack.last().pose();
+        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+        buffer.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+
+        float innerRadius = Math.max(0.0F, radius - width);
+        for (int i = 0; i <= degSegments; i++) {
+            double angle = Math.toRadians(startAngle + i);
+            float cos = (float)Math.cos(angle);
+            float sin = (float)Math.sin(angle);
+
+            float ox = centerX + cos * radius;
+            float oy = centerY + sin * radius;
+            float ix = centerX + cos * innerRadius;
+            float iy = centerY + sin * innerRadius;
+
+            float a = ((color >> 24) & 0xFF) / 255.0F;
+            float r = ((color >> 16) & 0xFF) / 255.0F;
+            float g = ((color >> 8) & 0xFF) / 255.0F;
+            float b = (color & 0xFF) / 255.0F;
+
+            buffer.vertex(matrix, ox, oy, 0).color(r, g, b, a).endVertex();
+            buffer.vertex(matrix, ix, iy, 0).color(r, g, b, a).endVertex();
+        }
+        Tesselator.getInstance().end();
     }
 
     private void performFallDetection() {

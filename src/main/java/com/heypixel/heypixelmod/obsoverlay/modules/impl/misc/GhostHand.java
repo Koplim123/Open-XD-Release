@@ -61,6 +61,7 @@ public class GhostHand extends Module {
     @EventTarget
     public void onMotion(EventMotion event) {
         if (event.getType() != EventType.PRE) return;
+        
 
         if (mc.options.keyUse.isDown() && timer.delay(5)) {
             if (mc.player == null || mc.level == null) return;

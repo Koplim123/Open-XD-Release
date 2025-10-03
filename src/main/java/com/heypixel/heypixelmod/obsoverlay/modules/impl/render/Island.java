@@ -217,6 +217,7 @@ public class Island extends Module {
     }
     @EventTarget
     public void onShader(EventShader e) {
+        
         CustomTextRenderer font = Fonts.opensans;
         float[] wh = computeAnimatedBoxWH(font);
         float w = wh[0];

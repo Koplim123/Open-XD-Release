@@ -49,6 +49,7 @@ public class HackerCheck extends Module {
         if (mc.level == null || mc.player == null) {
             return;
         }
+        
 
         for (Player player : mc.level.players()) {
             if (player.equals(mc.player) || mc.player.distanceToSqr(player) > 2048) {
