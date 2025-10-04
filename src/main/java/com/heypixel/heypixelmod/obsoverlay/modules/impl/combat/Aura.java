@@ -66,7 +66,7 @@ public class Aura extends Module {
     public static Vector2f rotation;
     BooleanValue targetHud = ValueBuilder.create(this, "Target HUD").setDefaultBooleanValue(true).build().getBooleanValue();
     ModeValue targetHudStyle = ValueBuilder.create(this, "Target HUD Style")
-            .setModes("Naven", "New", "MoonLight", "Rise", "Exhibition")
+            .setModes("Naven", "New", "MoonLight", "Rise", "Exhibition", "Capsule")
             .setDefaultModeIndex(0)
             .setVisibility(() -> Aura.this.targetHud.getCurrentValue())
             .build()
@@ -74,6 +74,7 @@ public class Aura extends Module {
     BooleanValue targetEsp = ValueBuilder.create(this, "Target ESP").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackPlayer = ValueBuilder.create(this, "Attack Player").setDefaultBooleanValue(true).build().getBooleanValue();
     BooleanValue attackInvisible = ValueBuilder.create(this, "Attack Invisible").setDefaultBooleanValue(false).build().getBooleanValue();
+    BooleanValue attackFriends = ValueBuilder.create(this, "Attack Friends").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue attackAnimals = ValueBuilder.create(this, "Attack Animals").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue attackMobs = ValueBuilder.create(this, "Attack Mobs").setDefaultBooleanValue(false).build().getBooleanValue();
     BooleanValue multi = ValueBuilder.create(this, "Multi Attack").setDefaultBooleanValue(false).build().getBooleanValue();
@@ -508,7 +509,7 @@ public class Aura extends Module {
                 if (module == null || !module.isEnabled() || !AntiBots.isBot(entity) && !AntiBots.isBedWarsBot(entity)) {
                     if (Teams.isSameTeam(living)) {
                         return false;
-                    } else if (FriendManager.isFriend(living)) {
+                    } else if (FriendManager.isFriend(living) && !this.attackFriends.getCurrentValue()) {
                         return false;
                     } else if (living.isDeadOrDying() || living.getHealth() <= 0.0F) {
                         return false;

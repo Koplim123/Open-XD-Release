@@ -1,5 +1,6 @@
 package com.heypixel.heypixelmod.obsoverlay.commands.impl;
 
+import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.commands.Command;
 import com.heypixel.heypixelmod.obsoverlay.commands.CommandInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NameProtect;
@@ -17,10 +18,10 @@ public class CommandSetHideName extends Command {
             ChatUtils.addChatMessage("Usage: .sethiddenname <name>");
             return;
         }
-        
         String hiddenName = String.join(" ", args);
         NameProtect.setCustomHiddenName(hiddenName);
-        ChatUtils.addChatMessage("Hidden name set to: " + hiddenName);
+        Naven.getInstance().getFileManager().save();
+        ChatUtils.addChatMessage("Hidden name set to: " + hiddenName + " §a(Saved!)");
     }
 
     @Override

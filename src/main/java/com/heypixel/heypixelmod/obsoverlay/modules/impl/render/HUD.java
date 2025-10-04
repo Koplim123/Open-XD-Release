@@ -217,6 +217,9 @@ public class HUD extends Module {
         if (this.arrayList.getCurrentValue() && e.getType() == EventType.BLUR) {
             com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.onShader(e);
         }
+        
+        // BetterHotBar的blur渲染
+        com.heypixel.heypixelmod.obsoverlay.ui.BetterHotBar.onShader(e);
     }
 
     @EventTarget

@@ -91,6 +91,7 @@ public class ModuleManager {
          new PostProcess(),
          new AttackCrystal(),
          new ItemsCounter(),
+         new ArmorRender(),
          new EffectDisplay(),
          new NoRender(),
          new Weather(),

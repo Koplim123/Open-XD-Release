@@ -1,6 +1,3 @@
-// Decompiled with: Procyon 0.6.0
-// Class Version: 17
-// Deobfuscated by Gemini
 package com.heypixel.heypixelmod.obsoverlay.modules.impl.render;
 
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -480,7 +477,8 @@ public class Animations extends Module
                                         poseStack.mulPose(Axis.ZP.rotation(i * f25 * -20.0f * 3.1415927f / 180.0f));
                                         poseStack.mulPose(Axis.XP.rotation(f25 * -80.0f * 3.1415927f / 180.0f));
                                         poseStack.mulPose(Axis.YP.rotation(i * -45.0f * 3.1415927f / 180.0f));
-                                        poseStack.scale(0.9f, 0.9f, 0.9f);
+                                        poseStack.scale(1.0f, 1.0f, 1.0f);
+                                        poseStack.scale(1.0f, 1.0f, 1.0f);
                                         poseStack.translate(-0.2f, 0.126f, 0.2f);
                                         poseStack.mulPose(Axis.XP.rotation(-1.7845992f));
                                         poseStack.mulPose(Axis.YP.rotation(i * 15.0f * 3.1415927f / 180.0f));

@@ -43,8 +43,71 @@ public class TargetHUD {
             return renderRise(graphics, living, x, y);
         } else if ("Exhibition".equals(style)) {
             return renderExhibitionStyle(graphics, living, x, y);
+        } else if ("Capsule".equals(style)) {
+            return renderCapsuleStyle(graphics, living, x, y);
         }
         return null;
+    }
+
+    private static Vector4f renderCapsuleStyle(GuiGraphics graphics, LivingEntity living, float x, float y) {
+        String targetName = living.getName().getString();
+        String hpText = "HP: " + Math.round(living.getHealth()) + (living.getAbsorptionAmount() > 0.0F ? "+" + Math.round(living.getAbsorptionAmount()) : "");
+
+        float titleW = Fonts.harmony.getWidth(targetName, 0.35F);
+        float hpW = Fonts.harmony.getWidth(hpText, 0.30F);
+        float contentW = Math.max(titleW, hpW);
+
+        float paddingH = 10.0F; // left/right padding similar to CapsuleNotification
+        float paddingV = 10.0F; // top padding
+        float hudWidth = Math.max(180.0F, contentW + paddingH * 2.0F);
+        float hudHeight = 50.0F; // match CapsuleNotification height
+
+        // Capsule风格：不渲染任何黑色背景，仅在shader阶段由Aura渲染blur蒙版。
+        // 这里只渲染文本与细节条。
+
+        float nameX = x + paddingH;
+        float nameY = y + paddingV;
+        Fonts.harmony.render(graphics.pose(), targetName, (double) nameX, (double) nameY, Color.WHITE, true, 0.35F);
+
+        float hpX = x + paddingH;
+        float hpY = nameY + (float) Fonts.harmony.getHeight(true, 0.35F) + 4.0F;
+        Fonts.harmony.render(graphics.pose(), hpText, (double) hpX, (double) hpY, new Color(220, 220, 220), true, 0.30F);
+
+        // 细圆角生命条（缩短一些，圆角填充，低血量变色且使用浅色调）
+        float barWidthBase = hudWidth - paddingH * 2.0F;
+        float barWidth = Math.max(60.0F, barWidthBase - 20.0F); // 比原来略短
+        float barHeight = 5.0F;
+        float barX = x + paddingH;
+        float barY = y + hudHeight - paddingV - barHeight;
+
+        float cornerRadius = 4.0F;
+        RenderUtils.drawRoundedRect(graphics.pose(), barX, barY, barWidth, barHeight, cornerRadius, 0x80FFFFFF);
+        float ratio = Math.min(1.0F, Math.max(0.0F, living.getHealth() / Math.max(1.0F, living.getMaxHealth())));
+        float fillW = barWidth * ratio;
+        if (fillW > 0) {
+            // 颜色：>1/2 淡绿色；<=1/2 橙黄色；<=1/3 浅红色
+            int fillColor;
+            if (ratio <= (1.0F / 3.0F)) {
+                fillColor = 0xFFFF9999; // 浅红
+            } else if (ratio <= 0.5F) {
+                fillColor = 0xFFFFD28C; // 橘黄（浅色）
+            } else {
+                fillColor = 0xFFB6F2B6; // 淡绿
+            }
+
+            float foregroundRadius = Math.min(cornerRadius, fillW / 2.0F);
+            RenderUtils.drawRoundedRect(
+                    graphics.pose(),
+                    barX,
+                    barY,
+                    fillW,
+                    barHeight,
+                    foregroundRadius,
+                    fillColor
+            );
+        }
+
+        return new Vector4f(x, y, hudWidth, hudHeight);
     }
 
     private static Vector4f renderNavenStyle(GuiGraphics graphics, LivingEntity living, float x, float y) {

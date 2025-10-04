@@ -11,7 +11,7 @@ import java.awt.Color;
 public class NewNotification extends Notification {
     private static final int BACKGROUND_COLOR = new Color(21, 22, 25, 220).getRGB();
     private static final int PROGRESS_BAR_COLOR = new Color(50, 100, 255).getRGB();
-    private static final float CORNER_RADIUS = 6.0F; // 适中的圆角半径
+    private static final float CORNER_RADIUS = 4.0F; // 略小的圆角半径
 
     // --- [修改] 使用固定宽度和独立的边距常量 ---
 
@@ -32,7 +32,8 @@ public class NewNotification extends Notification {
 
     @Override
     public void renderShader(PoseStack stack, float x, float y) {
-        RenderUtils.fill(stack, x, y, x + this.getWidth(), y + this.getHeight(), BACKGROUND_COLOR);
+        // 使用圆角矩形渲染 shader 效果
+        RenderUtils.drawRoundedRect(stack, x, y, this.getWidth(), this.getHeight(), CORNER_RADIUS, BACKGROUND_COLOR);
     }
 
     @Override
@@ -44,7 +45,8 @@ public class NewNotification extends Notification {
         GuiGraphics guiGraphics = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
         guiGraphics.pose().last().pose().mul(stack.last().pose());
 
-        RenderUtils.fill(stack, x, y, x + this.getWidth(), y + this.getHeight(), BACKGROUND_COLOR);
+        // 绘制圆角背景
+        RenderUtils.drawRoundedRect(stack, x, y, this.getWidth(), this.getHeight(), CORNER_RADIUS, BACKGROUND_COLOR);
 
         // 使用 LEFT_PADDING 和 VERTICAL_PADDING 来定位文字
         float textX = x + LEFT_PADDING;
@@ -53,10 +55,22 @@ public class NewNotification extends Notification {
         Fonts.harmony.render(guiGraphics.pose(), this.title, textX, textY, Color.WHITE, true, 0.35f);
         Fonts.harmony.render(guiGraphics.pose(), "Module " + this.getMessage(), textX, textY + Fonts.harmony.getHeight(true, 0.35f) + 4, new Color(180, 180, 180), true, 0.3f);
 
+        // 绘制进度条（适配圆角背景）
         float lifeTime = (float)(System.currentTimeMillis() - this.getCreateTime());
         float progress = Math.min(lifeTime / (float)this.getMaxAge(), 1.0F);
-        float progressBarWidth = this.getWidth() * progress;
-        RenderUtils.fill(stack, x, y + this.getHeight() - PROGRESS_BAR_HEIGHT, x + progressBarWidth, y + this.getHeight(), PROGRESS_BAR_COLOR);
+
+        // 让进度条与圆角背景协调：
+        // 1) 水平内缩 CORNER_RADIUS，避免与底部圆角重叠
+        // 2) 使用圆角进度条（半径为高度的一半）
+        float insetX = x + CORNER_RADIUS;
+        float usableWidth = Math.max(0.0F, this.getWidth() - CORNER_RADIUS * 2.0F);
+        float progressBarWidth = usableWidth * progress;
+
+        if (progressBarWidth > 0.0F) {
+            float progressY = y + this.getHeight() - PROGRESS_BAR_HEIGHT;
+            float progressRadius = PROGRESS_BAR_HEIGHT / 2.0F;
+            RenderUtils.drawRoundedRect(stack, insetX, progressY, progressBarWidth, PROGRESS_BAR_HEIGHT, progressRadius, PROGRESS_BAR_COLOR);
+        }
     }
 
     @Override

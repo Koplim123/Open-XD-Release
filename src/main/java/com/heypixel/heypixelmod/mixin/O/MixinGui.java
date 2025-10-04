@@ -6,6 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRenderScoreboard;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventSetTitle;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.NoRender;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Scoreboard;
+import com.heypixel.heypixelmod.obsoverlay.ui.BetterHotBar;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
@@ -50,8 +51,11 @@ public void hookScoreboardHead(GuiGraphics pPoseStack, Objective pObjective, Cal
    pPoseStack.pose().pushPose();
    Scoreboard module = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
    if (module.isEnabled()) {
-      pPoseStack.pose().translate(0.0F, module.down.getCurrentValue(), 0.0F);
       module.clearScoreboardData();
+      // 使用 Down 偏移
+      float xOffset = module.getXOffset();
+      float yOffset = module.getYOffset();
+      pPoseStack.pose().translate(xOffset, yOffset, 0.0F);
    }
 }
 
@@ -156,20 +160,33 @@ public void hookRenderEffects(GuiGraphics pPoseStack, CallbackInfo ci) {
 public void hookScoreboardFill(GuiGraphics instance, int pX1, int pY1, int pX2, int pY2, int pColor) {
    Scoreboard module = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
    if (module.isEnabled()) {
-      // 保存 scoreboard 的边界信息
-      float x = Math.min(pX1, pX2);
-      float y = Math.min(pY1, pY2);
-      float width = Math.abs(pX2 - pX1);
-      float height = Math.abs(pY2 - pY1);
-      module.setScoreboardBounds(x, y, width, height, pColor, pColor);
+      // 累积 scoreboard 的边界信息，而不是覆盖
+      module.addScoreboardBounds(pX1, pY1, pX2, pY2, pColor);
       
-      // 如果启用圆角，则渲染圆角背景并跳过原版渲染
+      // 在第一次 fill 后尝试渲染圆角背景（只会渲染一次）
+      module.renderBackgroundIfNeeded(instance.pose());
+      
+      // 如果启用圆角，则跳过原版渲染
       if (module.shouldRenderRoundedBackground()) {
-         module.renderRoundedBackground(instance.pose());
          return;
       }
    }
    // 继续正常渲染直角背景
    instance.fill(pX1, pY1, pX2, pY2, pColor);
+}
+
+// 拦截hotbar渲染，使用自定义的BetterHotBar渲染
+@Inject(
+   method = {"renderHotbar"},
+   at = {@At("HEAD")},
+   cancellable = true
+)
+public void hookRenderHotbar(float pPartialTick, GuiGraphics pGuiGraphics, CallbackInfo ci) {
+   if (BetterHotBar.shouldRenderCustomHotbar()) {
+      // 使用自定义hotbar渲染
+      BetterHotBar.renderCustomHotbar(pGuiGraphics, pPartialTick);
+      // 取消原版hotbar渲染
+      ci.cancel();
+   }
 }
 }

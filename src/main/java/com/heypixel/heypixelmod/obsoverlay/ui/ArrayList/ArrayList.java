@@ -28,6 +28,14 @@ public class ArrayList {
     private static final java.util.ArrayList<Vector4f> blurMatrices = new java.util.ArrayList<>();
     public static final int backgroundColor = new Color(0, 0, 0, 40).getRGB();
 
+    // Caches to avoid per-frame recomputation
+    private static final java.util.Map<Module, Float> widthCache = new java.util.HashMap<>();
+    private static final java.util.Map<Module, String> nameCache = new java.util.HashMap<>();
+    private static float cachedArrayListSize = -1.0F;
+    private static boolean cachedPrettyName = false;
+    private static boolean cachedHideRender = false;
+    private static float cachedMaxWidth = 0.0F;
+
 
     private static String getModuleDisplayName(Module module, boolean pretty) {
         String name = pretty ? module.getPrettyName() : module.getName();
@@ -67,32 +75,43 @@ public class ArrayList {
         e.getStack().pushPose();
         Minecraft mc = Minecraft.getInstance();
         ModuleManager moduleManager = Naven.getInstance().getModuleManager();
-        if (Module.update || renderModules == null) {
+
+        boolean needRebuild = Module.update
+                || renderModules == null
+                || cachedArrayListSize != arrayListSize
+                || cachedPrettyName != prettyModuleName
+                || cachedHideRender != hideRenderModules;
+
+        if (needRebuild) {
             renderModules = new java.util.ArrayList<>(moduleManager.getModules());
             if (hideRenderModules) {
                 renderModules.removeIf(modulex -> modulex.getCategory() == Category.RENDER);
             }
 
-            renderModules.sort((o1, o2) -> {
-                float o1Width = font.getWidth(getModuleDisplayName(o1, prettyModuleName), (double)arrayListSize);
-                float o2Width = font.getWidth(getModuleDisplayName(o2, prettyModuleName), (double)arrayListSize);
-                return Float.compare(o2Width, o1Width);
-            });
-            Module.update = false; // Reset update flag
-        }
-
-        // 计算最大可能的宽度（包括所有模块，无论是否启用）
-        float maxWidth = 0.0F;
-        for (Module module : renderModules) {
-            float moduleWidth = font.getWidth(getModuleDisplayName(module, prettyModuleName), (double)arrayListSize);
-            if (moduleWidth > maxWidth) {
-                maxWidth = moduleWidth;
+            // Rebuild name and width caches and compute max width once
+            widthCache.clear();
+            nameCache.clear();
+            cachedMaxWidth = 0.0F;
+            for (Module m : renderModules) {
+                String display = getModuleDisplayName(m, prettyModuleName);
+                nameCache.put(m, display);
+                float w = font.getWidth(display, (double)arrayListSize);
+                widthCache.put(m, w);
+                if (w > cachedMaxWidth) cachedMaxWidth = w;
             }
+
+            // Sort by cached width descending
+            renderModules.sort((o1, o2) -> Float.compare(widthCache.getOrDefault(o2, 0.0F), widthCache.getOrDefault(o1, 0.0F)));
+
+            // Update cache flags
+            cachedArrayListSize = arrayListSize;
+            cachedPrettyName = prettyModuleName;
+            cachedHideRender = hideRenderModules;
+            Module.update = false;
         }
 
-        if (maxWidth < 50.0F) {
-            maxWidth = 100.0F;
-        }
+        float maxWidth = cachedMaxWidth;
+        if (maxWidth < 50.0F) maxWidth = 100.0F;
 
         com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement arrayListElement =
                 com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("arraylist");
@@ -118,6 +137,10 @@ public class ArrayList {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
 
+        // Precompute rainbow factors to avoid repeated math per module
+        final int rainbowPeriodMs = (int)((21.0F - rainbowSpeed) * 1000.0F);
+        final float rainbowOffsetMul = rainbowOffset;
+
         for (Module module : renderModules) {
             SmoothAnimationTimer animation = module.getAnimation();
             if (module.isEnabled()) {
@@ -128,8 +151,15 @@ public class ArrayList {
 
             animation.update(true);
             if (animation.value > 0.0F) {
-                String displayName = getModuleDisplayName(module, prettyModuleName);
-                float stringWidth = font.getWidth(displayName, (double)arrayListSize);
+                // Use cached display name and width to avoid per-frame computation
+                String displayName = nameCache.get(module);
+                if (displayName == null) {
+                    displayName = getModuleDisplayName(module, prettyModuleName);
+                    nameCache.put(module, displayName);
+                }
+                Float cachedWidth = widthCache.get(module);
+                float stringWidth = cachedWidth != null ? cachedWidth : font.getWidth(displayName, (double)arrayListSize);
+                if (cachedWidth == null) widthCache.put(module, stringWidth);
                 float left = -stringWidth * (1.0F - animation.value / 100.0F);
                 float right = maxWidth - stringWidth * (animation.value / 100.0F);
                 float innerX = "Left".equals(arrayListDirection) ? left : right;
@@ -155,11 +185,12 @@ public class ArrayList {
 
                 // 步骤 2: 绘制模块名称文本
                 int color = -1; // 默认白色
+                int rainbowColor = color;
                 if (rainbow) {
-                    // 如果彩虹效果开启，文本也使用彩虹色
-                    color = RenderUtils.getRainbowOpaque(
-                            (int)(-height * rainbowOffset), 1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
-                    );
+                    // sample at the module's Y to keep color coherent across text and bar
+                    float moduleYBase = arrayListY + height + 1.0F;
+                    rainbowColor = RenderUtils.getRainbowOpaque((int)(-moduleYBase * rainbowOffsetMul), 1.0F, 1.0F, rainbowPeriodMs);
+                    color = rainbowColor;
                 }
 
                 float alpha = animation.value / 100.0F;
@@ -181,10 +212,8 @@ public class ArrayList {
                     float capsuleX = "Left".equals(arrayListDirection)
                             ? (moduleX - capsuleWidth - capsulePadding)
                             : (moduleX + moduleWidth + capsulePadding);
-                    int barColor = RenderUtils.getRainbowOpaque(
-                            (int)(-moduleY * rainbowOffset),
-                            1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
-                    );
+                    // reuse computed rainbowColor for the bar to avoid extra work
+                    int barColor = rainbowColor;
                     RenderUtils.fill(e.getStack(), capsuleX, moduleY, capsuleX + capsuleWidth, moduleY + moduleHeight, barColor);
                 }
 

@@ -18,6 +18,8 @@ import com.heypixel.heypixelmod.obsoverlay.values.impl.FloatValue;
 )
 public class Scoreboard extends Module {
    public BooleanValue hideScore = ValueBuilder.create(this, "Hide Red Score").setDefaultBooleanValue(true).build().getBooleanValue();
+   
+   // 恢复原来的位置调节：Down（仅Y轴向下位移）
    public FloatValue down = ValueBuilder.create(this, "Down")
       .setDefaultFloatValue(120.0F)
       .setFloatStep(1.0F)
@@ -40,25 +42,51 @@ public class Scoreboard extends Module {
       .setDefaultFloatValue(5.0F)
       .setFloatStep(0.5F)
       .setMinFloatValue(0.0F)
-      .setMaxFloatValue(15.0F)
+      .setMaxFloatValue(10.5F)
       .build()
       .getFloatValue();
    
-   private float scoreboardX = 0;
-   private float scoreboardY = 0;
-   private float scoreboardWidth = 0;
-   private float scoreboardHeight = 0;
+   private float scoreboardMinX = Float.MAX_VALUE;
+   private float scoreboardMinY = Float.MAX_VALUE;
+   private float scoreboardMaxX = Float.MIN_VALUE;
+   private float scoreboardMaxY = Float.MIN_VALUE;
    private boolean hasScoreboardData = false;
-   private int colorFrom = 0;
-   private int colorTo = 0;
+   private int backgroundColor = 0;
+   private boolean backgroundRendered = false;
    
-   public void setScoreboardBounds(float x, float y, float width, float height, int colorFrom, int colorTo) {
-      this.scoreboardX = x;
-      this.scoreboardY = y;
-      this.scoreboardWidth = width;
-      this.scoreboardHeight = height;
-      this.colorFrom = colorFrom;
-      this.colorTo = colorTo;
+   // 位置偏移：X恒为0，Y使用Down
+   public float getXOffset() {
+      return 0.0F;
+   }
+   
+   public float getYOffset() {
+      return this.down.getCurrentValue();
+   }
+   
+   // 获取 Scoreboard 的实际屏幕位置和尺寸
+   public float getScreenX() {
+      return this.scoreboardMinX + getXOffset();
+   }
+   
+   public float getScreenY() {
+      return this.scoreboardMinY + getYOffset();
+   }
+   
+   public float getWidth() {
+      return this.scoreboardMaxX - this.scoreboardMinX;
+   }
+   
+   public float getHeight() {
+      return this.scoreboardMaxY - this.scoreboardMinY;
+   }
+   
+   // 累积 scoreboard 的边界
+   public void addScoreboardBounds(float x1, float y1, float x2, float y2, int color) {
+      this.scoreboardMinX = Math.min(this.scoreboardMinX, Math.min(x1, x2));
+      this.scoreboardMinY = Math.min(this.scoreboardMinY, Math.min(y1, y2));
+      this.scoreboardMaxX = Math.max(this.scoreboardMaxX, Math.max(x1, x2));
+      this.scoreboardMaxY = Math.max(this.scoreboardMaxY, Math.max(y1, y2));
+      this.backgroundColor = color;
       this.hasScoreboardData = true;
    }
    
@@ -68,6 +96,18 @@ public class Scoreboard extends Module {
    
    public void clearScoreboardData() {
       this.hasScoreboardData = false;
+      this.backgroundRendered = false;
+      this.scoreboardMinX = Float.MAX_VALUE;
+      this.scoreboardMinY = Float.MAX_VALUE;
+      this.scoreboardMaxX = Float.MIN_VALUE;
+      this.scoreboardMaxY = Float.MIN_VALUE;
+   }
+   
+   public void renderBackgroundIfNeeded(com.mojang.blaze3d.vertex.PoseStack poseStack) {
+      if (!this.backgroundRendered && this.hasScoreboardData && this.roundedCorner.getCurrentValue()) {
+         // 当启用圆角时，不渲染黑色背景，只标记为已处理，依赖 BLUR 通道绘制模糊蒙版
+         this.backgroundRendered = true;
+      }
    }
    
    @EventTarget
@@ -78,12 +118,17 @@ public class Scoreboard extends Module {
       
       if (e.getType() == EventType.BLUR && this.blur.getCurrentValue()) {
          float radius = this.roundedCorner.getCurrentValue() ? this.cornerRadius.getCurrentValue() : 0.0F;
+         float width = this.scoreboardMaxX - this.scoreboardMinX;
+         float height = this.scoreboardMaxY - this.scoreboardMinY;
+         // blur 在全局上下文中渲染，需要加上 Down 偏移
+         float xOffset = this.getXOffset();
+         float yOffset = this.getYOffset();
          RenderUtils.drawRoundedRect(
             e.getStack(), 
-            scoreboardX, 
-            scoreboardY, 
-            scoreboardWidth, 
-            scoreboardHeight, 
+            this.scoreboardMinX + xOffset, 
+            this.scoreboardMinY + yOffset, 
+            width, 
+            height, 
             radius, 
             Integer.MIN_VALUE
          );
@@ -96,15 +141,17 @@ public class Scoreboard extends Module {
       }
       
       float radius = this.cornerRadius.getCurrentValue();
+      float width = this.scoreboardMaxX - this.scoreboardMinX;
+      float height = this.scoreboardMaxY - this.scoreboardMinY;
       // 使用单一颜色绘制圆角矩形背景
       RenderUtils.drawRoundedRect(
          poseStack,
-         scoreboardX,
-         scoreboardY,
-         scoreboardWidth,
-         scoreboardHeight,
+         this.scoreboardMinX,
+         this.scoreboardMinY,
+         width,
+         height,
          radius,
-         colorFrom
+         this.backgroundColor
       );
    }
 }

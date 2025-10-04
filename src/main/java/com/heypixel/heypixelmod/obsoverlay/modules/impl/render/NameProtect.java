@@ -5,6 +5,8 @@ import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRenderTabOverlay;
 import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
+import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.StringValue;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,13 +18,25 @@ import org.apache.commons.lang3.StringUtils;
 public class NameProtect extends Module {
    public static NameProtect instance;
    private static String customHiddenName = "§dHidden§7";
+   
+   public StringValue hiddenNameValue = ValueBuilder.create(this, "Hidden Name")
+      .setDefaultStringValue("Hidden")
+      .setOnUpdate((value) -> {
+         customHiddenName = "§d" + value.getStringValue().getCurrentValue() + "§7";
+      })
+      .build()
+      .getStringValue();
 
    public NameProtect() {
       instance = this;
+      customHiddenName = "§d" + hiddenNameValue.getCurrentValue() + "§7";
    }
 
    public static void setCustomHiddenName(String name) {
       customHiddenName = "§d" + name + "§7";
+      if (instance != null && instance.hiddenNameValue != null) {
+         instance.hiddenNameValue.setCurrentValue(name);
+      }
    }
 
    public static String getHiddenName() {

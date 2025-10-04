@@ -3,6 +3,7 @@ package com.heypixel.heypixelmod.obsoverlay.ui;
 import com.heypixel.heypixelmod.obsoverlay.Naven;
 import com.heypixel.heypixelmod.obsoverlay.events.api.EventTarget;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRender2D;
+import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.Scoreboard;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.text.CustomTextRenderer;
@@ -70,6 +71,15 @@ public class HUDEditor {
         
         // 添加 "itemscounter" 元素
         hudElements.put("itemscounter", new HUDElement("itemscounter", "Items Counter", 10, 10, 100, 80));
+        
+        // 添加 "armorrender" 元素，默认在屏幕左下角
+        hudElements.put("armorrender", new HUDElement("armorrender", "Armor Render", 
+                10, screenHeight - 80, 120, 60));
+        
+        // 添加 "scoreboard" 元素
+        // 默认位置 (0, 0) 表示使用 Minecraft 原版位置（无偏移）
+        // 拖拽后的位置会被保存为相对于原版位置的偏移
+        hudElements.put("scoreboard", new HUDElement("scoreboard", "Scoreboard", 0, 0, 120, 200));
     }
 
     /**
@@ -143,7 +153,24 @@ public class HUDEditor {
     private void startDragging(double mouseX, double mouseY) {
         // 遍历所有元素，检查鼠标是否悬停在某个元素上
         for (HUDElement element : hudElements.values()) {
-            if (element.isHovering(mouseX, mouseY)) {
+            boolean isHovering = false;
+            
+            // Scoreboard 需要特殊处理：使用实际屏幕位置检测
+            if (element.name.equals("scoreboard")) {
+                Scoreboard scoreboardModule = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
+                if (scoreboardModule != null && scoreboardModule.isEnabled()) {
+                    float screenX = scoreboardModule.getScreenX();
+                    float screenY = scoreboardModule.getScreenY();
+                    float width = scoreboardModule.getWidth();
+                    float height = scoreboardModule.getHeight();
+                    isHovering = mouseX >= screenX && mouseX <= screenX + width && 
+                                mouseY >= screenY && mouseY <= screenY + height;
+                }
+            } else {
+                isHovering = element.isHovering(mouseX, mouseY);
+            }
+            
+            if (isHovering) {
                 draggingElement = element;
                 dragStartX = mouseX;
                 dragStartY = mouseY;
@@ -194,6 +221,12 @@ public class HUDEditor {
 
         // 为所有HUD元素绘制边框和名称标签
         for (HUDElement element : hudElements.values()) {
+            // Scoreboard 需要特殊处理：使用实际的屏幕位置
+            if (element.name.equals("scoreboard")) {
+                renderScoreboardBorder(event, element, mouseX, mouseY, font);
+                continue;
+            }
+            
             boolean hovering = element.isHovering(mouseX, mouseY);
             boolean shouldDrawBorder = hovering || element == draggingElement;
 
@@ -206,6 +239,46 @@ public class HUDEditor {
                 font.render(event.getStack(), element.displayName,
                         element.x + 2, element.y - 12, Color.WHITE, true, 0.3);
             }
+        }
+    }
+    
+    /**
+     * 特殊处理 Scoreboard 的边框渲染和拖拽
+     */
+    private void renderScoreboardBorder(EventRender2D event, HUDElement element, double mouseX, double mouseY, CustomTextRenderer font) {
+        Scoreboard scoreboardModule = (Scoreboard)Naven.getInstance().getModuleManager().getModule(Scoreboard.class);
+        if (scoreboardModule == null || !scoreboardModule.isEnabled()) {
+            return;
+        }
+        
+        // 获取 Scoreboard 的实际屏幕位置
+        float screenX = scoreboardModule.getScreenX();
+        float screenY = scoreboardModule.getScreenY();
+        float width = scoreboardModule.getWidth();
+        float height = scoreboardModule.getHeight();
+        
+        if (width <= 0 || height <= 0) {
+            // Scoreboard 还没有数据，不显示边框
+            return;
+        }
+        
+        // 检查鼠标是否悬停在实际位置上
+        boolean hovering = mouseX >= screenX && mouseX <= screenX + width && 
+                          mouseY >= screenY && mouseY <= screenY + height;
+        boolean shouldDrawBorder = hovering || element == draggingElement;
+        
+        if (shouldDrawBorder) {
+            int borderColor = element == draggingElement ? Color.RED.getRGB() : Color.YELLOW.getRGB();
+            
+            // 绘制边框（使用实际屏幕位置）
+            RenderUtils.fill(event.getStack(), screenX, screenY, screenX + width, screenY + 1, borderColor);
+            RenderUtils.fill(event.getStack(), screenX, screenY + height - 1, screenX + width, screenY + height, borderColor);
+            RenderUtils.fill(event.getStack(), screenX, screenY, screenX + 1, screenY + height, borderColor);
+            RenderUtils.fill(event.getStack(), screenX + width - 1, screenY, screenX + width, screenY + height, borderColor);
+            
+            // 在元素左上角绘制其名称
+            font.render(event.getStack(), element.displayName,
+                    screenX + 2, screenY - 12, Color.WHITE, true, 0.3);
         }
     }
 
