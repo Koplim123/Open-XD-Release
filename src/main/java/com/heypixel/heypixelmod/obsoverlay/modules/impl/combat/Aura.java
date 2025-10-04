@@ -181,7 +181,7 @@ public class Aura extends Module {
     public ModeValue TargetESPStyle = ValueBuilder.create(this, "TargetEsp Style")
             .setVisibility(this.targetEsp::getCurrentValue)
             .setDefaultModeIndex(0)
-            .setModes("Naven", "Nitro")
+            .setModes("Naven", "Nitro","Colorful")
             .build()
             .getModeValue();
     ModeValue priority = ValueBuilder.create(this, "Priority").setModes("Health", "Fov", "Range", "None").build().getModeValue();
