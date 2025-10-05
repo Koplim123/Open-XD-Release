@@ -81,9 +81,6 @@ public class BetterHotBar {
         poseStack.popPose();
     }
     
-    /**
-     * 
-     */
     private static void updateSlotAnimation(int selectedSlot) {
         float targetPosition = selectedSlot;
         

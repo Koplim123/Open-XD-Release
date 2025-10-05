@@ -171,22 +171,13 @@ public class NameTags extends Module {
     public void onShader(EventShader e) {
         if (e.getType() != EventType.BLUR || !this.isEnabled()) return;
         
-        // Stno 模式的模糊效果
-        if (this.style.getCurrentMode().equals("Stno")) {
-            for (StnoRenderData data : stnoEntityRenderData.values()) {
-                if (data.isValid()) {
-                    RenderUtils.drawRoundedRect(e.getStack(), data.startX, data.startY, data.totalWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), Integer.MIN_VALUE);
-                }
-            }
-        } else {
-            // 使用 drawRoundedRect 渲染模糊效果以匹配圆角
-            for (Vector4f blurMatrix : this.blurMatrices) {
-                float x = blurMatrix.x();
-                float y = blurMatrix.y();
-                float width = blurMatrix.z() - x;
-                float height = blurMatrix.w() - y;
-                RenderUtils.drawRoundedRect(e.getStack(), x, y, width, height, this.cornerRadius.getCurrentValue(), 1073741824);
-            }
+        // 统一使用 blurMatrices 渲染模糊效果
+        for (Vector4f blurMatrix : this.blurMatrices) {
+            float x = blurMatrix.x();
+            float y = blurMatrix.y();
+            float width = blurMatrix.z() - x;
+            float height = blurMatrix.w() - y;
+            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, height, this.cornerRadius.getCurrentValue(), 1073741824);
         }
     }
 
@@ -379,9 +370,10 @@ public class NameTags extends Module {
                         nameToRender += "...";
                     }
                     String nameText = "§c" + nameToRender;
-                    // 重新计算实际宽度，确保准确
-                    float nameWidth = Fonts.harmony.getWidth(nameText, (double)scale);
-                    capsules.add(new CapsuleData(nameText, nameWidth));
+                    // 重新计算实际宽度，确保不超过最大宽度
+                    float nameMeasuredWidth = Fonts.harmony.getWidth(nameText, (double)scale);
+                    float nameWidthClamped = Math.min(nameMeasuredWidth, maxNameWidth);
+                    capsules.add(new CapsuleData(nameText, nameWidthClamped));
                     
                     // 4. 距离
                     float distance = mc.player.distanceTo(living);
@@ -407,11 +399,13 @@ public class NameTags extends Module {
                         
                         this.blurMatrices.add(new Vector4f(currentX, position.y - 2.0F, capsuleEndX, (float)(position.y + height)));
                         
-                        
-                        RenderUtils.drawRoundedRect(e.getStack(), currentX, position.y - 2.0F, capsuleWidth, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
-                        
-                    
+                        // 使用模板裁剪，防止文本溢出到下一个胶囊
+                        StencilUtils.write(false);
+                        RenderUtils.drawRoundedRect(e.getStack(), currentX, position.y - 2.0F, capsuleWidth, (float)(height + 2.0F), this.cornerRadius.getCurrentValue(), -1);
+                        StencilUtils.erase(true);
+                        RenderUtils.drawRoundedRect(e.getStack(), currentX, position.y - 2.0F, capsuleWidth, (float)(height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
                         Fonts.harmony.render(e.getStack(), capsule.text, (double)(currentX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
+                        StencilUtils.dispose();
                         
                         currentX = capsuleEndX + spacing;
                     }
@@ -421,6 +415,9 @@ public class NameTags extends Module {
                         StnoRenderData data = stnoEntityRenderData.get(living);
                         if (data.isValid()) {
                             e.getStack().pushPose();
+                            
+                            // 添加整体的blur背景到blurMatrices
+                            this.blurMatrices.add(new Vector4f(data.startX, data.startY, data.startX + data.totalWidth, data.startY + data.totalHeight));
                             
                             float currentX = data.startX;
                             float startY = data.startY;

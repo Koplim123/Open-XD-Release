@@ -57,14 +57,10 @@ public class TargetHUD {
         float hpW = Fonts.harmony.getWidth(hpText, 0.30F);
         float contentW = Math.max(titleW, hpW);
 
-        float paddingH = 10.0F; // left/right padding similar to CapsuleNotification
-        float paddingV = 10.0F; // top padding
+        float paddingH = 10.0F; 
+        float paddingV = 10.0F;
         float hudWidth = Math.max(180.0F, contentW + paddingH * 2.0F);
-        float hudHeight = 50.0F; // match CapsuleNotification height
-
-        // Capsule风格：不渲染任何黑色背景，仅在shader阶段由Aura渲染blur蒙版。
-        // 这里只渲染文本与细节条。
-
+        float hudHeight = 50.0F; 
         float nameX = x + paddingH;
         float nameY = y + paddingV;
         Fonts.harmony.render(graphics.pose(), targetName, (double) nameX, (double) nameY, Color.WHITE, true, 0.35F);
@@ -72,10 +68,8 @@ public class TargetHUD {
         float hpX = x + paddingH;
         float hpY = nameY + (float) Fonts.harmony.getHeight(true, 0.35F) + 4.0F;
         Fonts.harmony.render(graphics.pose(), hpText, (double) hpX, (double) hpY, new Color(220, 220, 220), true, 0.30F);
-
-        // 细圆角生命条（缩短一些，圆角填充，低血量变色且使用浅色调）
         float barWidthBase = hudWidth - paddingH * 2.0F;
-        float barWidth = Math.max(60.0F, barWidthBase - 20.0F); // 比原来略短
+        float barWidth = Math.max(60.0F, barWidthBase - 20.0F); 
         float barHeight = 5.0F;
         float barX = x + paddingH;
         float barY = y + hudHeight - paddingV - barHeight;
@@ -85,14 +79,14 @@ public class TargetHUD {
         float ratio = Math.min(1.0F, Math.max(0.0F, living.getHealth() / Math.max(1.0F, living.getMaxHealth())));
         float fillW = barWidth * ratio;
         if (fillW > 0) {
-            // 颜色：>1/2 淡绿色；<=1/2 橙黄色；<=1/3 浅红色
+
             int fillColor;
             if (ratio <= (1.0F / 3.0F)) {
-                fillColor = 0xFFFF9999; // 浅红
+                fillColor = 0xFFFF9999; 
             } else if (ratio <= 0.5F) {
-                fillColor = 0xFFFFD28C; // 橘黄（浅色）
+                fillColor = 0xFFFFD28C; 
             } else {
-                fillColor = 0xFFB6F2B6; // 淡绿
+                fillColor = 0xFFB6F2B6; 
             }
 
             float foregroundRadius = Math.min(cornerRadius, fillW / 2.0F);
@@ -353,9 +347,9 @@ public class TargetHUD {
         float avatarX = x + padding + 3; // 调整位置以对齐大边框
         float modelSize = avatarSize - 6.0F; // 稍大的模型
         float avatarY = y + (hudHeight - modelSize) / 2.0f; // 垂直居中
-        // 绘制模型背景
+                
         RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 2, avatarX + modelSize + 2, avatarY + modelSize + 2, new Color(10, 10, 10).getRGB());
-        // 绘制模型边框 (上下更长但不移动模型)
+       
         RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 4, avatarX + modelSize + 2, avatarY - 3, new Color(50, 50, 50).getRGB()); // 上边框更长
         RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY + modelSize + 3, avatarX + modelSize + 2, avatarY + modelSize + 4, new Color(50, 60, 60).getRGB()); // 下边框更长
         RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 3, avatarX - 1, avatarY + modelSize + 3, new Color(50, 50, 50).getRGB()); // 左边框
@@ -419,11 +413,11 @@ public class TargetHUD {
     private static void drawPlayerModel(GuiGraphics graphics, LivingEntity living, float x, float y, float size) {
         com.mojang.blaze3d.vertex.PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        // 调整Y和Z坐标以确保模型可见
+       
         poseStack.translate(x + size / 2.0F, y + size / 2F + (size * 0.7f * living.getBbHeight()) / 2F, 100.0F);
         poseStack.scale(size * 0.7f, size * 0.7f, -size * 0.7f);
         poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-        // 使用固定的旋转角度以获得更好的视觉效果
+       
         poseStack.mulPose(Axis.YP.rotationDegrees(-30.0F));
         poseStack.mulPose(Axis.XP.rotationDegrees(10.0F));
 
@@ -442,8 +436,6 @@ public class TargetHUD {
         if (living instanceof Player player) {
             float itemSize = 16.0F;
             float currentX = x;
-
-            // 渲染盔甲 (从左到右: 头盔, 胸甲, 腿甲, 靴子)
             for (int i = 3; i >= 0; i--) {
                 ItemStack armorStack = player.getInventory().getArmor(i);
                 if (!armorStack.isEmpty()) {
@@ -453,14 +445,14 @@ public class TargetHUD {
                 }
             }
 
-            // 渲染主手物品
+           
             ItemStack mainHandStack = player.getMainHandItem();
             if (!mainHandStack.isEmpty()) {
                 graphics.renderItem(mainHandStack, (int) currentX, (int) y);
                 graphics.renderItemDecorations(mc.font, mainHandStack, (int) currentX, (int) y);
             }
             
-            // 渲染副手物品
+           
             ItemStack offHandStack = player.getOffhandItem();
             if (!offHandStack.isEmpty()) {
                 graphics.renderItem(offHandStack, (int) (currentX + itemSize + 2.0F), (int) y);
@@ -471,13 +463,10 @@ public class TargetHUD {
 
     private static Color getHealthColor(float healthRatio) {
         if (healthRatio > 0.6) {
-            // 绿色 (大于60%)
             return new Color(0, 255, 0);
         } else if (healthRatio > 0.3) {
-            // 黄色 (30%-60%)
             return new Color(255, 255, 0);
         } else {
-            // 红色 (低于30%)
             return new Color(255, 0, 0);
         }
     }
