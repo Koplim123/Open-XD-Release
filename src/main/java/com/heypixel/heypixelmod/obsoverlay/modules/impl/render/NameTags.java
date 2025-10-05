@@ -10,7 +10,6 @@ import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.HackerCheck;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.misc.Teams;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.Notification;
-import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationLevel;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.heypixel.heypixelmod.obsoverlay.utils.rotation.RotationUtils;
@@ -44,7 +43,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 )
 public class NameTags extends Module {
     // 添加模式值以在不同样式之间切换
-    public ModeValue style = ValueBuilder.create(this, "Style").setModes("Normal", "Capsule").setDefaultModeIndex(0).build().getModeValue();
+    public ModeValue style = ValueBuilder.create(this, "Style").setModes("Normal", "Capsule", "Stno").setDefaultModeIndex(0).build().getModeValue();
     // 添加圆角半径值
     public FloatValue cornerRadius = ValueBuilder.create(this, "Corner Radius")
             .setDefaultFloatValue(4.0F)
@@ -93,6 +92,7 @@ public class NameTags extends Module {
     private final Map<Entity, Vector2f> entityPositions = new ConcurrentHashMap<>();
     private final List<NameTags.NameTagData> sharedPositions = new CopyOnWriteArrayList<>();
     List<Vector4f> blurMatrices = new ArrayList<>();
+    private final Map<Entity, StnoRenderData> stnoEntityRenderData = new ConcurrentHashMap<>();
     private BlockPos spawnPosition;
     private Vector2f compassPosition;
     private final Map<Player, Integer> aimTicks = new ConcurrentHashMap<>();
@@ -169,13 +169,24 @@ public class NameTags extends Module {
 
     @EventTarget
     public void onShader(EventShader e) {
-        // 使用 drawRoundedRect 渲染模糊效果以匹配圆角
-        for (Vector4f blurMatrix : this.blurMatrices) {
-            float x = blurMatrix.x();
-            float y = blurMatrix.y();
-            float width = blurMatrix.z() - x;
-            float height = blurMatrix.w() - y;
-            RenderUtils.drawRoundedRect(e.getStack(), x, y, width, height, this.cornerRadius.getCurrentValue(), 1073741824);
+        if (e.getType() != EventType.BLUR || !this.isEnabled()) return;
+        
+        // Stno 模式的模糊效果
+        if (this.style.getCurrentMode().equals("Stno")) {
+            for (StnoRenderData data : stnoEntityRenderData.values()) {
+                if (data.isValid()) {
+                    RenderUtils.drawRoundedRect(e.getStack(), data.startX, data.startY, data.totalWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), Integer.MIN_VALUE);
+                }
+            }
+        } else {
+            // 使用 drawRoundedRect 渲染模糊效果以匹配圆角
+            for (Vector4f blurMatrix : this.blurMatrices) {
+                float x = blurMatrix.x();
+                float y = blurMatrix.y();
+                float width = blurMatrix.z() - x;
+                float height = blurMatrix.w() - y;
+                RenderUtils.drawRoundedRect(e.getStack(), x, y, width, height, this.cornerRadius.getCurrentValue(), 1073741824);
+            }
         }
     }
 
@@ -191,6 +202,27 @@ public class NameTags extends Module {
                         (double)this.spawnPosition.getZ() + 0.5,
                         e.getRenderPartialTicks()
                 );
+            }
+            
+            // Stno 模式的数据更新
+            if (this.style.getCurrentMode().equals("Stno")) {
+                stnoEntityRenderData.clear();
+                if (mc.level == null) return;
+                
+                for (Entity entity : mc.level.entitiesForRendering()) {
+                    if (entity instanceof Player player && entity != mc.player && !entity.isRemoved()) {
+                        double x = MathUtils.interpolate(e.getRenderPartialTicks(), entity.xo, entity.getX());
+                        double y = MathUtils.interpolate(e.getRenderPartialTicks(), entity.yo, entity.getY()) + entity.getBbHeight() + 0.5;
+                        double z = MathUtils.interpolate(e.getRenderPartialTicks(), entity.zo, entity.getZ());
+                        Vector2f projectedPos = ProjectionUtils.project(x, y, z, e.getRenderPartialTicks());
+                        
+                        if (projectedPos != null) {
+                            StnoRenderData data = new StnoRenderData(projectedPos);
+                            data.calculateDimensions(player);
+                            stnoEntityRenderData.put(entity, data);
+                        }
+                    }
+                }
             }
         } catch (Exception var3) {
         }
@@ -372,19 +404,49 @@ public class NameTags extends Module {
                         float capsuleWidth = capsule.width + 4.0F;
                         float capsuleEndX = currentX + capsuleWidth;
                         
-                        // 渲染模糊
+                        
                         this.blurMatrices.add(new Vector4f(currentX, position.y - 2.0F, capsuleEndX, (float)(position.y + height)));
                         
-                        // 渲染背景
+                        
                         RenderUtils.drawRoundedRect(e.getStack(), currentX, position.y - 2.0F, capsuleWidth, (float) (height + 2.0F), this.cornerRadius.getCurrentValue(), color1);
                         
-                        // 渲染文字
+                    
                         Fonts.harmony.render(e.getStack(), capsule.text, (double)(currentX + 2.0F), (double)(position.y - 1.0F), Color.WHITE, true, (double)scale);
                         
-                        // 移动到下一个胶囊位置
                         currentX = capsuleEndX + spacing;
                     }
                     Fonts.harmony.setAlpha(1.0F);
+                } else if (this.style.getCurrentMode().equals("Stno")) {
+                    if (stnoEntityRenderData.containsKey(living)) {
+                        StnoRenderData data = stnoEntityRenderData.get(living);
+                        if (data.isValid()) {
+                            e.getStack().pushPose();
+                            
+                            float currentX = data.startX;
+                            float startY = data.startY;
+                            float scale = this.scale.getCurrentValue();
+                            Color backgroundColor = new Color(20, 20, 20, 120);
+                            
+                            if (!data.prefix.isEmpty()) {
+                                RenderUtils.drawRoundedRect(e.getStack(), currentX, startY, data.prefixWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), backgroundColor.getRGB());
+                                Fonts.harmony.render(e.getStack(), data.prefix, currentX + 6.0F, startY + 2.5F, data.prefixColor, true, scale);
+                                currentX += data.prefixWidth + 2.0F;
+                            }
+                            
+                            RenderUtils.drawRoundedRect(e.getStack(), currentX, startY, data.healthWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), backgroundColor.getRGB());
+                            Fonts.harmony.render(e.getStack(), data.healthText, currentX + 6.0F, startY + 2.5F, data.healthColor, true, scale);
+                            currentX += data.healthWidth + 2.0F;
+                            
+                            RenderUtils.drawRoundedRect(e.getStack(), currentX, startY, data.nameWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), backgroundColor.getRGB());
+                            Fonts.harmony.render(e.getStack(), data.nameText, currentX + 6.0F, startY + 2.5F, Color.WHITE, true, scale);
+                            currentX += data.nameWidth + 2.0F;
+            
+                            RenderUtils.drawRoundedRect(e.getStack(), currentX, startY, data.pingWidth, data.totalHeight, this.cornerRadius.getCurrentValue(), backgroundColor.getRGB());
+                            Fonts.harmony.render(e.getStack(), data.pingText, currentX + 6.0F, startY + 2.5F, data.pingColor, true, scale);
+                            
+                            e.getStack().popPose();
+                        }
+                    }
                 }
 
                 e.getStack().popPose();
@@ -474,6 +536,94 @@ public class NameTags extends Module {
             this.text = text;
             this.width = width;
         }
+    }
+    
+    private class StnoRenderData {
+        private static final float PADDING = 6.0F;
+        private static final float VERTICAL_PADDING = 2.5F;
+        private static final float GAP = 2.0F;
+        
+        private final Vector2f projectedPos;
+        float totalWidth = 0, totalHeight = 0;
+        float startX = 0, startY = 0;
+        float prefixWidth = 0, healthWidth = 0, nameWidth = 0, pingWidth = 0;
+        String prefix, healthText, nameText, pingText;
+        Color healthColor, pingColor, prefixColor;
+        
+        StnoRenderData(Vector2f projectedPos) {
+            this.projectedPos = projectedPos;
+        }
+        
+        void calculateDimensions(Player player) {
+            this.prefix = getStnoPrefix(player);
+            switch (this.prefix) {
+                case "Hacker": this.prefixColor = Color.RED; break;
+                case "Team": this.prefixColor = Color.GREEN; break;
+                case "Friend": this.prefixColor = new Color(0, 255, 255); break;
+                default: this.prefixColor = Color.WHITE; break;
+            }
+            
+            float health = player.getHealth() + player.getAbsorptionAmount();
+            this.healthText = String.format("%.1f", health);
+            this.healthColor = getStnoHealthColor(player.getHealth());
+            
+            net.minecraft.client.multiplayer.PlayerInfo playerInfo = null;
+            if (mc.getConnection() != null) {
+                playerInfo = mc.getConnection().getPlayerInfo(player.getUUID());
+            }
+            int ping = 0;
+            
+            if (playerInfo != null) {
+                this.nameText = playerInfo.getTabListDisplayName() != null ? playerInfo.getTabListDisplayName().getString() : playerInfo.getProfile().getName();
+                ping = playerInfo.getLatency();
+            } else {
+                this.nameText = player.getName().getString();
+            }
+            this.pingText = ping + "ms";
+            this.pingColor = getStnoPingColor(ping);
+            
+            float scaleValue = scale.getCurrentValue();
+            float fontHeight = (float) Fonts.harmony.getHeight(true, scaleValue);
+            this.totalHeight = fontHeight + VERTICAL_PADDING * 2;
+            
+            this.prefixWidth = prefix.isEmpty() ? 0 : (Fonts.harmony.getWidth(prefix, scaleValue) + PADDING * 2);
+            this.healthWidth = Fonts.harmony.getWidth(healthText, scaleValue) + PADDING * 2;
+            this.nameWidth = Fonts.harmony.getWidth(nameText, scaleValue) + PADDING * 2;
+            this.pingWidth = Fonts.harmony.getWidth(pingText, scaleValue) + PADDING * 2;
+            
+            this.totalWidth = healthWidth + nameWidth + pingWidth + (GAP * 2);
+            if (!prefix.isEmpty()) {
+                this.totalWidth += prefixWidth + GAP;
+            }
+            
+            this.startX = projectedPos.x - totalWidth / 2.0f;
+            this.startY = projectedPos.y;
+        }
+        
+        boolean isValid() {
+            return this.projectedPos != null && this.totalWidth > 0;
+        }
+    }
+    
+    private String getStnoPrefix(Player player) {
+        Module hackerCheckModule = Naven.getInstance().getModuleManager().getModule(HackerCheck.class);
+        if (hackerCheckModule != null && hackerCheckModule.isEnabled() && HackerCheck.isHacker(player)) return "Hacker";
+        if (Teams.isSameTeam(player)) return "Team";
+        if (FriendManager.isFriend(player)) return "Friend";
+        return "";
+    }
+    
+    private Color getStnoHealthColor(float health) {
+        if (health >= 16) return new Color(0, 255, 0);
+        if (health >= 6) return new Color(255, 255, 0);
+        return new Color(255, 0, 0);
+    }
+    
+    private Color getStnoPingColor(int ping) {
+        if (ping <= 70) return new Color(0, 255, 0);
+        if (ping <= 150) return new Color(255, 255, 0);
+        if (ping <= 250) return new Color(255, 165, 0);
+        return new Color(255, 0, 0);
     }
 
     private static class NameTagData {

@@ -190,12 +190,24 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
             .build()
             .getFloatValue();
-    // 添加一个新的旋转速度控制值，范围为10-360度/秒
     FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
             .setDefaultFloatValue(180.0F)
             .setMaxFloatValue(360.0F)
             .setMinFloatValue(10.0F)
             .setFloatStep(10.0F)
+            .build()
+            .getFloatValue();
+    public BooleanValue stepRotation = ValueBuilder.create(this, "Step Rotation")
+            .setDefaultBooleanValue(false)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
+            .build()
+            .getBooleanValue();
+    FloatValue step = ValueBuilder.create(this, "Step")
+            .setDefaultFloatValue(45.0F)
+            .setMaxFloatValue(180.0F)
+            .setMinFloatValue(10.0F)
+            .setFloatStep(5.0F)
+            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.stepRotation.getCurrentValue())
             .build()
             .getFloatValue();
     public BooleanValue acceleration = ValueBuilder.create(this, "Acceleration")
@@ -210,7 +222,6 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.acceleration.getCurrentValue())
             .build()
             .getFloatValue();
-    // 添加加速强度设置
     FloatValue accelerationStrength = ValueBuilder.create(this, "Acceleration Strength")
             .setDefaultFloatValue(10.0F)
             .setMaxFloatValue(50.0F)
@@ -223,7 +234,6 @@ public class Scaffold extends Module {
             .setDefaultBooleanValue(true)
             .build()
             .getBooleanValue();
-    // 优化OffGround相关逻辑
     FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
             .setDefaultFloatValue(5.0F)
             .setMaxFloatValue(10.0F)
@@ -256,7 +266,7 @@ public class Scaffold extends Module {
     private float blockCounterWidth;
     private float blockCounterHeight;
     private long lastPlaceTime = 0;
-    private int initialBlockCount = 0; // 记录开启Scaffold时的方块数量
+    private int initialBlockCount = 0; 
 
     /**
      * 获取玩家背包中所有方块的数量
@@ -345,8 +355,6 @@ public class Scaffold extends Module {
             this.fallDetectionTicks = 0;
             this.lastVelocity = mc.player.getDeltaMovement();
             this.lastAcceleration = Vec3.ZERO;
-
-            // 记录初始方块数量
             this.initialBlockCount = getBlockCount();
         }
     }
@@ -412,13 +420,23 @@ public class Scaffold extends Module {
             this.getBlockPos();
             if (this.pos != null) {
                 this.correctRotation = this.getPlayerYawRotation();
-                if (this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue()) {
-                    this.rots.setX(this.correctRotation.getX());
-                } else if (this.mode.isCurrentMode("Normal")) {
-                    // 使用新的旋转速度控制
-                    this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), this.correctRotation.getX()));
+                if (this.mode.isCurrentMode("Normal")) {
+                    if (this.stepRotation.getCurrentValue()) {
+                        float targetYaw = this.correctRotation.getX();
+                        float currentYaw = this.rots.getX();
+                        float angleDifference = RotationUtils.getAngleDifference(targetYaw, currentYaw);
+                        float stepSize = this.step.getCurrentValue();
+                        if (Math.abs(angleDifference) > stepSize) {
+                            this.rots.setX(currentYaw + stepSize * Math.signum(angleDifference));
+                        } else {
+                            this.rots.setX(targetYaw);
+                        }
+                    } else if (this.snap.getCurrentValue()) {
+                        this.rots.setX(this.correctRotation.getX());
+                    } else {
+                        this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), this.correctRotation.getX()));
+                    }
                 } else {
-                    // 在Telly Bridge模式下也使用可配置的旋转速度
                     this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), this.correctRotation.getX()));
                 }
 

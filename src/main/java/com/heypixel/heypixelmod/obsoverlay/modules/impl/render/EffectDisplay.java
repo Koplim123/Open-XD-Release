@@ -8,6 +8,7 @@ import com.heypixel.heypixelmod.obsoverlay.modules.Category;
 import com.heypixel.heypixelmod.obsoverlay.modules.Module;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleInfo;
 import com.heypixel.heypixelmod.obsoverlay.values.ValueBuilder;
+import com.heypixel.heypixelmod.obsoverlay.values.impl.BooleanValue;
 import com.heypixel.heypixelmod.obsoverlay.values.impl.ModeValue;
 import com.heypixel.heypixelmod.obsoverlay.utils.RenderUtils;
 import com.heypixel.heypixelmod.obsoverlay.utils.SmoothAnimationTimer;
@@ -44,7 +45,6 @@ public class EffectDisplay extends Module {
    private final List<Vector4f> blurMatrices = new ArrayList<>();
    private static final Pattern CJK_CHAR_PATTERN = Pattern.compile("[\\u4e00-\\u9fa5]");
    
-   // Capsule Mode的总体背景bounds
    private float totalMinX = Float.MAX_VALUE;
    private float totalMinY = Float.MAX_VALUE;
    private float totalMaxX = Float.MIN_VALUE;
@@ -55,6 +55,12 @@ public class EffectDisplay extends Module {
            .setDefaultModeIndex(0)
            .build()
            .getModeValue();
+   
+   private final BooleanValue renderBackground = ValueBuilder.create(this, "RenderBackGround")
+           .setDefaultBooleanValue(true)
+           .setVisibility(() -> this.displayMode.getCurrentMode().equals("Capsule"))
+           .build()
+           .getBooleanValue();
 
    private String getDisplayName(MobEffect effect, MobEffectInfo info) {
       String displayName = I18n.get(effect.getDescriptionId());
@@ -163,7 +169,8 @@ public class EffectDisplay extends Module {
       
       // 在Capsule Mode时添加总体背景blur
       if (displayMode.getCurrentMode().equals("Capsule") && !this.infos.isEmpty() && 
-          this.totalMinX != Float.MAX_VALUE && this.totalMaxX != Float.MIN_VALUE) {
+          this.totalMinX != Float.MAX_VALUE && this.totalMaxX != Float.MIN_VALUE && 
+          this.renderBackground.getCurrentValue()) {
          float padding = 8.0F;
          float backgroundX = this.totalMinX - padding;
          float backgroundY = this.totalMinY - padding;

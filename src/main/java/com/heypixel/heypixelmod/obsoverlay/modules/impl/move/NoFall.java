@@ -25,6 +25,7 @@ public class NoFall extends Module {
     public static boolean isSpoofing = false;
     private boolean sentSpoofPacket = false;
     public static boolean forceJump = false;
+    private int delayTicks = 0;
 
     public NoFall() {
     }
@@ -42,6 +43,7 @@ public class NoFall extends Module {
         isSpoofing = false;
         this.sentSpoofPacket = false;
         forceJump = false;
+        this.delayTicks = 0;
     }
 
     private boolean shouldBlockJump() {
@@ -64,6 +66,10 @@ public class NoFall extends Module {
                 return;
             }
 
+            if (delayTicks > 0) {
+                delayTicks--;
+            }
+
             if (this.shouldBlockJump()) {
                 mc.options.keyJump.setDown(false);
             }
@@ -84,7 +90,6 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onLivingUpdate(EventUpdate event) {
-        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
         if (shouldSkipNoFall()) {
             return;
         }
@@ -96,21 +101,18 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onStrafe(EventStrafe event) {
-        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
         if (shouldSkipNoFall()) {
             return;
         }
         
         if (mc.player.onGround() && forceJump) {
-            // 修正 #2：使用 1.20.1 的正确跳跃方法
-            mc.player.jumpFromGround();
             forceJump = false;
+            delayTicks = 2;
         }
     }
 
     @EventTarget
     public void onMoveInput(EventMoveInput event) {
-        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
         if (shouldSkipNoFall()) {
             return;
         }
@@ -123,7 +125,6 @@ public class NoFall extends Module {
     @EventTarget
     public void onMotion(EventMotion event) {
         if (event.getType() != EventType.POST) {
-            // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
             if (shouldSkipNoFall()) {
                 return;
             }
@@ -146,13 +147,12 @@ public class NoFall extends Module {
 
     @EventTarget
     public void onPacket(EventPacket event) {
-        // 如果启用了液体检查且玩家在液体中，则跳过NoFall逻辑
         if (shouldSkipNoFall()) {
             return;
         }
         
         if (event.getType() == EventType.SEND) {
-            if (isSpoofing && this.sentSpoofPacket && !this.receivedServerLagback && event.getPacket() instanceof ServerboundMovePlayerPacket) {
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket && ((isSpoofing && this.sentSpoofPacket && !this.receivedServerLagback) || delayTicks > 0)) {
                 event.setCancelled(true);
             }
         } else if (isSpoofing && event.getPacket() instanceof ClientboundPlayerPositionPacket) {

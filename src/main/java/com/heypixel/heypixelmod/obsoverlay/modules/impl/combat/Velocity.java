@@ -20,14 +20,14 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 
 @ModuleInfo(
-        name = "NoXZ",
+        name = "Velocity",
         description = "Reduces Knock Back.",
         category = Category.COMBAT
 )
-public class NoXZ extends Module {
+public class Velocity extends Module {
     private final ModeValue mode = ValueBuilder.create(this, "Mode")
             .setDefaultModeIndex(0)
-            .setModes("NoXZ")
+            .setModes("NoXZ", "JumpReset")
             .build()
             .getModeValue();
 
@@ -38,12 +38,36 @@ public class NoXZ extends Module {
             .build()
             .getModeValue();
 
+    private final BooleanValue randomAttackCount = ValueBuilder.create(this, "Random AttackCount")
+            .setDefaultBooleanValue(false)
+            .setVisibility(() -> mode.isCurrentMode("NoXZ"))
+            .build()
+            .getBooleanValue();
+
+    private final FloatValue maxAttacks = ValueBuilder.create(this, "Max AttackCount")
+            .setDefaultFloatValue(5.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setVisibility(() -> mode.isCurrentMode("NoXZ") && randomAttackCount.getCurrentValue())
+            .build()
+            .getFloatValue();
+
+    private final FloatValue minAttacks = ValueBuilder.create(this, "Min AttackCount")
+            .setDefaultFloatValue(3.0F)
+            .setMinFloatValue(1.0F)
+            .setMaxFloatValue(10.0F)
+            .setFloatStep(1.0F)
+            .setVisibility(() -> mode.isCurrentMode("NoXZ") && randomAttackCount.getCurrentValue())
+            .build()
+            .getFloatValue();
+
     private final FloatValue attacks = ValueBuilder.create(this, "Attack Count")
             .setDefaultFloatValue(3.0F)
             .setMinFloatValue(1.0F)
             .setMaxFloatValue(5.0F)
             .setFloatStep(1.0F)
-            .setVisibility(() -> mode.isCurrentMode("NoXZ"))
+            .setVisibility(() -> mode.isCurrentMode("NoXZ") && !randomAttackCount.getCurrentValue())
               .build()
               .getFloatValue();
 
@@ -98,7 +122,7 @@ public class NoXZ extends Module {
             if (this.mode.isCurrentMode("NoXZ")) {
                 if (this.receiveDamage) {
                     this.receiveDamage = false;
-                    this.attackQueue = (int)this.attacks.getCurrentValue();
+                    this.attackQueue = getAttackCount();
 
                     if (this.Logging.getCurrentValue()) {
                         ChatUtils.addChatMessage("NoXZ Queue set: " + this.attackQueue + " attacks");
@@ -116,6 +140,13 @@ public class NoXZ extends Module {
         if (mc.player.hurtTime == 0) {
             this.velocityInput = false;
             this.currentKnockbackSpeed = 0.0;
+        }
+
+        if (this.mode.isCurrentMode("JumpReset")) {
+            if (this.velocityInput && mc.player.onGround()) {
+                mc.player.setDeltaMovement(mc.player.getDeltaMovement().x, 0.42, mc.player.getDeltaMovement().z);
+                this.velocityInput = false;
+            }
         }
 
 
@@ -147,4 +178,21 @@ public class NoXZ extends Module {
     }
 
 
+    private int getAttackCount() {
+        if (randomAttackCount.getCurrentValue()) {
+            int min = (int) minAttacks.getCurrentValue();
+            int max = (int) maxAttacks.getCurrentValue();
+            if (min > max) {
+                int temp = min;
+                min = max;
+                max = temp;
+            }
+            if (min == max) {
+                return min;
+            }
+            return new java.util.Random().nextInt(max - min + 1) + min;
+        } else {
+            return (int) attacks.getCurrentValue();
+        }
+    }
 }

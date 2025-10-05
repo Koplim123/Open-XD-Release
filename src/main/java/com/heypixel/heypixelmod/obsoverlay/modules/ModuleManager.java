@@ -53,7 +53,7 @@ public class ModuleManager {
          new ClickGUIModule(),
          new Teams(),
          new Glow(),
-         new NoXZ(),
+         new Velocity(),
          new AutoPlay(),
          new ItemTracker(),
          new AutoMLG(),
