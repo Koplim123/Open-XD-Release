@@ -156,30 +156,6 @@ public class Scaffold extends Module {
             .setFloatStep(0.1F)
             .build()
             .getFloatValue();
-    FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
-            .setDefaultFloatValue(5.0F)
-            .setMaxFloatValue(10.0F)
-            .setMinFloatValue(0.0F)
-            .setFloatStep(0.15F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.randomOffGroundTicks.getCurrentValue())
-            .build()
-            .getFloatValue();
-    FloatValue minOffGroundTicks = ValueBuilder.create(this, "Min OffGround Ticks")
-            .setDefaultFloatValue(0.0F)
-            .setMaxFloatValue(10.0F)
-            .setMinFloatValue(0.0F)
-            .setFloatStep(0.15F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.randomOffGroundTicks.getCurrentValue())
-            .build()
-            .getFloatValue();
-    FloatValue offGroundTicksValue = ValueBuilder.create(this, "OffGround Ticks")
-            .setDefaultFloatValue(2.5F)
-            .setMaxFloatValue(5.0F)
-            .setMinFloatValue(0.1F)
-            .setFloatStep(0.15F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && !this.randomOffGroundTicks.getCurrentValue())
-            .build()
-            .getFloatValue();
     public BooleanValue randomOffGroundTicks = ValueBuilder.create(this, "Random OffGround Ticks")
             .setDefaultBooleanValue(false)
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
@@ -214,9 +190,16 @@ public class Scaffold extends Module {
             .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
             .build()
             .getFloatValue();
+    // 添加一个新的旋转速度控制值，范围为10-360度/秒
+    FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
+            .setDefaultFloatValue(180.0F)
+            .setMaxFloatValue(360.0F)
+            .setMinFloatValue(10.0F)
+            .setFloatStep(10.0F)
+            .build()
+            .getFloatValue();
     public BooleanValue acceleration = ValueBuilder.create(this, "Acceleration")
             .setDefaultBooleanValue(false)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
             .build()
             .getBooleanValue();
     FloatValue probability = ValueBuilder.create(this, "Probability")
@@ -224,13 +207,47 @@ public class Scaffold extends Module {
             .setMaxFloatValue(1.0F)
             .setMinFloatValue(0.0F)
             .setFloatStep(0.1F)
-            .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge") && this.acceleration.getCurrentValue())
+            .setVisibility(() -> this.acceleration.getCurrentValue())
+            .build()
+            .getFloatValue();
+    // 添加加速强度设置
+    FloatValue accelerationStrength = ValueBuilder.create(this, "Acceleration Strength")
+            .setDefaultFloatValue(10.0F)
+            .setMaxFloatValue(50.0F)
+            .setMinFloatValue(1.0F)
+            .setFloatStep(1.0F)
+            .setVisibility(() -> this.acceleration.getCurrentValue())
             .build()
             .getFloatValue();
     public BooleanValue swing = ValueBuilder.create(this, "Swing")
             .setDefaultBooleanValue(true)
             .build()
             .getBooleanValue();
+    // 优化OffGround相关逻辑
+    FloatValue maxOffGroundTicks = ValueBuilder.create(this, "Max OffGround Ticks")
+            .setDefaultFloatValue(5.0F)
+            .setMaxFloatValue(10.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(0.15F)
+            .setVisibility(() -> this.randomOffGroundTicks.getCurrentValue())
+            .build()
+            .getFloatValue();
+    FloatValue minOffGroundTicks = ValueBuilder.create(this, "Min OffGround Ticks")
+            .setDefaultFloatValue(0.0F)
+            .setMaxFloatValue(10.0F)
+            .setMinFloatValue(0.0F)
+            .setFloatStep(0.15F)
+            .setVisibility(() -> this.randomOffGroundTicks.getCurrentValue())
+            .build()
+            .getFloatValue();
+    FloatValue offGroundTicksValue = ValueBuilder.create(this, "OffGround Ticks")
+            .setDefaultFloatValue(2.5F)
+            .setMaxFloatValue(5.0F)
+            .setMinFloatValue(0.1F)
+            .setFloatStep(0.15F)
+            .setVisibility(() -> !this.randomOffGroundTicks.getCurrentValue())
+            .build()
+            .getFloatValue();
     int oldSlot;
     private Scaffold.BlockPosWithFacing pos;
     private int lastSneakTicks;
@@ -299,7 +316,7 @@ public class Scaffold extends Module {
             }
 
             float baseFov = e.getFov();
-            float moveBonus = MoveUtils.isMoving() ? (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 0.13F : 0.0F;
+            float moveBonus = MoveUtils.isMoving() ? (float) PlayerUtils.getMoveSpeedEffectAmplifier() * 00.13F : 0.0F;
             float yawDelta = Math.abs(this.rots.getX() - this.lastRots.getX());
             float pitchDelta = Math.abs(this.rots.getY() - this.lastRots.getY());
             float rotationSpeed = (float) Math.sqrt(yawDelta * yawDelta + pitchDelta * pitchDelta);
@@ -328,7 +345,7 @@ public class Scaffold extends Module {
             this.fallDetectionTicks = 0;
             this.lastVelocity = mc.player.getDeltaMovement();
             this.lastAcceleration = Vec3.ZERO;
-            
+
             // 记录初始方块数量
             this.initialBlockCount = getBlockCount();
         }
@@ -397,8 +414,12 @@ public class Scaffold extends Module {
                 this.correctRotation = this.getPlayerYawRotation();
                 if (this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue()) {
                     this.rots.setX(this.correctRotation.getX());
+                } else if (this.mode.isCurrentMode("Normal")) {
+                    // 使用新的旋转速度控制
+                    this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), this.correctRotation.getX()));
                 } else {
-                    this.rots.setX(RotationUtils.rotateToYaw(180.0F, this.rots.getX(), this.correctRotation.getX()));
+                    // 在Telly Bridge模式下也使用可配置的旋转速度
+                    this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), this.correctRotation.getX()));
                 }
 
                 this.rots.setY(this.correctRotation.getY());
@@ -424,20 +445,25 @@ public class Scaffold extends Module {
                 mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
                     float targetYaw = mc.player.getYRot();
+                    // 改进的加速逻辑
                     if (this.acceleration.getCurrentValue() && RandomUtils.nextFloat(0.0F, 1.0F) < this.probability.getCurrentValue()) {
                         Vec3 currentVelocity = mc.player.getDeltaMovement();
                         Vec3 acceleration = currentVelocity.subtract(this.lastVelocity);
                         this.lastAcceleration = acceleration;
                         this.lastVelocity = currentVelocity;
-                        float accelerationMagnitude = (float) acceleration.length();
-                        float noiseFactor = Math.min(accelerationMagnitude * 10.0F, 30.0F);
+                        
+                        // 使用新的加速强度设置，基于实际加速度而非仅仅是数值
+                        double accelerationMagnitude = acceleration.horizontalDistance();
+                        float yawOffset = (float) (accelerationMagnitude * this.accelerationStrength.getCurrentValue());
+                        float noiseFactor = Math.min(yawOffset * 0.5F, 20.0F);
                         float randomNoise = RandomUtils.nextFloat(-noiseFactor, noiseFactor);
                         targetYaw += randomNoise;
                     } else {
                         this.lastVelocity = mc.player.getDeltaMovement();
                     }
-                    
-                    this.rots.setX(RotationUtils.rotateToYaw(this.tellyRotationSpeed.getCurrentValue(), this.rots.getX(), targetYaw));
+
+                    // 使用统一的旋转速度设置
+                    this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), targetYaw));
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
                 }
@@ -530,7 +556,7 @@ public class Scaffold extends Module {
                 float limitedYaw = currentRotation.getX() + direction * 180.0F;
                 targetRotation.setX(limitedYaw);
             }
-            
+
             return targetRotation;
         }
         return new Vector2f(0.0F, 0.0F);
@@ -633,17 +659,17 @@ public class Scaffold extends Module {
         if (this.renderBlockCounter.getCurrentValue() && mc.player != null) {
             float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-            
+
             if (this.blockCounterMode.isCurrentMode("Capsule")) {
                 // Capsule模式：渲染blur蒙版
                 String text = "Blocks: " + getBlockCount();
                 double textScale = 0.35;
                 this.blockCounterWidth = Fonts.opensans.getWidth(text, textScale) + 20.0F;
                 this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, textScale) + 10.0F;
-                
+
                 float x = (screenWidth - this.blockCounterWidth) / 2.0F;
                 float y = screenHeight / 2.0F + 15.0F;
-                
+
                 // 渲染blur蒙版（圆角矩形）
                 RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, 6.0F, Integer.MIN_VALUE);
             } else {
@@ -732,22 +758,22 @@ public class Scaffold extends Module {
         int blockCount = getBlockCount();
         String text = "Blocks: " + blockCount;
         double textScale = 0.35;
-        
+
         this.blockCounterWidth = Fonts.opensans.getWidth(text, textScale) + 20.0F;
         this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, textScale) + 10.0F;
 
         float screenWidth = (float) mc.getWindow().getGuiScaledWidth();
         float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
-        
+
         float x = (screenWidth - this.blockCounterWidth) / 2.0F;
         float y = screenHeight / 2.0F + 15.0F;
-        
+
         float cornerRadius = 6.0F;
         float borderWidth = 1.5F; // 进度条宽度
-        
+
         // 计算进度比例
         float ratio = this.initialBlockCount > 0 ? (float) blockCount / (float) this.initialBlockCount : 0.0F;
-        
+
         // 根据比例确定进度条颜色
         Color progressColor;
         if (ratio >= 0.6F) { // 超过3/5
@@ -757,14 +783,14 @@ public class Scaffold extends Module {
         } else { // 低于2/5
             progressColor = new Color(200, 50, 50, 255); // 红色
         }
-        
+
         e.getStack().pushPose();
-        
+
         // 渲染进度条边框（在blur背景的边缘）
         // 计算进度条的长度（沿着边框的周长）
         float perimeter = 2 * (this.blockCounterWidth + this.blockCounterHeight) - 8 * cornerRadius + 2 * (float) Math.PI * cornerRadius;
         float progressLength = perimeter * ratio;
-        
+
         // 使用模板裁剪，确保进度边框不会超出圆角背景
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, Integer.MIN_VALUE);
@@ -772,15 +798,15 @@ public class Scaffold extends Module {
         // 绘制进度条（从顶部中心开始，顺时针绘制），被裁剪在圆角形状内
         drawProgressBorder(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, borderWidth, progressLength, progressColor.getRGB());
         StencilUtils.dispose();
-        
+
         // 渲染文本
         float textWidth = Fonts.opensans.getWidth(text, textScale);
         float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
         float textX = x + (this.blockCounterWidth - textWidth) / 2.0F;
         float textY = y + (this.blockCounterHeight - textHeight) / 2.0F;
-        
+
         Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
-        
+
         e.getStack().popPose();
     }
 
@@ -790,7 +816,7 @@ public class Scaffold extends Module {
      */
     private void drawProgressBorder(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float radius, float borderWidth, float length, int color) {
         float currentLength = 0.0F;
-        
+
         // 顶部边（从中心向右）
         float topLength = (width - 2 * radius) / 2.0F;
         if (currentLength < length) {
@@ -798,7 +824,7 @@ public class Scaffold extends Module {
             RenderUtils.fill(stack, x + width / 2.0F, y, x + width / 2.0F + drawLength, y + borderWidth, color);
             currentLength += drawLength;
         }
-        
+
         // 右上角 - 使用精细的圆弧绘制
         float cornerArcLength = (float) (Math.PI * radius / 2.0F);
         if (currentLength < length) {
@@ -807,7 +833,7 @@ public class Scaffold extends Module {
             drawPartialCornerArc(stack, x + width - radius, y + radius, radius, 270, 270 + segments, borderWidth, color);
             currentLength += drawLength;
         }
-        
+
         // 右边
         float rightLength = height - 2 * radius;
         if (currentLength < length) {
@@ -815,7 +841,7 @@ public class Scaffold extends Module {
             RenderUtils.fill(stack, x + width - borderWidth, y + radius, x + width, y + radius + drawLength, color);
             currentLength += drawLength;
         }
-        
+
         // 右下角
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
@@ -823,7 +849,7 @@ public class Scaffold extends Module {
             drawPartialCornerArc(stack, x + width - radius, y + height - radius, radius, 0, segments, borderWidth, color);
             currentLength += drawLength;
         }
-        
+
         // 底部边
         float bottomLength = width - 2 * radius;
         if (currentLength < length) {
@@ -831,7 +857,7 @@ public class Scaffold extends Module {
             RenderUtils.fill(stack, x + width - radius - drawLength, y + height - borderWidth, x + width - radius, y + height, color);
             currentLength += drawLength;
         }
-        
+
         // 左下角
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
@@ -839,7 +865,7 @@ public class Scaffold extends Module {
             drawPartialCornerArc(stack, x + radius, y + height - radius, radius, 90, 90 + segments, borderWidth, color);
             currentLength += drawLength;
         }
-        
+
         // 左边
         float leftLength = height - 2 * radius;
         if (currentLength < length) {
@@ -847,7 +873,7 @@ public class Scaffold extends Module {
             RenderUtils.fill(stack, x, y + height - radius - drawLength, x + borderWidth, y + height - radius, color);
             currentLength += drawLength;
         }
-        
+
         // 左上角
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
@@ -855,7 +881,7 @@ public class Scaffold extends Module {
             drawPartialCornerArc(stack, x + radius, y + radius, radius, 180, 180 + segments, borderWidth, color);
             currentLength += drawLength;
         }
-        
+
         // 顶部边（从左到中心）
         float topLeftLength = (width - 2 * radius) / 2.0F;
         if (currentLength < length) {
@@ -863,7 +889,7 @@ public class Scaffold extends Module {
             RenderUtils.fill(stack, x + width / 2.0F - drawLength, y, x + width / 2.0F, y + borderWidth, color);
         }
     }
-    
+
     /**
      * 绘制部分圆角弧线（使用更窄的宽度避免突起）
      */

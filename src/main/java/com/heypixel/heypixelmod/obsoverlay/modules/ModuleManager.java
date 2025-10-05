@@ -71,6 +71,8 @@ public class ModuleManager {
          new TriggerBot(),
          new AutoTotem(),
          new AutoHitCrystal(),
+         new AutoHeal(),
+         new TargetStrafe(),
          new AnchorMacro(),
          new Disabler(),
          new Projectile(),

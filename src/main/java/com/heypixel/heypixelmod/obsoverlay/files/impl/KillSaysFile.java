@@ -13,15 +13,15 @@ import java.util.List;
 
 public class KillSaysFile extends ClientFile {
    private static final String[] styles = new String[]{
-      "%s 你以为能战胜我吗？",
-      "%s 权威认证",
-      "%s 我喜欢你",
-      "%s 我喜欢你♥",
-      "%s 可以和我交往吗？",
-      "%s 你好可爱",
-      "%s 别急",
-      "%s 你已被BJD害死！快使用Hack Lunar！",
-      "%s 你已被YM本人害死，快使用我编写的端！"
+      "%s 你以为能战胜我吗？naven-xd.top",
+      "%s 权威认证naven-xd.top",
+      "%s 我喜欢你naven-xd.top",
+      "%s 我是Naven-XD使用者，你不可能战胜我！",
+      "%s 可以和我交往吗？naven-xd.top",
+      "%s 你好可爱naven-xd.top",
+      "%s naven-xd.topYYDS",
+      "%s 你已被BJD害死！快使用naven-xd.top！",
+      "%s 你已被我本人害死，快使用naven-xd.top！"
    };
 
    public KillSaysFile() {

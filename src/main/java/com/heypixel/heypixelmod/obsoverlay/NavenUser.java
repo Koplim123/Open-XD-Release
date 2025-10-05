@@ -54,7 +54,7 @@ public class NavenUser {
             bw.flush();
             cachedUsername = trimmed;
         } catch (IOException e) {
-            System.err.println("[NavenUser] 操你妈逼! write user name failed: " + e.getMessage());
+            System.err.println("[NavenUser]  write user name failed: " + e.getMessage());
         }
     }
     private static String readUsernameFromFile() {
@@ -63,7 +63,7 @@ public class NavenUser {
             String line = br.readLine();
             return line != null ? line.trim() : null;
         } catch (IOException e) {
-            System.err.println("[NavenUser] 你妈死了！red user name failed: " + e.getMessage());
+            System.err.println("[NavenUser] red user name failed: " + e.getMessage());
             return null;
         }
     }
