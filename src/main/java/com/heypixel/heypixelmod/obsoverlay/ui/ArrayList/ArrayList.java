@@ -28,7 +28,7 @@ public class ArrayList {
     private static final java.util.ArrayList<Vector4f> blurMatrices = new java.util.ArrayList<>();
     public static final int backgroundColor = new Color(0, 0, 0, 40).getRGB();
 
-    // Caches to avoid per-frame recomputation
+
     private static final java.util.Map<Module, Float> widthCache = new java.util.HashMap<>();
     private static final java.util.Map<Module, String> nameCache = new java.util.HashMap<>();
     private static float cachedArrayListSize = -1.0F;
@@ -43,18 +43,15 @@ public class ArrayList {
     }
 
     public static void onShader(EventShader e) {
-        // 仅在 BLUR 通道为ArrayList背景板写入模糊蒙版
+
         for (Vector4f blurMatrix : blurMatrices) {
             RenderUtils.drawRoundedRect(e.getStack(), blurMatrix.x(), blurMatrix.y(), blurMatrix.z(), blurMatrix.w(), 3.0F, Integer.MIN_VALUE);
         }
     }
 
-    /**
-     * 绘制一个垂直的、颜色渐变的动态彩虹条，用于模块列表的装饰胶囊。
-     * 颜色基于其Y坐标，以实现模块间的平滑过渡。
-     */
+    
     private static void drawVerticalAnimatedRainbowBar(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
-        // 分段绘制，降低 draw call 与循环次数
+
         int segments = Math.max(4, Math.min(12, (int)(height / 2.0F)));
         float segmentHeight = height / (float)segments;
         for (int s = 0; s < segments; s++) {
@@ -88,7 +85,7 @@ public class ArrayList {
                 renderModules.removeIf(modulex -> modulex.getCategory() == Category.RENDER);
             }
 
-            // Rebuild name and width caches and compute max width once
+
             widthCache.clear();
             nameCache.clear();
             cachedMaxWidth = 0.0F;
@@ -100,10 +97,10 @@ public class ArrayList {
                 if (w > cachedMaxWidth) cachedMaxWidth = w;
             }
 
-            // Sort by cached width descending
+
             renderModules.sort((o1, o2) -> Float.compare(widthCache.getOrDefault(o2, 0.0F), widthCache.getOrDefault(o1, 0.0F)));
 
-            // Update cache flags
+
             cachedArrayListSize = arrayListSize;
             cachedPrettyName = prettyModuleName;
             cachedHideRender = hideRenderModules;
@@ -137,7 +134,7 @@ public class ArrayList {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
 
-        // Precompute rainbow factors to avoid repeated math per module
+
         final int rainbowPeriodMs = (int)((21.0F - rainbowSpeed) * 1000.0F);
         final float rainbowOffsetMul = rainbowOffset;
 
@@ -151,7 +148,7 @@ public class ArrayList {
 
             animation.update(true);
             if (animation.value > 0.0F) {
-                // Use cached display name and width to avoid per-frame computation
+
                 String displayName = nameCache.get(module);
                 if (displayName == null) {
                     displayName = getModuleDisplayName(module, prettyModuleName);
@@ -169,7 +166,7 @@ public class ArrayList {
                 float moduleWidth = stringWidth + 3.0F;
 
                 if (mode == Mode.Normal) {
-                    // 步骤 1: 绘制模块的深色背景
+
                     RenderUtils.drawRoundedRect(
                             e.getStack(),
                             moduleX,
@@ -183,11 +180,11 @@ public class ArrayList {
                 }
 
 
-                // 步骤 2: 绘制模块名称文本
-                int color = -1; // 默认白色
+
+                int color = -1;
                 int rainbowColor = color;
                 if (rainbow) {
-                    // sample at the module's Y to keep color coherent across text and bar
+
                     float moduleYBase = arrayListY + height + 1.0F;
                     rainbowColor = RenderUtils.getRainbowOpaque((int)(-moduleYBase * rainbowOffsetMul), 1.0F, 1.0F, rainbowPeriodMs);
                     color = rainbowColor;
@@ -205,19 +202,19 @@ public class ArrayList {
                         (double)arrayListSize
                 );
 
-                // 步骤 3: 彩虹装饰条（低开销版本，避免频繁模板切换与逐像素填充）
+
                 if (rainbow && capsule && mode == Mode.Normal) {
                     float capsuleWidth = 2.0f;
                     float capsulePadding = 1.5f;
                     float capsuleX = "Left".equals(arrayListDirection)
                             ? (moduleX - capsuleWidth - capsulePadding)
                             : (moduleX + moduleWidth + capsulePadding);
-                    // reuse computed rainbowColor for the bar to avoid extra work
+
                     int barColor = rainbowColor;
                     RenderUtils.fill(e.getStack(), capsuleX, moduleY, capsuleX + capsuleWidth, moduleY + moduleHeight, barColor);
                 }
 
-                // 使用 arrayListSpacing 调整模块之间的垂直间距
+
                 height += (float)((double)(animation.value / 100.0F) * (fontHeight + arrayListSpacing));
             }
         }

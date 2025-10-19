@@ -158,7 +158,7 @@ public class HUD extends Module {
             .setMaxFloatValue(1.0F)
             .build()
             .getFloatValue();
-    // 新增：ArrayList中模块之间的垂直间距
+
     public FloatValue arrayListSpacing = ValueBuilder.create(this, "ArrayList Spacing")
             .setVisibility(this.arrayList::getCurrentValue)
             .setDefaultFloatValue(2.0F)
@@ -213,19 +213,19 @@ public class HUD extends Module {
             Watermark.onShader(e, this.watermarkStyle.getCurrentMode(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkSize.getCurrentValue(), this.watermarkVPadding.getCurrentValue(), this.renderBlackBackground.getCurrentValue(), this.blackFont.getCurrentValue());
         }
 
-        // 仅在 BLUR 通道为ArrayList背景板写入模糊蒙版
+
         if (this.arrayList.getCurrentValue() && e.getType() == EventType.BLUR) {
             com.heypixel.heypixelmod.obsoverlay.ui.ArrayList.ArrayList.onShader(e);
         }
         
-        // BetterHotBar的blur渲染
+
         com.heypixel.heypixelmod.obsoverlay.ui.BetterHotBar.onShader(e);
     }
 
     @EventTarget
     public void onRender(EventRender2D e) {
         if (this.waterMark.getCurrentValue()) {
-            // 传递彩虹效果和新的padding相关参数到Watermark
+
             Watermark.onRender(e, this.watermarkSize.getCurrentValue(), this.watermarkStyle.getCurrentMode(), this.rainbow.getCurrentValue(), this.rainbowSpeed.getCurrentValue(), this.rainbowOffset.getCurrentValue(), this.watermarkCornerRadius.getCurrentValue(), this.watermarkVPadding.getCurrentValue(), this.renderBlackBackground.getCurrentValue(), this.blackFont.getCurrentValue());
         }
 

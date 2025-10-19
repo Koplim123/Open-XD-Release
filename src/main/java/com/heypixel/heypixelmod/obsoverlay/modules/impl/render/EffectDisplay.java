@@ -79,7 +79,7 @@ public class EffectDisplay extends Module {
    public void onShader(EventShader e) {
       for (int i = 0; i < this.blurMatrices.size(); i++) {
          Vector4f matrix = this.blurMatrices.get(i);
-         // 第一个矩形是Capsule Mode的总体背景，使用更大的圆角
+
          float cornerRadius = (i == 0 && displayMode.getCurrentMode().equals("Capsule")) ? 8.0F : 5.0F;
          RenderUtils.drawRoundedRect(e.getStack(), matrix.x(), matrix.y(), matrix.z(), matrix.w(), cornerRadius, 1073741824);
       }
@@ -114,7 +114,7 @@ public class EffectDisplay extends Module {
       this.list = Lists.newArrayListWithExpectedSize(this.infos.size());
       this.blurMatrices.clear();
       
-      // 重置Capsule Mode的总体背景bounds
+
       if (displayMode.getCurrentMode().equals("Capsule") && !this.infos.isEmpty()) {
          this.totalMinX = Float.MAX_VALUE;
          this.totalMinY = Float.MAX_VALUE;
@@ -167,7 +167,7 @@ public class EffectDisplay extends Module {
          e.getStack().popPose();
       }
       
-      // 在Capsule Mode时添加总体背景blur
+
       if (displayMode.getCurrentMode().equals("Capsule") && !this.infos.isEmpty() && 
           this.totalMinX != Float.MAX_VALUE && this.totalMaxX != Float.MIN_VALUE && 
           this.renderBackground.getCurrentValue()) {
@@ -177,7 +177,7 @@ public class EffectDisplay extends Module {
          float backgroundWidth = (this.totalMaxX - this.totalMinX) + (padding * 2);
          float backgroundHeight = (this.totalMaxY - this.totalMinY) + (padding * 2);
          
-         // 在列表开头添加总体背景blur（这样它会先渲染，在所有effect之下）
+
          this.blurMatrices.add(0, new Vector4f(backgroundX, backgroundY, backgroundWidth, backgroundHeight));
       }
    }
@@ -204,7 +204,7 @@ public class EffectDisplay extends Module {
    }
 
    private void renderCapsuleMode(EventRender2D e, Entry<MobEffect, EffectDisplay.MobEffectInfo> entry, EffectDisplay.MobEffectInfo effectInfo, float x, float y, CustomTextRenderer harmony, String text) {
-      // 更新总体边界
+
       this.totalMinX = Math.min(this.totalMinX, x);
       this.totalMinY = Math.min(this.totalMinY, y);
       this.totalMaxX = Math.max(this.totalMaxX, x + effectInfo.width);
@@ -226,8 +226,8 @@ public class EffectDisplay extends Module {
          RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
          e.getGuiGraphics().blit((int)(x + 6.0F), (int)(y + 8.0F), 1, 18, 18, textureatlassprite);
       });
-      // 注释掉单个effect的blur，现在使用总体背景
-      // this.blurMatrices.add(new Vector4f(x, y, effectInfo.width, 30.0F));
+
+
       StencilUtils.dispose();
    }
 
@@ -261,11 +261,11 @@ public class EffectDisplay extends Module {
       if (descriptionId.equals("effect.minecraft.hero_of_the_village")) return createColorWithAlpha(0xCDD724, alpha);
       if (descriptionId.equals("effect.minecraft.darkness")) return createColorWithAlpha(0x1E1E23, alpha);
       
-      // 默认使用黑色背景，alpha为95
+
       return createColorWithAlpha(0x000000, alpha);
    }
    
-   // 创建带alpha值的颜色
+
    private int createColorWithAlpha(int rgb, int alpha) {
       int r = (rgb >> 16) & 0xFF;
       int g = (rgb >> 8) & 0xFF;

@@ -37,7 +37,7 @@ public class MainUI extends Screen {
 
         int panelWidth = 240;
         int panelX = this.width - panelWidth;
-        // 调整起始Y位置，为标题留出空间
+
         int startY = this.height / 2 - (4 * BUTTON_HEIGHT + 3 * BUTTON_SPACING) / 2 + 30;
 
         buttons = new Button[] {
@@ -77,15 +77,15 @@ public class MainUI extends Screen {
         int panelY = 0;
         int panelHeight = this.height;
 
-        // 绘制半透明背景面板
+
         guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0x80000000);
         
-        // 添加发光效果
+
         renderGlowEffect(guiGraphics, panelX, panelY, panelWidth, panelHeight);
     }
     
     private void renderGlowEffect(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        // 绘制外发光效果
+
         for (int i = 0; i < 5; i++) {
             int alpha = 30 - i * 6;
             int color = (alpha << 24) | 0xFFFFFF;
@@ -121,12 +121,12 @@ public class MainUI extends Screen {
         int panelWidth = 240;
         int panelX = this.width - panelWidth;
         
-        // 将标题放在按钮上方并增大字体
+
         int titleX = panelX + (panelWidth - titleWidth * 2) / 2;
         int titleY = this.height / 2 - (4 * BUTTON_HEIGHT + 3 * BUTTON_SPACING) / 2 - 40;
 
         guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(2.0f, 2.0f, 1.0f); // 增大字体
+        guiGraphics.pose().scale(2.0f, 2.0f, 1.0f);
         guiGraphics.drawString(this.font, title, titleX / 2, titleY / 2, 0xFFFFFFFF, true);
         guiGraphics.pose().popPose();
     }
@@ -218,7 +218,7 @@ public class MainUI extends Screen {
 
             float easedProgress = (float) (1 - Math.pow(1 - hoverProgress, 4));
 
-            // 使用半透明和彩虹发光效果绘制按钮
+
             renderButton(guiGraphics, easedProgress);
 
             Minecraft mc = Minecraft.getInstance();
@@ -233,19 +233,19 @@ public class MainUI extends Screen {
         }
 
         private void renderButton(GuiGraphics guiGraphics, float hoverProgress) {
-            // 使用圆角矩形
+
             float cornerRadius = 5.0f;
             
-            // 按钮基础颜色 (更透明)
-            int baseColor = 0x40FFFFFF; // 25% 不透明度的白色
+
+            int baseColor = 0x40FFFFFF;
             
-            // 按钮悬停时的颜色 (更亮一些)
-            int hoverColor = 0x60FFFFFF; // 37.5% 不透明度的白色
+
+            int hoverColor = 0x60FFFFFF;
             
-            // 根据悬停进度插值颜色
+
             int buttonColor = interpolateColor(baseColor, hoverColor, hoverProgress);
             
-            // 绘制半透明圆角按钮背景
+
             RenderUtils.drawRoundedRect(
                 guiGraphics.pose(),
                 x,
@@ -256,12 +256,12 @@ public class MainUI extends Screen {
                 buttonColor
             );
             
-            // 如果悬停，添加彩虹发光效果
+
             if (hoverProgress > 0) {
-                // 获取当前时间用于彩虹色计算
+
                 long time = System.currentTimeMillis();
                 for (int i = 0; i < 5; i++) {
-                    // 计算彩虹色
+
                     int rainbowColor = getRainbowColor(time + i * 100);
                     int alpha = (int) (hoverProgress * (50 - i * 10));
                     int glowColor = (alpha << 24) | (rainbowColor & 0x00FFFFFF);
@@ -280,10 +280,10 @@ public class MainUI extends Screen {
         }
 
         private int getRainbowColor(long time) {
-            // 使用不同的色相创建彩虹效果
+
             float hue = (time % 5000) / 5000.0f;
             int rgb = Color.HSBtoRGB(hue, 1.0f, 1.0f);
-            return rgb & 0x00FFFFFF; // 移除alpha通道
+            return rgb & 0x00FFFFFF;
         }
 
         private int rgba(int r, int g, int b, int a) {

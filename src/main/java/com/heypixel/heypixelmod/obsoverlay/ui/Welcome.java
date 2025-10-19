@@ -43,27 +43,27 @@ public class Welcome extends Screen {
     @Override
     public void tick() {
         switch (fadeInStage) {
-            case 0: // Fading in
+            case 0:
                 fadeAlpha += (MAX_ALPHA / FADE_IN_DURATION);
                 if (fadeAlpha >= MAX_ALPHA) {
                     fadeAlpha = MAX_ALPHA;
-                    fadeInStage = 1; // Waiting for input
+                    fadeInStage = 1;
+                    fadeInStage = 2;
                 }
                 break;
-            case 1: // Waiting for user input
+            case 1:
                 break;
-            case 2: // Fading out
+            case 2:
                 fadeAlpha -= (MAX_ALPHA / FADE_OUT_DURATION);
                 if (fadeAlpha <= 0) {
                     fadeAlpha = 0;
-                    fadeInStage = 3; // Done
+                    fadeInStage = 3;
                     if (this.minecraft != null) {
-                        // IRC登录完成后直接跳转到MainUI
                         this.minecraft.setScreen(new MainUI());
                     }
                 }
                 break;
-            case 3: // Screen is done
+            case 3:
                 break;
         }
     }
@@ -80,22 +80,22 @@ public class Welcome extends Screen {
         int width = window.getGuiScaledWidth();
         int height = window.getGuiScaledHeight();
 
-        // Render solid black background as a fallback
+
         guiGraphics.fill(0, 0, width, height, 0xFF000000);
 
         if (textureLoaded) {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            // The image is rendered with the fade-in alpha
+
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, fadeAlpha / 255.0F);
             guiGraphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, width, height, width, height);
             RenderSystem.disableBlend();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F); // Reset shader color
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
 
-        // Render a darkening overlay to improve text contrast
-        int overlayAlpha = (int)((fadeAlpha / 255.0f) * 150); // ~60% black overlay at full alpha
-        int overlayColor = (overlayAlpha << 24); // Black color
+
+        int overlayAlpha = (int)((fadeAlpha / 255.0f) * 150);
+        int overlayColor = (overlayAlpha << 24);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -110,22 +110,17 @@ public class Welcome extends Screen {
         int shadowColor = 0x000000 | (shadowAlpha << 24);
 
         String title = "Welcome to Naven-XD Client";
-        String subtitle = "Press any key to continue";
 
-        int titleY = this.height / 2 - 10;
-        int subtitleY = this.height / 2 + 10;
+        int titleY = this.height / 2;
 
         guiGraphics.drawCenteredString(this.font, title, this.width / 2 + 1, titleY + 1, shadowColor);
         guiGraphics.drawCenteredString(this.font, title, this.width / 2, titleY, textColor);
-
-        guiGraphics.drawCenteredString(this.font, subtitle, this.width / 2 + 1, subtitleY + 1, shadowColor);
-        guiGraphics.drawCenteredString(this.font, subtitle, this.width / 2, subtitleY, textColor);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (fadeInStage == 1) {
-            fadeInStage = 2; // Start fading out
+            fadeInStage = 2;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -133,7 +128,7 @@ public class Welcome extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (fadeInStage == 1) {
-            fadeInStage = 2; // Start fading out
+            fadeInStage = 2;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }

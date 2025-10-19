@@ -328,9 +328,7 @@ public class GL {
       return null;
    }
 
-   /**
-    * 注册OpenGL错误回调函数，当发生OpenGL错误时自动重置OpenGL状态
-    */
+   
    public static void registerErrorCallback() {
       if (!errorCallbackRegistered) {
          try {
@@ -369,9 +367,9 @@ public class GL {
       
       try {
          GlStateManager._glBindVertexArray(0);
-         GlStateManager._glBindBuffer(34962, 0); // GL_ARRAY_BUFFER
-         GlStateManager._glBindBuffer(34963, 0); // GL_ELEMENT_ARRAY_BUFFER
-         GlStateManager._glBindFramebuffer(36160, 0); // GL_FRAMEBUFFER
+         GlStateManager._glBindBuffer(34962, 0);
+         GlStateManager._glBindBuffer(34963, 0);
+         GlStateManager._glBindFramebuffer(36160, 0);
 
          for (int i = 0; i < 8; i++) {
             GlStateManager._activeTexture(33984 + i);

@@ -7,9 +7,7 @@ import net.minecraft.util.Mth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 通知选择器基类 - 支持Naven和SouthSide两种模式
- */
+
 public class Notification {
     protected static final Logger LOGGER = LoggerFactory.getLogger(Notification.class);
     
@@ -41,7 +39,7 @@ public class Notification {
         this.maxAge = age;
     }
     
-    // 添加接受(String, boolean)参数的构造函数
+
     public Notification(String message, boolean enabled) {
         this.level = enabled ? NotificationLevel.SUCCESS : NotificationLevel.ERROR;
         if (message.contains(":")) {
@@ -118,9 +116,7 @@ public class Notification {
         return 1.0F;
     }
 
-    /**
-     * 创建通知实例 - 根据当前模式自动选择实现
-     */
+    
     public static Notification create(NotificationLevel level, String message, long age) {
         if (NotificationMode.isNavenMode()) {
             return new NavenNotification(level, message, age);
@@ -152,10 +148,10 @@ public class Notification {
     }
 
     public void render(PoseStack stack, float x, float y) {
-        // 子类必须实现此方法
+
     }
 
     public void renderShader(PoseStack stack, float x, float y) {
-        // 子类必须实现此方法
+
     }
 }

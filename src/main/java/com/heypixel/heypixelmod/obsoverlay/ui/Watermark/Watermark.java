@@ -29,7 +29,7 @@ public class Watermark {
     public static void onShader(EventShader e, String style, float cornerRadius, float watermarkSize, float vPadding, boolean renderBlackBackground, boolean blackFont) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        // 在 BLUR 通道写入胶囊蒙版，供后处理模糊使用
+
         if ("Capsule".equals(style) && e.getType() == EventType.BLUR) {
             CustomTextRenderer font = Fonts.opensans;
             Minecraft mc = Minecraft.getInstance();
@@ -68,9 +68,7 @@ public class Watermark {
         }
     }
 
-    /**
-     * 绘制静态的彩虹条
-     */
+    
     private static void drawRainbowBar(PoseStack stack, float x, float y, float width, float height) {
         for (float i = 0; i < width; i++) {
             float hue = i / width;
@@ -79,9 +77,7 @@ public class Watermark {
         }
     }
 
-    /**
-     * 绘制动态的、与ArrayList同步的彩虹条
-     */
+    
     private static void drawAnimatedRainbowBar(PoseStack stack, float x, float y, float width, float height, float rainbowSpeed, float rainbowOffset) {
         for (float i = 0; i < width; i++) {
             int color = RenderUtils.getRainbowOpaque(
@@ -91,9 +87,7 @@ public class Watermark {
         }
     }
 
-    /**
-     * 渲染 "Rainbow" 样式的Watermark
-     */
+    
     private static void renderRainbow(EventRender2D e, float watermarkSize, boolean rainbow, float rainbowSpeed, float rainbowOffset, float cornerRadius, float vPadding) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
@@ -111,20 +105,20 @@ public class Watermark {
         float textY = y + vPadding;
         float totalHeight = watermarkHeight + vPadding * 2;
 
-        // 步骤 1: 绘制带圆角的背景 (使用模板缓冲修复毛刺问题)
+
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, width, totalHeight, cornerRadius, Integer.MIN_VALUE);
         StencilUtils.erase(true);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, width, totalHeight, cornerRadius, backgroundColor);
 
-        // 步骤 2: 绘制顶部的彩虹条
+
         if (rainbow) {
             drawAnimatedRainbowBar(e.getStack(), x, y, width, 2.0F, rainbowSpeed, rainbowOffset);
         } else {
             drawRainbowBar(e.getStack(), x, y, width, 2.0F);
         }
 
-        // 步骤 3: 渲染文本
+
         if (rainbow) {
             float clientNameWidth = font.getWidth(clientName, (double)watermarkSize);
             float currentX = textX;
@@ -148,9 +142,7 @@ public class Watermark {
         e.getStack().popPose();
     }
 
-    /**
-     * 渲染 "exhibition" 样式的Watermark
-     */
+    
     private static void renderExhibition(EventRender2D e, float watermarkSize, boolean rainbow, float rainbowSpeed, float rainbowOffset) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
@@ -168,30 +160,28 @@ public class Watermark {
         String firstChar = String.valueOf(clientName.charAt(0));
         String restOfClientName = clientName.substring(1);
 
-        // 渲染 'N'
+
         if (rainbow) {
-            // 动态彩虹 'N'
+
             int color = RenderUtils.getRainbowOpaque(
                     (int)(currentX * -rainbowOffset / 5), 1.0F, 1.0F, (21.0F - rainbowSpeed) * 1000.0F
             );
             font.render(e.getStack(), firstChar, currentX, y, new Color(color), true, (double)watermarkSize);
         } else {
-            // 静态彩虹 'N' (使用色相环的第一个颜色，红色)
+
             font.render(e.getStack(), firstChar, currentX, y, new Color(Color.HSBtoRGB(0f, 0.8f, 1f)), true, (double)watermarkSize);
         }
 
         currentX += font.getWidth(firstChar, (double)watermarkSize);
 
-        // 渲染其余白色文本
+
         String restOfText = restOfClientName + separator + otherInfo;
         font.render(e.getStack(), restOfText, currentX, y, Color.WHITE, true, (double)watermarkSize);
 
         e.getStack().popPose();
     }
 
-    /**
-     * 渲染 "skeet" 样式的Watermark
-     */
+    
     private static void renderSkeet(EventRender2D e, float watermarkSize, boolean rainbow, float rainbowSpeed, float rainbowOffset, float vPadding) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
@@ -200,12 +190,12 @@ public class Watermark {
         String text = "Naven-XD | " + Version.getVersion() + " | " + IRCLoginManager.getUsername() + " | " + StringUtils.split(mc.fpsString, " ")[0] + " FPS | " + format.format(new Date());
 
         float textWidth = font.getWidth(text, (double)watermarkSize);
-        width = textWidth + 14.0F; // 7px padding on each side
+        width = textWidth + 14.0F;
         watermarkHeight = (float)font.getHeight(true, (double)watermarkSize);
         float borderWidth = 2.0f;
         float rainbowHeight = 1.0f;
-        float topSectionHeight = borderWidth + rainbowHeight; // 顶部边框 + 彩虹条
-        float totalHeight = topSectionHeight + watermarkHeight + vPadding * 2 + borderWidth; // 顶部区域 + 内容 + 底部边框
+        float topSectionHeight = borderWidth + rainbowHeight;
+        float totalHeight = topSectionHeight + watermarkHeight + vPadding * 2 + borderWidth;
 
         float x = 5.0f;
         float y = 5.0f;
@@ -213,27 +203,27 @@ public class Watermark {
         int skeetBorderColor = new Color(45, 45, 45).getRGB();
         int skeetBackgroundColor = new Color(35, 35, 35).getRGB();
 
-        // 绘制背景
+
         RenderUtils.fill(e.getStack(), x + borderWidth, y + topSectionHeight, x + width - borderWidth, y + totalHeight - borderWidth, skeetBackgroundColor);
 
-        // 绘制边框
-        // 顶部边框
+
+
         RenderUtils.fill(e.getStack(), x, y, x + width, y + borderWidth, skeetBorderColor);
-        // 彩虹条
+
         if (rainbow) {
             drawAnimatedRainbowBar(e.getStack(), x, y + borderWidth, width, rainbowHeight, rainbowSpeed, rainbowOffset);
         } else {
             drawRainbowBar(e.getStack(), x, y + borderWidth, width, rainbowHeight);
         }
-        // 左边框
+
         RenderUtils.fill(e.getStack(), x, y + borderWidth, x + borderWidth, y + totalHeight, skeetBorderColor);
-        // 右边框
+
         RenderUtils.fill(e.getStack(), x + width - borderWidth, y + borderWidth, x + width, y + totalHeight, skeetBorderColor);
-        // 底边框
+
         RenderUtils.fill(e.getStack(), x, y + totalHeight - borderWidth, x + width, y + totalHeight, skeetBorderColor);
 
 
-        // 渲染文本
+
         float textX = x + 7.0f;
         float textY = y + topSectionHeight + vPadding;
         font.render(e.getStack(), text, textX, textY, Color.WHITE, true, (double)watermarkSize);
@@ -241,9 +231,7 @@ public class Watermark {
         e.getStack().popPose();
     }
 
-    /**
-     * 渲染 "Classic" 样式的Watermark
-     */
+    
     private static void renderClassic(EventRender2D e, float watermarkSize, float cornerRadius, float vPadding) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
@@ -253,7 +241,7 @@ public class Watermark {
 
         width = font.getWidth(text, (double)watermarkSize) + 14.0F;
         watermarkHeight = (float)font.getHeight(true, (double)watermarkSize);
-        float totalHeight = 3.0f + watermarkHeight + vPadding * 2; // 3px 顶部栏 + 文本高度 + 上下边距
+        float totalHeight = 3.0f + watermarkHeight + vPadding * 2;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -269,9 +257,7 @@ public class Watermark {
         e.getStack().popPose();
     }
 
-    /**
-     * 渲染 "Capsule" 样式的Watermark
-     */
+    
     private static void renderCapsule(EventRender2D e, float watermarkSize, float cornerRadius, float vPadding, boolean renderBlackBackground, boolean blackFont) {
         CustomTextRenderer font = Fonts.opensans;
         Minecraft mc = Minecraft.getInstance();
@@ -293,20 +279,20 @@ public class Watermark {
         float capsule2_x = x + capsule1_width + spacing;
         float capsule2_width = otherInfoWidth + hPadding * 2;
 
-        // 使用模板缓冲来获得更平滑的圆角
+
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
         RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, Integer.MIN_VALUE);
         StencilUtils.erase(true);
 
-        // 根据 renderBlackBackground 参数决定是否渲染黑色背景
+
         if (renderBlackBackground) {
-            // 使用半透明背景色而不是纯白色，以便呈现 blur 背景
+
             RenderUtils.drawRoundedRect(e.getStack(), x, y, capsule1_width, capsule_height, cornerRadius, backgroundColor);
             RenderUtils.drawRoundedRect(e.getStack(), capsule2_x, y, capsule2_width, capsule_height, cornerRadius, backgroundColor);
         }
 
-        // 渲染文本 - 根据 blackFont 参数选择颜色
+
         Color textColor = blackFont ? Color.BLACK : Color.WHITE;
         font.render(e.getStack(), clientName, x + hPadding, y + vPadding, textColor, true, (double)watermarkSize);
         font.render(e.getStack(), otherInfo, capsule2_x + hPadding, y + vPadding, textColor, true, (double)watermarkSize);

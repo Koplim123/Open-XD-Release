@@ -49,7 +49,7 @@ public class FontSelect extends Module {
         }
     }
 
-    // 将此方法改为public以便从外部调用
+
     public void updateFont() {
         try {
             if (fontOption != null) {

@@ -69,16 +69,16 @@ public class ArmorRender extends Module {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // 计算所需尺寸
+
         float itemSize = 16.0F * this.scale.getCurrentValue();
         float spacing = 4.0F * this.scale.getCurrentValue();
         float padding = 8.0F * this.scale.getCurrentValue();
         
-        // 计算宽度：4个盔甲槽位
+
         float contentWidth = (itemSize * 4) + (spacing * 3);
         float totalWidth = contentWidth + (padding * 2);
         
-        // 计算高度
+
         float contentHeight = itemSize;
         if (this.showDurability.getCurrentValue()) {
             CustomTextRenderer font = Fonts.opensans;
@@ -87,7 +87,7 @@ public class ArmorRender extends Module {
         }
         float totalHeight = contentHeight + (padding * 2);
 
-        // 平滑动画
+
         float finalWidth = totalWidth;
         float finalHeight = totalHeight;
         
@@ -103,7 +103,7 @@ public class ArmorRender extends Module {
         if (Math.abs(finalWidth - currentWidth) < 0.01f) currentWidth = finalWidth;
         if (Math.abs(finalHeight - currentHeight) < 0.01f) currentHeight = finalHeight;
 
-        // 更新HUD编辑器中的元素尺寸
+
         if (HUDEditor.getInstance() != null) {
             HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("armorrender");
             if (element != null) {
@@ -112,11 +112,11 @@ public class ArmorRender extends Module {
             }
         }
 
-        // 获取位置
+
         float x = getX();
         float y = getY();
 
-        // 渲染模糊背景
+
         if (currentWidth > 0.1f && currentHeight > 0.1f) {
             RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, 1073741824);
         }
@@ -137,7 +137,7 @@ public class ArmorRender extends Module {
 
         e.getStack().pushPose();
 
-        // 绘制背景
+
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, currentHeight, 5.0F, Integer.MIN_VALUE);
         StencilUtils.erase(true);
@@ -146,12 +146,12 @@ public class ArmorRender extends Module {
         RenderUtils.drawRoundedRect(e.getStack(), x, y, currentWidth, 3.0F, 5.0F, headerColor);
         RenderUtils.fill(e.getStack(), x, y + 2.0F, x + currentWidth, y + 3.0F, headerColor);
 
-        // 计算布局参数
+
         float itemSize = 16.0F * this.scale.getCurrentValue();
         float spacing = 4.0F * this.scale.getCurrentValue();
         float padding = 8.0F * this.scale.getCurrentValue();
         
-        // 从头盔到靴子（索引3到0）横向渲染
+
         float startX = x + padding;
         float startY = y + padding;
         
@@ -163,7 +163,7 @@ public class ArmorRender extends Module {
             float currentX = startX + ((3 - i) * (itemSize + spacing));
             
             if (!armorStack.isEmpty()) {
-                // 为盔甲物品绘制圆角背景
+
                 float slotPadding = 2.0F * this.scale.getCurrentValue();
                 RenderUtils.drawRoundedRect(e.getStack(), 
                         currentX - slotPadding, 
@@ -173,30 +173,30 @@ public class ArmorRender extends Module {
                         3.0F, 
                         new Color(255, 255, 255, 40).getRGB());
                 
-                // 渲染盔甲物品
+
                 e.getStack().pushPose();
                 float scale = itemSize / 16.0F;
                 e.getStack().scale(scale, scale, 1.0F);
                 e.getGuiGraphics().renderItem(armorStack, (int)(currentX / scale), (int)(startY / scale));
                 e.getStack().popPose();
                 
-                // 渲染耐久度
+
                 if (this.showDurability.getCurrentValue() && armorStack.getItem() instanceof ArmorItem) {
                     int maxDamage = armorStack.getMaxDamage();
                     int damage = armorStack.getDamageValue();
                     int durability = maxDamage - damage;
                     
-                    // 计算耐久度百分比
+
                     float durabilityPercent = (float) durability / (float) maxDamage;
                     
-                    // 根据耐久度百分比选择颜色
+
                     Color durabilityColor;
                     if (durabilityPercent > 0.6F) {
-                        durabilityColor = new Color(0, 255, 0); // 绿色
+                        durabilityColor = new Color(0, 255, 0);
                     } else if (durabilityPercent > 0.3F) {
-                        durabilityColor = new Color(255, 255, 0); // 黄色
+                        durabilityColor = new Color(255, 255, 0);
                     } else {
-                        durabilityColor = new Color(255, 0, 0); // 红色
+                        durabilityColor = new Color(255, 0, 0);
                     }
                     
                     String durabilityText = durability + "/" + maxDamage;
@@ -204,7 +204,7 @@ public class ArmorRender extends Module {
                     float textX = currentX + (itemSize / 2) - (textWidth / 2);
                     float textY = startY + itemSize + (spacing * 0.5F);
                     
-                    // 为耐久度文字添加圆角背景
+
                     float textHeight = (float) font.getHeight(true, this.textSize.getCurrentValue());
                     float textBgPadding = 1.0F * this.scale.getCurrentValue();
                     RenderUtils.drawRoundedRect(e.getStack(), 
@@ -218,7 +218,7 @@ public class ArmorRender extends Module {
                     font.render(e.getStack(), durabilityText, textX, textY, durabilityColor, true, this.textSize.getCurrentValue());
                 }
             } else {
-                // 如果没有盔甲，绘制一个空槽位指示
+
                 RenderUtils.drawRoundedRect(e.getStack(), currentX, startY, itemSize, itemSize, 3.0F, 
                         new Color(255, 255, 255, 30).getRGB());
             }
@@ -228,9 +228,7 @@ public class ArmorRender extends Module {
         e.getStack().popPose();
     }
 
-    /**
-     * 获取X坐标
-     */
+    
     private float getX() {
         if (HUDEditor.getInstance() != null) {
             HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("armorrender");
@@ -238,13 +236,11 @@ public class ArmorRender extends Module {
                 return (float) element.x;
             }
         }
-        // 默认位置：屏幕左下角
+
         return 10.0F;
     }
 
-    /**
-     * 获取Y坐标
-     */
+    
     private float getY() {
         if (HUDEditor.getInstance() != null) {
             HUDEditor.HUDElement element = HUDEditor.getInstance().getHUDElement("armorrender");
@@ -252,7 +248,7 @@ public class ArmorRender extends Module {
                 return (float) element.y;
             }
         }
-        // 默认位置：屏幕左下角
+
         Minecraft mc = Minecraft.getInstance();
         return mc.getWindow().getGuiScaledHeight() - 80.0F;
     }

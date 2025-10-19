@@ -237,32 +237,32 @@ public class Disabler extends Module {
                boolean modified = false;
                float newYaw = yaw;
 
-               // 1. 先处理重复旋转检测逻辑
+
                if (this.rotated) {
                   float deltaYaw = Math.abs(yaw - this.playerYaw);
                   if (deltaYaw > 2.0F) {
                      float xDiff = Math.abs(deltaYaw - this.lastPlacedDeltaYaw);
                      if (xDiff < 1.0E-4) {
                         this.log("Disabling DuplicateRotPlace!");
-                        newYaw = yaw + 0.002F; // 添加微小偏移破坏重复模式
+                        newYaw = yaw + 0.002F;
                         modified = true;
                      }
                   }
                }
 
-               // 2. 更新旋转状态（必须在包修改前记录原始值）
+
                float lastPlayerYaw = this.playerYaw;
-               this.playerYaw = modified ? newYaw : yaw; // 记录修改后的yaw
+               this.playerYaw = modified ? newYaw : yaw;
                this.deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
                this.rotated = true;
 
-               // 3. 应用720度偏移（避免干扰重复检测）
+
                if (yaw > -360.0F && yaw < 360.0F) {
                   newYaw += 720.0F;
                   modified = true;
                }
 
-               // 4. 应用所有修改
+
                if (modified) {
                   if (packet.hasPosition()) {
                      e.setPacket(new PosRot(
@@ -279,7 +279,7 @@ public class Disabler extends Module {
                }
             }
          } else if (e.getPacket() instanceof ServerboundUseItemOnPacket) {
-            // 只在确实有旋转时记录（避免误触发）
+
             if (this.rotated) {
                this.lastPlacedDeltaYaw = this.deltaYaw;
                this.rotated = false;

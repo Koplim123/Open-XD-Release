@@ -84,7 +84,7 @@ public class BowAimbot extends Module {
 
     private final ModeValue priorityValue = ValueBuilder.create(this, "Priority")
             .setModes("Health", "Distance", "Direction")
-            .setDefaultModeIndex(2) // 对应"Direction"
+            .setDefaultModeIndex(2)
             .build()
             .getModeValue();
 

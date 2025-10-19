@@ -92,12 +92,12 @@ public class Font {
       } else {
          double width = 0.0;
 
-         // 移除颜色代码后计算宽度
+
          StringBuilder strippedString = new StringBuilder();
          for (int i = 0; i < string.length(); i++) {
             char c = string.charAt(i);
             if (c == '\u00A7' && i + 1 < string.length()) {
-               // 跳过颜色代码
+
                i++;
             } else {
                strippedString.append(c);
@@ -140,7 +140,7 @@ public class Font {
       for (int i = 0; i < string.length(); i++) {
          char ch = string.charAt(i);
          
-         // 检查是否为颜色控制符
+
          if (ch == '\u00A7' && i + 1 < string.length()) {
             char ctrl = string.charAt(i + 1);
             ChatFormatting byCode = ChatFormatting.getByCode(ctrl);
@@ -150,7 +150,7 @@ public class Font {
                currentColor = color;
             }
             
-            i++; // 跳过颜色码字符
+            i++;
             continue;
          }
 

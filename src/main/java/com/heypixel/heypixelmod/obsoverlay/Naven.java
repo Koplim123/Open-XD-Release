@@ -8,11 +8,9 @@ import com.heypixel.heypixelmod.obsoverlay.events.api.types.EventType;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventRunTicks;
 import com.heypixel.heypixelmod.obsoverlay.events.impl.EventShutdown;
 import com.heypixel.heypixelmod.obsoverlay.files.FileManager;
-import com.heypixel.heypixelmod.obsoverlay.IRCModules.AutoConnectListener;
-import com.heypixel.heypixelmod.obsoverlay.IRCModules.ConnectAndReveives;
 import com.heypixel.heypixelmod.obsoverlay.modules.ModuleManager;
 import com.heypixel.heypixelmod.obsoverlay.modules.impl.render.ClickGUIModule;
-import com.heypixel.heypixelmod.obsoverlay.ui.IRCLoginScreen;
+import com.heypixel.heypixelmod.obsoverlay.ui.Welcome;
 import com.heypixel.heypixelmod.obsoverlay.ui.notification.NotificationManager;
 import com.heypixel.heypixelmod.obsoverlay.utils.*;
 import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
@@ -47,8 +45,8 @@ public class Naven {
    private final NotificationManager notificationManager;
    public static float TICK_TIMER = 1.0F;
    public static Queue<Runnable> skipTasks = new ConcurrentLinkedQueue<>();
-   private static boolean ircScreenDisplayed = false; // 添加一个标志，防止重复显示
-   private static ConnectAndReveives ircClient; // IRC客户端实例
+   private static boolean ircScreenDisplayed = false; 
+   private static IRCConnection ircClient; // IRC客户端实例
    private static boolean ircConnected = false; // IRC连接状态标志
 
    private Naven() {
@@ -103,11 +101,9 @@ public class Naven {
       this.fileManager = new FileManager();
       this.notificationManager = new NotificationManager();
       
-      // 初始化HUD编辑器
       com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance();
       this.fileManager.load();
       
-      // 在加载配置文件后加载用户选择的字体
       LoadFontOnStart.loadUserSelectedFont();
       
       this.moduleManager.getModule(ClickGUIModule.class).setEnabled(false);
@@ -116,7 +112,7 @@ public class Naven {
       this.eventManager.register(new RotationManager());
       this.eventManager.register(new NetworkUtils());
       this.eventManager.register(new AutoConnectListener());
-      this.eventManager.register(com.heypixel.heypixelmod.obsoverlay.IRCModules.IRCTabDecorator.getInstance());
+      // this.eventManager.register(com.heypixel.heypixelmod.obsoverlay.IRCModules.IRCTabDecorator.getInstance()); // 注释掉不存在的类
       this.eventManager.register(new ServerUtils());
       this.eventManager.register(new EntityWatcher());
       this.eventManager.register(this.notificationManager);
@@ -135,13 +131,10 @@ public class Naven {
 
    @SubscribeEvent
    public void onClientTick(ClientTickEvent event) {
-      // 只在TitleScreen时检查IRC登录状态，避免在MainUI上重复检查
+      // 直接进入Welcome界面，不再显示IRC登录界面
       if (!ircScreenDisplayed && Minecraft.getInstance().screen instanceof TitleScreen) {
-         if (com.heypixel.heypixelmod.obsoverlay.utils.IRCLoginManager.userId == -1) {
-            Minecraft.getInstance().setScreen(new IRCLoginScreen());
-            ircScreenDisplayed = true;
-         }
-         // 移除了自动连接逻辑，现在在登录成功后立即连接
+         Minecraft.getInstance().setScreen(new Welcome());
+         ircScreenDisplayed = true;
       }
    }
 
@@ -166,10 +159,10 @@ public class Naven {
       try {
          System.out.println("正在自动连接到IRC服务器...");
          com.heypixel.heypixelmod.obsoverlay.utils.ChatUtils.addChatMessage("§e[IRC] 正在连接到服务器...");
-         ircClient = new ConnectAndReveives();
+         ircClient = new IRCConnection();
          
          // 设置消息处理器
-         ircClient.setMessageHandler(new ConnectAndReveives.MessageHandler() {
+         ircClient.setMessageHandler(new IRCConnection.MessageHandler() {
             @Override
             public void onMessage(String type, JsonObject data) {
                // 处理接收到的消息
@@ -278,7 +271,7 @@ public class Naven {
       }
    }
 
-   public static ConnectAndReveives getIrcClient() {
+   public static IRCConnection getIrcClient() {
       return ircClient;
    }
    

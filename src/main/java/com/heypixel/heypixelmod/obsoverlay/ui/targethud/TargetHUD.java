@@ -336,46 +336,46 @@ public class TargetHUD {
         float avatarSize = 40.0F;
         float padding = 5.0F;
 
-        // 绘制外部深灰色边框 (更粗的边框)
-        RenderUtils.fill(graphics.pose(), x, y, x + hudWidth, y + hudHeight, new Color(50, 50, 50, 200).getRGB()); // 外层边框
-        RenderUtils.fill(graphics.pose(), x + 1, y + 1, x + hudWidth - 1, y + hudHeight - 1, new Color(50, 50, 50, 200).getRGB()); // 加粗边框
-        RenderUtils.fill(graphics.pose(), x + 2, y + 2, x + hudWidth - 2, y + hudHeight - 2, new Color(50, 50, 50, 200).getRGB()); // 加粗边框
-        // 绘制内部深黑色背景
+
+        RenderUtils.fill(graphics.pose(), x, y, x + hudWidth, y + hudHeight, new Color(50, 50, 50, 200).getRGB());
+        RenderUtils.fill(graphics.pose(), x + 1, y + 1, x + hudWidth - 1, y + hudHeight - 1, new Color(50, 50, 50, 200).getRGB());
+        RenderUtils.fill(graphics.pose(), x + 2, y + 2, x + hudWidth - 2, y + hudHeight - 2, new Color(50, 50, 50, 200).getRGB());
+
         RenderUtils.fill(graphics.pose(), x + 3, y + 3, x + hudWidth - 3, y + hudHeight - 3, new Color(25, 25, 25, 240).getRGB());
 
-        // 左侧玩家立体模型边框 (正方形，更大并与大边框对齐)
-        float avatarX = x + padding + 3; // 调整位置以对齐大边框
-        float modelSize = avatarSize - 6.0F; // 稍大的模型
-        float avatarY = y + (hudHeight - modelSize) / 2.0f; // 垂直居中
+
+        float avatarX = x + padding + 3;
+        float modelSize = avatarSize - 6.0F;
+        float avatarY = y + (hudHeight - modelSize) / 2.0f;
                 
         RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 2, avatarX + modelSize + 2, avatarY + modelSize + 2, new Color(10, 10, 10).getRGB());
        
-        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 4, avatarX + modelSize + 2, avatarY - 3, new Color(50, 50, 50).getRGB()); // 上边框更长
-        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY + modelSize + 3, avatarX + modelSize + 2, avatarY + modelSize + 4, new Color(50, 60, 60).getRGB()); // 下边框更长
-        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 3, avatarX - 1, avatarY + modelSize + 3, new Color(50, 50, 50).getRGB()); // 左边框
-        RenderUtils.fill(graphics.pose(), avatarX + modelSize + 1, avatarY - 3, avatarX + modelSize + 2, avatarY + modelSize + 3, new Color(60, 60, 60).getRGB()); // 右边框
+        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 4, avatarX + modelSize + 2, avatarY - 3, new Color(50, 50, 50).getRGB());
+        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY + modelSize + 3, avatarX + modelSize + 2, avatarY + modelSize + 4, new Color(50, 60, 60).getRGB());
+        RenderUtils.fill(graphics.pose(), avatarX - 2, avatarY - 3, avatarX - 1, avatarY + modelSize + 3, new Color(50, 50, 50).getRGB());
+        RenderUtils.fill(graphics.pose(), avatarX + modelSize + 1, avatarY - 3, avatarX + modelSize + 2, avatarY + modelSize + 3, new Color(60, 60, 60).getRGB());
         drawPlayerModel(graphics, living, avatarX, avatarY, modelSize);
 
-        // 右侧信息
-        float textX = x + avatarSize + padding * 2 + 2; // 调整位置以适应更细的边框
-        float textY = y + padding + 2; // 调整位置以适应更细的边框
 
-        // 名字
+        float textX = x + avatarSize + padding * 2 + 2;
+        float textY = y + padding + 2;
+
+
         String targetName = living.getName().getString();
         Fonts.harmony.render(graphics.pose(), targetName, (double) textX, (double) textY, Color.WHITE, true, 0.35F);
 
-        // 血条
+
         float health = living.getHealth();
         float maxHealth = living.getMaxHealth();
         float absorption = living.getAbsorptionAmount();
 
-        float healthBarWidth = hudWidth - (avatarSize + padding * 3) - 4; // 调整宽度以适应更细的边框
+        float healthBarWidth = hudWidth - (avatarSize + padding * 3) - 4;
         float healthBarHeight = 5.0F;
         float healthBarX = textX;
         float healthBarY = textY + (float)Fonts.harmony.getHeight(true, 0.35F) + padding;
 
-        int numSegments = 10; // 10个格子
-        float gap = 1.0f; // 格子之间的间隙
+        int numSegments = 10;
+        float gap = 1.0f;
         float totalGapWidth = gap * (numSegments - 1);
         float segmentWidth = (healthBarWidth - totalGapWidth) / numSegments;
 
@@ -384,11 +384,11 @@ public class TargetHUD {
         float healthRatioForColor = (health + absorption) / maxHealth;
         Color healthColor = getHealthColor(healthRatioForColor);
 
-        // 绘制格子
+
         for (int i = 0; i < numSegments; i++) {
             float segmentX = healthBarX + i * (segmentWidth + gap);
 
-            // 每个格子的背景
+
             RenderUtils.fill(graphics.pose(), segmentX, healthBarY, segmentX + segmentWidth, healthBarY + healthBarHeight, new Color(50, 50, 50).getRGB());
 
             if (currentHealthAmount > 0) {
@@ -403,7 +403,7 @@ public class TargetHUD {
             }
         }
 
-        // 装备和手持物品
+
         float itemY = healthBarY + healthBarHeight + 5.0F;
         renderPlayerItems(graphics, living, textX, itemY);
 

@@ -17,13 +17,7 @@ public class HWIDUtils {
     private HWIDUtils() {
     }
 
-    /**
-     * 获取一个由多个硬件信息组合而成的唯一硬件ID。
-     * 该方法会缓存结果，以避免重复执行昂贵的操作。
-     * 生成的ID通过SHA-256哈希算法处理，保证了其固定长度、安全性和不可逆性。
-     *
-     * @return 唯一的硬件ID哈希字符串。
-     */
+    
     public static String getHWID() {
         if (cachedHWID != null) {
             return cachedHWID;
@@ -34,7 +28,7 @@ public class HWIDUtils {
         StringBuilder sb = new StringBuilder();
 
         try {
-            // 1. 获取CPU处理器ID
+
             CentralProcessor processor = hal.getProcessor();
             if (processor != null && processor.getProcessorIdentifier() != null) {
                 String processorID = processor.getProcessorIdentifier().getProcessorID();
@@ -43,29 +37,29 @@ public class HWIDUtils {
                 }
             }
 
-            // 2. 获取硬盘序列号
+
             List<HWDiskStore> diskStores = hal.getDiskStores();
             if (diskStores != null && !diskStores.isEmpty()) {
                 for (HWDiskStore disk : diskStores) {
                     String diskSerial = disk.getSerial();
                     if (diskSerial != null && !diskSerial.isEmpty() && !"Unknown".equalsIgnoreCase(diskSerial)) {
                         sb.append("DISK:").append(diskSerial).append(":");
-                        break; // 只取第一个有效硬盘序列号
+                        break;
                     }
                 }
             }
 
-            // 3. 获取主板序列号和主板型号
+
             ComputerSystem computerSystem = hal.getComputerSystem();
             Baseboard baseboard = computerSystem.getBaseboard();
             
-            // 主板序列号
+
             String boardSerial = baseboard.getSerialNumber();
             if (boardSerial != null && !boardSerial.isEmpty() && !"Unknown".equalsIgnoreCase(boardSerial)) {
                 sb.append("MB_SERIAL:").append(boardSerial).append(":");
             }
             
-            // 主板型号
+
             String boardModel = baseboard.getModel();
             if (boardModel != null && !boardModel.isEmpty() && !"Unknown".equalsIgnoreCase(boardModel)) {
                 sb.append("MB_MODEL:").append(boardModel).append(":");
@@ -80,17 +74,12 @@ public class HWIDUtils {
         }
 
         String fullHash = generateHash(sb.toString());
-        // 截取前25个字符作为HWID
+
         cachedHWID = fullHash.length() > 25 ? fullHash.substring(0, 25) : fullHash;
         return cachedHWID;
     }
 
-    /**
-     * 生成给定字符串的 SHA-256 哈希值。
-     *
-     * @param input 要哈希的字符串。
-     * @return 哈希后的字符串，如果哈希失败则返回空字符串。
-     */
+    
     private static String generateHash(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

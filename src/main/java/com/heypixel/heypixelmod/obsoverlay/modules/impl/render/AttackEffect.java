@@ -86,13 +86,13 @@ public class AttackEffect extends Module {
             LivingEntity target = (LivingEntity) Aura.target;
             Vec3 targetPos = target.getPosition(event.getRenderPartialTicks());
             
-            // 获取目标实体高度
+
             float targetHeight = target.getBbHeight();
             
-            // 在目标脚部位置显示效果
+
             Vec3 effectPos = new Vec3(targetPos.x, targetPos.y, targetPos.z);
             
-            // 根据模式渲染不同的效果
+
             String currentMode = mode.getCurrentMode();
             
             if (currentMode.equals("Circle") || currentMode.equals("Both")) {
@@ -104,7 +104,7 @@ public class AttackEffect extends Module {
             }
         }
         
-        // 更新和渲染粒子
+
         updateParticles();
         renderParticles(event.getPMatrixStack());
     }
@@ -113,7 +113,7 @@ public class AttackEffect extends Module {
         PoseStack poseStack = new PoseStack();
         poseStack.pushPose();
         
-        // 应用3D渲染偏移
+
         RenderUtils.applyRegionalRenderOffset(poseStack);
         
         Matrix4f matrix = poseStack.last().pose();
@@ -126,13 +126,13 @@ public class AttackEffect extends Module {
         
         int color = getEffectColor();
         
-        // 在目标脚部绘制圆形
+
         float circleRadius = circleSize.getCurrentValue();
         int segments = 36;
         
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         
-        // 转换为屏幕坐标进行2D渲染
+
         Vector2f screenPos = ProjectionUtils.project(pos.x, pos.y, pos.z, 1.0f);
         if (screenPos != null && screenPos.x != Float.MAX_VALUE) {
             RenderUtils.drawCircle(new PoseStack(), screenPos.x, screenPos.y, circleRadius * 10, color, segments);
@@ -164,13 +164,13 @@ public class AttackEffect extends Module {
         
         float size = triangleSize.getCurrentValue();
         
-        // 在目标位置上方绘制三角形
+
         Vec3 topPos = new Vec3(pos.x, pos.y + targetHeight * 0.8, pos.z);
         
-        // 转换为屏幕坐标
+
         Vector2f screenPos = ProjectionUtils.project(topPos.x, topPos.y, topPos.z, 1.0f);
         if (screenPos != null && screenPos.x != Float.MAX_VALUE && screenPos.y != Float.MAX_VALUE) {
-            // 添加额外的边界检查
+
             if (screenPos.x >= 0 && screenPos.x <= Minecraft.getInstance().getWindow().getGuiScaledWidth() && 
                 screenPos.y >= 0 && screenPos.y <= Minecraft.getInstance().getWindow().getGuiScaledHeight()) {
                 
@@ -178,7 +178,7 @@ public class AttackEffect extends Module {
                 float y = screenPos.y;
                 float triangleSizePx = size * 15;
                 
-                // 绘制三角形（顶点朝下）
+
                 float x1 = x;
                 float y1 = y - triangleSizePx;
                 float x2 = x - triangleSizePx;
@@ -204,7 +204,7 @@ public class AttackEffect extends Module {
             float hue = (time % 2000) / 2000.0f;
             return Color.HSBtoRGB(hue, 0.8f, 1.0f);
         } else {
-            return 0xFFFF0000; // 红色
+            return 0xFFFF0000;
         }
     }
     
@@ -224,7 +224,7 @@ public class AttackEffect extends Module {
             LivingEntity target = (LivingEntity) event.getEntity();
             Vec3 targetPos = target.position();
             
-            // 创建粒子效果
+
             int count = (int) particleCount.getCurrentValue();
             for (int i = 0; i < count; i++) {
                 double offsetX = (random.nextDouble() - 0.5) * target.getBbWidth();
@@ -273,7 +273,7 @@ public class AttackEffect extends Module {
             RenderSystem.setShaderTexture(0, 0);
             RenderSystem.depthMask(false);
             
-            // 设置颜色和透明度
+
             int particleColor = (int)(alpha * 255) << 24 | (color & 0xFFFFFF);
             
             Vector2f screenPos = ProjectionUtils.project(position.x, position.y, position.z, 1.0f);
@@ -289,7 +289,7 @@ public class AttackEffect extends Module {
                 float x = screenPos.x - size / 2;
                 float y = screenPos.y - size / 2;
                 
-                // 绘制带有透明度的圆形粒子
+
                 RenderUtils.drawCircle(new PoseStack(), x + size / 2, y + size / 2, size, particleColor, 8);
             }
             

@@ -268,9 +268,7 @@ public class Scaffold extends Module {
     private long lastPlaceTime = 0;
     private int initialBlockCount = 0; 
 
-    /**
-     * 获取玩家背包中所有方块的数量
-     */
+    
     private int getBlockCount() {
         if (mc.player == null) return 0;
         int count = 0;
@@ -463,14 +461,14 @@ public class Scaffold extends Module {
                 mc.options.keyJump.setDown(PlayerUtils.movementInput() || isHoldingJump);
                 if (this.offGroundTicks < 1 && PlayerUtils.movementInput()) {
                     float targetYaw = mc.player.getYRot();
-                    // 改进的加速逻辑
+
                     if (this.acceleration.getCurrentValue() && RandomUtils.nextFloat(0.0F, 1.0F) < this.probability.getCurrentValue()) {
                         Vec3 currentVelocity = mc.player.getDeltaMovement();
                         Vec3 acceleration = currentVelocity.subtract(this.lastVelocity);
                         this.lastAcceleration = acceleration;
                         this.lastVelocity = currentVelocity;
                         
-                        // 使用新的加速强度设置，基于实际加速度而非仅仅是数值
+
                         double accelerationMagnitude = acceleration.horizontalDistance();
                         float yawOffset = (float) (accelerationMagnitude * this.accelerationStrength.getCurrentValue());
                         float noiseFactor = Math.min(yawOffset * 0.5F, 20.0F);
@@ -480,7 +478,7 @@ public class Scaffold extends Module {
                         this.lastVelocity = mc.player.getDeltaMovement();
                     }
 
-                    // 使用统一的旋转速度设置
+
                     this.rots.setX(RotationUtils.rotateToYaw(this.rotationSpeed.getCurrentValue(), this.rots.getX(), targetYaw));
                     this.lastRots.set(this.rots.getX(), this.rots.getY());
                     return;
@@ -529,7 +527,7 @@ public class Scaffold extends Module {
             }
 
             this.placeBlock();
-            // 记录放置方块的时间，用于NoSprintYawChange功能
+
             this.lastPlaceTime = System.currentTimeMillis();
         }
     }
@@ -679,7 +677,7 @@ public class Scaffold extends Module {
             float screenHeight = (float) mc.getWindow().getGuiScaledHeight();
 
             if (this.blockCounterMode.isCurrentMode("Capsule")) {
-                // Capsule模式：渲染blur蒙版
+
                 String text = "Blocks: " + getBlockCount();
                 double textScale = 0.35;
                 this.blockCounterWidth = Fonts.opensans.getWidth(text, textScale) + 20.0F;
@@ -688,10 +686,10 @@ public class Scaffold extends Module {
                 float x = (screenWidth - this.blockCounterWidth) / 2.0F;
                 float y = screenHeight / 2.0F + 15.0F;
 
-                // 渲染blur蒙版（圆角矩形）
+
                 RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, 6.0F, Integer.MIN_VALUE);
             } else {
-                // Normal模式：原有的shader渲染
+
                 float x = (screenWidth - this.blockCounterWidth) / 2.0F - 3.0F;
                 float y = screenHeight / 2.0F + 15.0F;
                 RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth + 6.0F, this.blockCounterHeight + 8.0F, 5.0F, Integer.MIN_VALUE);
@@ -710,15 +708,13 @@ public class Scaffold extends Module {
         }
     }
 
-    /**
-     * 渲染Normal模式的Block Counter（原有实现）
-     */
+    
     private void renderNormalBlockCounter(EventRender2D e) {
         int blockCount = getBlockCount();
 
-        // 获取玩家当前主手拿的物品
+
         ItemStack itemToRender = mc.player.getMainHandItem();
-        // 检查手持的物品是否是有效的方块，如果不是，则不显示图标
+
         if (!isValidStack(itemToRender)) {
             itemToRender = null;
         }
@@ -727,7 +723,7 @@ public class Scaffold extends Module {
         double backgroundScale = 0.4;
         double textScale = 0.35;
 
-        // 如果有图标要渲染，为图标增加额外的宽度
+
         float iconWidth = itemToRender != null ? 18.0f : 0;
         this.blockCounterWidth = Fonts.opensans.getWidth(text, backgroundScale) + iconWidth;
         this.blockCounterHeight = (float) Fonts.opensans.getHeight(true, backgroundScale);
@@ -741,7 +737,7 @@ public class Scaffold extends Module {
         float textWidth = Fonts.opensans.getWidth(text, textScale);
         float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
 
-        // 调整文本的X坐标，为图标留出空间
+
         float textX = backgroundX + iconWidth + (this.blockCounterWidth - iconWidth + 6.0F - textWidth) / 2.0F;
         float textY = backgroundY + 4.0F + (this.blockCounterHeight + 4.0F) / 2.0F - textHeight / 2.0F - 2.0F;
 
@@ -756,22 +752,20 @@ public class Scaffold extends Module {
         int bodyColor = new Color(0, 0, 0, 120).getRGB();
         RenderUtils.fill(e.getStack(), backgroundX, backgroundY + 3.0F, backgroundX + this.blockCounterWidth + 6.0F, backgroundY + this.blockCounterHeight + 8.0F, bodyColor);
 
-        // 如果有有效的方块物品，就渲染它的图标
+
         if (itemToRender != null) {
             float itemX = backgroundX + 4;
             float itemY = backgroundY + 4.0F + (this.blockCounterHeight / 2.0F) - 8.0F;
             e.getGuiGraphics().renderFakeItem(itemToRender, (int)itemX, (int)itemY);
         }
 
-        // 渲染方块数量文本
+
         Fonts.opensans.render(e.getStack(), text, textX, textY, Color.WHITE, true, textScale);
         StencilUtils.dispose();
         e.getStack().popPose();
     }
 
-    /**
-     * 渲染Capsule模式的Block Counter（blur背景 + 进度条边框）
-     */
+    
     private void renderCapsuleBlockCounter(EventRender2D e) {
         int blockCount = getBlockCount();
         String text = "Blocks: " + blockCount;
@@ -787,37 +781,37 @@ public class Scaffold extends Module {
         float y = screenHeight / 2.0F + 15.0F;
 
         float cornerRadius = 6.0F;
-        float borderWidth = 1.5F; // 进度条宽度
+        float borderWidth = 1.5F;
 
-        // 计算进度比例
+
         float ratio = this.initialBlockCount > 0 ? (float) blockCount / (float) this.initialBlockCount : 0.0F;
 
-        // 根据比例确定进度条颜色
+
         Color progressColor;
-        if (ratio >= 0.6F) { // 超过3/5
-            progressColor = new Color(50, 200, 50, 255); // 绿色
-        } else if (ratio >= 0.4F) { // 2/5到3/5之间
-            progressColor = new Color(255, 200, 50, 255); // 黄色
-        } else { // 低于2/5
-            progressColor = new Color(200, 50, 50, 255); // 红色
+        if (ratio >= 0.6F) {
+            progressColor = new Color(50, 200, 50, 255);
+        } else if (ratio >= 0.4F) {
+            progressColor = new Color(255, 200, 50, 255);
+        } else {
+            progressColor = new Color(200, 50, 50, 255);
         }
 
         e.getStack().pushPose();
 
-        // 渲染进度条边框（在blur背景的边缘）
-        // 计算进度条的长度（沿着边框的周长）
+
+
         float perimeter = 2 * (this.blockCounterWidth + this.blockCounterHeight) - 8 * cornerRadius + 2 * (float) Math.PI * cornerRadius;
         float progressLength = perimeter * ratio;
 
-        // 使用模板裁剪，确保进度边框不会超出圆角背景
+
         StencilUtils.write(false);
         RenderUtils.drawRoundedRect(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, Integer.MIN_VALUE);
         StencilUtils.erase(true);
-        // 绘制进度条（从顶部中心开始，顺时针绘制），被裁剪在圆角形状内
+
         drawProgressBorder(e.getStack(), x, y, this.blockCounterWidth, this.blockCounterHeight, cornerRadius, borderWidth, progressLength, progressColor.getRGB());
         StencilUtils.dispose();
 
-        // 渲染文本
+
         float textWidth = Fonts.opensans.getWidth(text, textScale);
         float textHeight = (float) Fonts.opensans.getHeight(true, textScale);
         float textX = x + (this.blockCounterWidth - textWidth) / 2.0F;
@@ -828,14 +822,11 @@ public class Scaffold extends Module {
         e.getStack().popPose();
     }
 
-    /**
-     * 绘制进度条边框（包含圆角，优化避免突起）
-     * 从顶部中心开始，顺时针绘制指定长度的进度条
-     */
+    
     private void drawProgressBorder(com.mojang.blaze3d.vertex.PoseStack stack, float x, float y, float width, float height, float radius, float borderWidth, float length, int color) {
         float currentLength = 0.0F;
 
-        // 顶部边（从中心向右）
+
         float topLength = (width - 2 * radius) / 2.0F;
         if (currentLength < length) {
             float drawLength = Math.min(topLength, length - currentLength);
@@ -843,16 +834,16 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 右上角 - 使用精细的圆弧绘制
+
         float cornerArcLength = (float) (Math.PI * radius / 2.0F);
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
-            int segments = (int)(drawLength / cornerArcLength * 90); // 根据进度计算segment数量
+            int segments = (int)(drawLength / cornerArcLength * 90);
             drawPartialCornerArc(stack, x + width - radius, y + radius, radius, 270, 270 + segments, borderWidth, color);
             currentLength += drawLength;
         }
 
-        // 右边
+
         float rightLength = height - 2 * radius;
         if (currentLength < length) {
             float drawLength = Math.min(rightLength, length - currentLength);
@@ -860,7 +851,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 右下角
+
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
             int segments = (int)(drawLength / cornerArcLength * 90);
@@ -868,7 +859,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 底部边
+
         float bottomLength = width - 2 * radius;
         if (currentLength < length) {
             float drawLength = Math.min(bottomLength, length - currentLength);
@@ -876,7 +867,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 左下角
+
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
             int segments = (int)(drawLength / cornerArcLength * 90);
@@ -884,7 +875,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 左边
+
         float leftLength = height - 2 * radius;
         if (currentLength < length) {
             float drawLength = Math.min(leftLength, length - currentLength);
@@ -892,7 +883,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 左上角
+
         if (currentLength < length) {
             float drawLength = Math.min(cornerArcLength, length - currentLength);
             int segments = (int)(drawLength / cornerArcLength * 90);
@@ -900,7 +891,7 @@ public class Scaffold extends Module {
             currentLength += drawLength;
         }
 
-        // 顶部边（从左到中心）
+
         float topLeftLength = (width - 2 * radius) / 2.0F;
         if (currentLength < length) {
             float drawLength = Math.min(topLeftLength, length - currentLength);
@@ -908,9 +899,7 @@ public class Scaffold extends Module {
         }
     }
 
-    /**
-     * 绘制部分圆角弧线（使用更窄的宽度避免突起）
-     */
+    
     private void drawPartialCornerArc(com.mojang.blaze3d.vertex.PoseStack stack, float centerX, float centerY, float radius, int startAngle, int endAngle, float width, int color) {
         int degSegments = Math.abs(endAngle - startAngle);
         if (degSegments <= 0) return;

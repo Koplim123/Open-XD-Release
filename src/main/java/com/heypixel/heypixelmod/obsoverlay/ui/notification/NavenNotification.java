@@ -6,9 +6,7 @@ import com.heypixel.heypixelmod.obsoverlay.utils.renderer.Fonts;
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.awt.Color;
 
-/**
- * Naven原版通知渲染实现
- */
+
 public class NavenNotification extends Notification {
     
     public NavenNotification(NotificationLevel level, String message, long age) {

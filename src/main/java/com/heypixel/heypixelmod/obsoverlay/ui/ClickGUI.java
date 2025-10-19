@@ -233,7 +233,7 @@ public class ClickGUI extends Screen {
     }
 
     protected void init() {
-        // 重置OpenGL状态
+
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -266,7 +266,7 @@ public class ClickGUI extends Screen {
     @EventTarget
     public void onShader(EventShader e) {
         if (mc.screen == this) {
-            // 确保正确的渲染状态
+
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderUtils.drawRoundedRect(e.getStack(), windowX, windowY, this.widthAnimation.value, this.heightAnimation.value, 5.0F, 1073741824);
@@ -289,7 +289,7 @@ public class ClickGUI extends Screen {
         this.widthAnimation.update(true);
         this.heightAnimation.update(true);
         
-        // 确保正确的渲染状态
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
@@ -528,7 +528,7 @@ public class ClickGUI extends Screen {
                             stack, windowX + 140.0F + x, windowY + valueHeight + motion + 20.0F, 12.0F, 12.0F, 2.0F, Colors.getColor(0, 0, 0, 150)
                     );
                     RenderUtils.drawRoundedRect(stack, windowX + 142.0F + x, windowY + valueHeight + motion + 22.0F, 8.0F, 8.0F, 2.0F, enabledColor);
-                    // 使用Fonts类的渲染方法确保支持中文字符
+
                     Fonts.renderMixedFont(
                             stack,
                             value.getName(),
@@ -562,7 +562,7 @@ public class ClickGUI extends Screen {
                     }
                     opensans.render(stack, valuex.getName(), (double)(windowX + 140.0F), (double)(windowY + valueHeight + motion + 25.0F), Color.WHITE, true, 0.4);
                     String currentValue = (float)Math.round(floatValue.getCurrentValue() * 100.0F) / 100.0F + " / " + floatValue.getMaxValue();
-                    // 使用Fonts类的渲染方法确保支持中文字符
+
                     Fonts.renderMixedFont(
                             stack,
                             currentValue,

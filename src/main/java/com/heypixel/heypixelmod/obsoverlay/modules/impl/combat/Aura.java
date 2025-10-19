@@ -197,10 +197,10 @@ public class Aura extends Module {
     private float currentCps = 0.0F;
     private boolean cpsInitialized = false;
 
-    // FOV屏蔽相关变量
+
     private float baseFov = 1.0F;
     private long lastAttackTime = 0;
-    private static final long FOV_BLOCK_DURATION = 500; // 攻击后屏蔽FOV变化的持续时间(毫秒)
+    private static final long FOV_BLOCK_DURATION = 500;
 
     @EventTarget
     public void onShader(EventShader e) {
@@ -218,19 +218,19 @@ public class Aura extends Module {
         if (this.blockSprintFov.getCurrentValue() && mc.player != null) {
             long currentTime = System.currentTimeMillis();
 
-            // 如果在攻击后的短时间内，屏蔽FOV变化
+
             if (currentTime - lastAttackTime < FOV_BLOCK_DURATION) {
                 e.setFov(baseFov);
                 return;
             }
 
-            // 如果当前有目标且准备攻击，记录基础FOV并屏蔽变化
+
             if (target != null && aimingTarget != null) {
-                // 获取疾跑状态的FOV作为基础FOV
+
                 if (mc.player.isSprinting()) {
                     baseFov = e.getFov();
                 } else {
-                    // 如果当前不在疾跑，计算疾跑状态的FOV (通常疾跑会增加约1.3倍的FOV修饰符)
+
                     baseFov = e.getFov() * 1.3F;
                 }
                 e.setFov(baseFov);
@@ -245,7 +245,7 @@ public class Aura extends Module {
             LivingEntity living = (LivingEntity)target;
             e.getStack().pushPose();
 
-            // 获取HUD编辑器中的TargetHUD位置
+
             com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.HUDElement targetHudElement =
                     com.heypixel.heypixelmod.obsoverlay.ui.HUDEditor.getInstance().getHUDElement("targethud");
 
@@ -254,15 +254,15 @@ public class Aura extends Module {
                 x = (float)targetHudElement.x;
                 y = (float)targetHudElement.y;
             } else {
-                // 后备位置
+
                 x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F + 10.0F;
                 y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F + 10.0F;
             }
 
-            // 使用TargetHUD类来渲染，而不是硬编码的Naven样式
+
             this.blurMatrix = TargetHUD.render(e.getGuiGraphics(), living, this.targetHudStyle.getCurrentMode(), x, y);
 
-            // 更新HUD元素大小（根据渲染结果）
+
             if (targetHudElement != null && this.blurMatrix != null) {
                 targetHudElement.width = this.blurMatrix.z();
                 targetHudElement.height = this.blurMatrix.w();
@@ -326,12 +326,12 @@ public class Aura extends Module {
         aimingTarget = null;
         targets.clear();
 
-        // 重置CPS状态，包括AdvancedCPS
+
         this.lastCpsUpdate = 0;
         this.currentCps = 0.0F;
         this.cpsInitialized = false;
 
-        // 重置FOV屏蔽状态
+
         this.baseFov = 1.0F;
         this.lastAttackTime = 0;
     }
@@ -341,7 +341,7 @@ public class Aura extends Module {
         target = null;
         aimingTarget = null;
 
-        // 重置FOV屏蔽状态
+
         this.baseFov = 1.0F;
         this.lastAttackTime = 0;
 
@@ -556,7 +556,7 @@ public class Aura extends Module {
     public void attackEntity(Entity entity) {
         this.attackTimes++;
 
-        // 记录攻击时间用于FOV屏蔽
+
         this.lastAttackTime = System.currentTimeMillis();
 
         float currentYaw = mc.player.getYRot();
@@ -619,7 +619,7 @@ public class Aura extends Module {
     public float getRandomCps() {
         long currentTime = System.currentTimeMillis();
 
-        // 根据AdvancedCPS设置获取CPS的间隔
+
         long cpsDelayMs = advancedCPS.getCurrentValue() ?
                 (long)getCPSDelay.getCurrentValue() : 5L;
 
